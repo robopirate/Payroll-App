@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <h4 class="page-header mb-4">Settings</h4>
+
+  <div class="row g-4">
+    <div class="col-lg-5">
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-bottom">
+          <h6 class="mb-0 fw-bold"><i class="bi bi-lock text-primary"></i> Change Password</h6>
+        </div>
+        <div class="card-body">
+          <form method="POST">
+            <div class="mb-3">
+              <label class="form-label">New Password</label>
+              <input type="password" name="new_password" class="form-control" placeholder="Enter new password">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Confirm Password</label>
+              <input type="password" name="confirm_password" class="form-control" placeholder="Confirm new password">
+            </div>
+            <button type="submit" class="btn btn-primary">Update Password</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom">
+          <h6 class="mb-0 fw-bold"><i class="bi bi-phone text-success"></i> Fast2SMS API Key</h6>
+        </div>
+        <div class="card-body">
+          <form method="POST">
+            <div class="mb-3">
+              <label class="form-label">API Key</label>
+              <input type="text" name="api_key" class="form-control" placeholder="Your Fast2SMS API key">
+              <div class="form-text">
+                Get your API key from <strong>fast2sms.com</strong>.
+                For permanent storage, set the <code>FAST2SMS_API_KEY</code> environment variable.
+              </div>
+            </div>
+            <button type="submit" class="btn btn-success">Save API Key</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-7">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom">
+          <h6 class="mb-0 fw-bold"><i class="bi bi-info-circle text-info"></i> System Information</h6>
+        </div>
+        <div class="card-body">
+          <table class="table table-borderless mb-0">
+            <tr><td class="text-muted">Application</td><td><strong>Robo Pirate HR v1.0</strong></td></tr>
+            <tr><td class="text-muted">Database</td><td>SQLite (payroll.db)</td></tr>
+            <tr><td class="text-muted">PF Rate</td><td>12% of Basic</td></tr>
+            <tr><td class="text-muted">ESI Rate</td><td>1.75% of Gross (if Gross ≤ Rs.21,000)</td></tr>
+            <tr><td class="text-muted">HRA</td><td>40% of Basic</td></tr>
+            <tr><td class="text-muted">Overtime Rate</td><td>2x hourly rate</td></tr>
+            <tr><td class="text-muted">Working Days/Month</td><td>26 (Mon-Sat)</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

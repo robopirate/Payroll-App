@@ -1,0 +1,580 @@
+{% extends 'portal/base.html' %}
+{% block title %}My Dashboard{% endblock %}
+
+{% block head %}
+<style>
+  /* ── Overall Layout ────────────────────────────── */
+  body { scroll-behavior: smooth; }
+
+  /* ── Greeting ─────────────────────────────────── */
+  .greet-section {
+    margin-bottom: 20px;
+    animation: slideIn 0.4s ease-out;
+  }
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .greet-section h5 {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 800;
+    font-size: 1.4rem;
+    color: #0A1628;
+    margin: 0;
+    letter-spacing: -0.3px;
+  }
+  .greet-section small {
+    color: #9aa5b4;
+    font-size: 0.85rem;
+    display: block;
+    margin-top: 4px;
+  }
+
+  /* ── Punch Card Hero ──────────────────────────── */
+  .punch-card-hero {
+    background: linear-gradient(135deg, #0A1628 0%, #1565C0 100%);
+    border-radius: 20px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    box-shadow: 0 12px 48px rgba(21, 101, 192, 0.25);
+    animation: cardSlideUp 0.5s ease-out 0.1s both;
+  }
+  @keyframes cardSlideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .punch-card-top {
+    padding: 18px 22px 14px;
+    color: white;
+    text-align: center;
+  }
+  .punch-card-top .label {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    opacity: 0.6;
+    font-weight: 600;
+  }
+  .punch-card-top .date-str {
+    font-family: 'Poppins', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    margin-top: 3px;
+  }
+
+  .status-pill {
+    display: inline-block;
+    padding: 5px 18px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    margin-top: 10px;
+    letter-spacing: 0.3px;
+  }
+
+  /* ── Punch Area ───────────────────────────────── */
+  .punch-area {
+    background: white;
+    padding: 30px 20px 24px;
+    text-align: center;
+    border-radius: 0 0 20px 20px;
+  }
+
+  /* ── Circular Punch Button ────────────────────── */
+  .btn-punch {
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    border: none;
+    font-weight: 800;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    font-size: 0.9rem;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    position: relative;
+    outline: none;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Outer glow ring */
+  .btn-punch::before {
+    content: '';
+    position: absolute;
+    inset: -12px;
+    border-radius: 50%;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .btn-punch:hover::before { opacity: 0.5; }
+  .btn-punch:hover {
+    transform: scale(1.08);
+  }
+  .btn-punch:active {
+    transform: scale(0.95);
+  }
+  .btn-punch i { font-size: 2.5rem; margin-bottom: 4px; display: block; }
+  .btn-punch small {
+    font-size: 0.6rem;
+    opacity: 0.8;
+    font-weight: 500;
+    display: block;
+    margin-top: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .btn-punch-in {
+    background: linear-gradient(135deg, #FF6B35 0%, #E64A19 100%);
+    color: white;
+    box-shadow: 0 12px 40px rgba(255,107,53,0.4);
+  }
+  .btn-punch-in::before {
+    background: radial-gradient(circle, rgba(255,107,53,0.6), transparent 70%);
+  }
+  .btn-punch-in:active {
+    box-shadow: 0 6px 20px rgba(255,107,53,0.3);
+  }
+
+  .btn-punch-out {
+    background: linear-gradient(135deg, #1565C0 0%, #0D47A1 100%);
+    color: white;
+    box-shadow: 0 12px 40px rgba(21,101,192,0.4);
+  }
+  .btn-punch-out::before {
+    background: radial-gradient(circle, rgba(21,101,192,0.5), transparent 70%);
+  }
+  .btn-punch-out:active {
+    box-shadow: 0 6px 20px rgba(21,101,192,0.3);
+  }
+
+  .btn-punch-done {
+    background: linear-gradient(135deg, #e8f5e9, #f1f8e9);
+    color: #00C853;
+    cursor: default;
+    box-shadow: 0 4px 12px rgba(0, 200, 83, 0.15);
+    border: 2px solid #e8f5e9;
+  }
+  .btn-punch-done:hover {
+    transform: none;
+  }
+  .btn-punch-done:active {
+    transform: none;
+  }
+
+  #punch-feedback {
+    min-height: 36px;
+    margin-top: 16px;
+    animation: fadeInScale 0.3s ease-out;
+  }
+  @keyframes fadeInScale {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  #punch-feedback > div {
+    animation: slideIn 0.4s ease-out;
+  }
+
+  /* ── Leave Balance Cards ──────────────────────── */
+  .leave-stats {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+  .leave-stat-card {
+    flex: 0 0 calc(50% - 6px);
+    background: white;
+    border-radius: 16px;
+    text-align: center;
+    padding: 16px 12px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    border: 1px solid #f0f4f8;
+    transition: all 0.25s ease;
+    animation: cardSlideUp 0.5s ease-out both;
+  }
+  .leave-stat-card:nth-child(2) { animation-delay: 0.2s; }
+  .leave-stat-card:nth-child(3) { animation-delay: 0.3s; }
+  .leave-stat-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  }
+  .leave-stat-card .num {
+    font-family: 'Poppins', sans-serif;
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--accent-orange, #FF6B35);
+    line-height: 1;
+  }
+  .leave-stat-card .lbl {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #a0aab8;
+    margin-top: 6px;
+  }
+
+  /* ── Section Title ────────────────────────────── */
+  .section-title {
+    font-family: 'Poppins', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #0A1628;
+    margin-bottom: 14px;
+    margin-top: 20px;
+    letter-spacing: -0.2px;
+  }
+
+  /* ── Attendance Row ───────────────────────────── */
+  .att-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 0;
+    border-bottom: 1px solid #f0f4f8;
+    transition: background 0.2s;
+  }
+  .att-row:hover {
+    background: rgba(255, 107, 53, 0.02);
+  }
+  .att-row:last-child { border-bottom: none; }
+  .att-row .day-name {
+    font-weight: 700;
+    font-size: 0.98rem;
+    color: #0A1628;
+  }
+  .att-row .day-date {
+    font-size: 0.78rem;
+    color: #a0aab8;
+  }
+  .att-row .times {
+    font-size: 0.73rem;
+    color: #9aa5b4;
+    margin-top: 2px;
+  }
+
+  /* ── Payslip Card ─────────────────────────────── */
+  .payslip-card {
+    animation: cardSlideUp 0.5s ease-out 0.3s both;
+  }
+  .payslip-amount {
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: #00C853;
+    line-height: 1;
+  }
+  .payslip-meta {
+    font-size: 0.75rem;
+    color: #9aa5b4;
+    margin-top: 4px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ── Greeting ────────────────────────────────── -->
+<div class="greet-section">
+  <h5>Hi, {{ emp.name.split()[0] }}! 👋</h5>
+  <small>{{ today.strftime('%A, %d %B %Y') }}</small>
+</div>
+
+<!-- ── Punch Card ─────────────────────────────── -->
+<div class="punch-card-hero">
+  <div class="punch-card-top">
+    <div class="label">Today's Attendance</div>
+    <div class="date-str">{{ today.strftime('%d %B %Y') }}</div>
+    {% if today_att %}
+      {% if today_att.check_in and today_att.check_out %}
+        <span class="status-pill"
+              style="background:rgba(0,200,83,0.18);color:#69f0ae;border:1px solid rgba(0,200,83,0.35);">
+          ✓ Completed &nbsp;{{ today_att.check_in }} → {{ today_att.check_out }}
+        </span>
+      {% elif today_att.check_in %}
+        <span class="status-pill"
+              style="background:rgba(255,193,7,0.2);color:#ffe066;border:1px solid rgba(255,193,7,0.4);">
+          ⏱ In since {{ today_att.check_in }}
+        </span>
+      {% else %}
+        <span class="status-pill"
+              style="background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.15);">
+          Not yet marked
+        </span>
+      {% endif %}
+    {% else %}
+      <span class="status-pill"
+            style="background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.15);">
+        Not yet punched in
+      </span>
+    {% endif %}
+  </div>
+
+  <div class="punch-area">
+    {% if today_att and today_att.check_in and today_att.check_out %}
+      <button class="btn-punch btn-punch-done" disabled>
+        <i class="bi bi-check-circle-fill"></i>
+        Done
+        <small>See you tomorrow!</small>
+      </button>
+
+    {% elif today_att and today_att.check_in %}
+      <button class="btn-punch btn-punch-out" id="punchBtn" onclick="doPunch('out')">
+        <i class="bi bi-box-arrow-right"></i>
+        Punch Out
+        <small>Since {{ today_att.check_in }}</small>
+      </button>
+
+    {% else %}
+      <button class="btn-punch btn-punch-in" id="punchBtn" onclick="doPunch('in')">
+        <i class="bi bi-fingerprint"></i>
+        Punch In
+        <small>Tap to mark</small>
+      </button>
+    {% endif %}
+
+    <div id="punch-feedback"></div>
+
+    {% set emp_schools = emp.schools %}
+    {% if not emp_schools %}
+      <div class="mt-3" style="font-size:0.78rem;color:#dc3545;">
+        <i class="bi bi-exclamation-triangle-fill me-1"></i>
+        No school assigned — contact admin.
+      </div>
+    {% else %}
+      <div class="mt-2" style="font-size:0.72rem;color:#a0aab8;">
+        <i class="bi bi-geo-alt me-1"></i>
+        {{ emp_schools|map(attribute='name')|join(', ') }}
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ── Leave Balance ───────────────────────────── -->
+{% if leave_balances %}
+<p class="section-title">Leave Balance</p>
+<div class="leave-stats">
+  {% for lb in leave_balances %}
+  <div class="leave-stat-card">
+    <div class="num">{{ lb.remaining_days|int }}</div>
+    <div class="lbl">{{ lb.leave_type }}<br>Leave</div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- ── Upcoming Holidays ────────────────────────── -->
+{% if upcoming_holidays %}
+<p class="section-title"><i class="bi bi-calendar-event me-2" style="color:#FF6B35;"></i>Upcoming Holidays</p>
+<div class="card" style="animation: cardSlideUp 0.5s ease-out 0.25s both; margin-bottom: 20px;">
+  <div class="card-body px-4 py-3">
+    {% for holiday in upcoming_holidays %}
+    <div class="att-row">
+      <div>
+        <div class="day-name">{{ holiday.date.strftime('%d %b') }} — {{ holiday.name }}</div>
+        <div class="day-date">{{ holiday.date.strftime('%A') }}</div>
+        {% if holiday.description %}
+        <div class="times">{{ holiday.description }}</div>
+        {% endif %}
+      </div>
+      <div>
+        <span class="badge-status" style="background:#ede7f6;color:#4a148c;">🎉 Holiday</span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- ── Latest Payslip ──────────────────────────── -->
+{% if latest_payroll and latest_payroll.status == 'paid' %}
+<div class="card payslip-card" style="margin-bottom:20px;">
+  <div class="card-body py-4 px-4">
+    <div class="d-flex align-items-center justify-content-between gap-3">
+      <div style="flex: 1;">
+        <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#a0aab8;margin-bottom:4px;">
+          💰 Latest Payslip
+        </div>
+        <div class="payslip-amount">₹{{ "%.0f"|format(latest_payroll.net_salary) }}</div>
+        <div class="payslip-meta">
+          {{ latest_payroll.month }}/{{ latest_payroll.year }} net salary
+        </div>
+      </div>
+      <a href="{{ url_for('portal_download_payslip', payroll_id=latest_payroll.id) }}"
+         class="btn btn-sm"
+         style="background: linear-gradient(135deg, #FF6B35, #E64A19); color:white; border-radius:12px; padding:11px 16px; font-weight:700; white-space:nowrap; font-size:0.8rem; border: none; box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3); transition: all 0.25s;">
+        <i class="bi bi-download me-1"></i>Download
+      </a>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- ── Recent Attendance ───────────────────────── -->
+<p class="section-title"><i class="bi bi-clock-history me-2" style="color:#FF6B35;"></i>Recent Attendance</p>
+<div class="card" style="animation: cardSlideUp 0.5s ease-out 0.4s both; margin-bottom: 20px;">
+  <div class="card-body px-4 py-3">
+    {% for att in recent_att %}
+    <div class="att-row">
+      <div>
+        <div class="day-name">{{ att.date.strftime('%d %b') }}</div>
+        <div class="day-date">{{ att.date.strftime('%A') }}</div>
+        {% if att.check_in %}
+          <div class="times">
+            ⏱ {{ att.check_in }}{% if att.check_out %} – {{ att.check_out }}{% endif %}
+            {% if att.gps_verified %}
+              <i class="bi bi-geo-alt-fill text-success ms-1" style="font-size:0.65rem;"></i>
+            {% endif %}
+          </div>
+        {% endif %}
+      </div>
+      <div>
+        {% if att.status == 'present' %}
+          <span class="badge-status badge-present">✓ Present</span>
+        {% elif att.status == 'absent' %}
+          <span class="badge-status badge-absent">✗ Absent</span>
+        {% elif att.status == 'half_day' %}
+          <span class="badge-status badge-half">½ Half Day</span>
+        {% elif att.status == 'leave' %}
+          <span class="badge-status badge-leave">🏖 Leave</span>
+        {% elif att.status == 'holiday' %}
+          <span class="badge-status" style="background:#ede7f6;color:#4a148c;">🎉 Holiday</span>
+        {% elif att.status == 'overtime' %}
+          <span class="badge-status" style="background:#e0f7fa;color:#006064;">⚡ Overtime</span>
+        {% else %}
+          <span class="badge-status" style="background:#f0f4f8;color:#6b7a99;">{{ att.status|title }}</span>
+        {% endif %}
+      </div>
+    </div>
+    {% else %}
+    <p class="text-muted text-center py-5 mb-0" style="font-size:0.88rem;">
+      <i class="bi bi-inbox" style="font-size: 2rem; display: block; color: #dde3ed; margin-bottom: 8px;"></i>
+      No attendance records yet
+    </p>
+    {% endfor %}
+
+    {% if recent_att %}
+    <div class="text-center mt-3 pt-2 border-top">
+      <a href="{{ url_for('portal_attendance') }}"
+         style="font-size:0.85rem;color:#FF6B35;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
+        View Full History <i class="bi bi-arrow-right"></i>
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<div style="height:32px;"></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function doPunch(action) {
+  const btn = document.getElementById('punchBtn');
+  const fb  = document.getElementById('punch-feedback');
+  if (!btn) return;
+
+  btn.disabled = true;
+  btn.style.opacity = '0.65';
+  btn.innerHTML = '<div class="spinner-border" style="width:2.2rem;height:2.2rem;border-color:#FF6B35 transparent #FF6B35 transparent;border-width:3px;"></div>';
+  showFeedback('info', '<i class="bi bi-geo-alt me-1"></i>Getting your GPS location…');
+
+  if (!navigator.geolocation) {
+    showFeedback('danger', 'GPS not supported by this browser.');
+    resetBtn(action, btn);
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    function(pos) {
+      showFeedback('info', '<i class="bi bi-wifi me-1"></i>Verifying location…');
+      fetch('/api/punch', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          accuracy: pos.coords.accuracy,
+          action: action
+        })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          showFeedback('success', '<i class="bi bi-check-circle-fill me-1"></i>' + data.message);
+          btn.style.opacity = '1';
+          btn.innerHTML = '<i class="bi bi-check-circle-fill" style="font-size:2.5rem;"></i>';
+          setTimeout(() => location.reload(), 2200);
+        } else {
+          showFeedback('danger', '<i class="bi bi-x-circle-fill me-1"></i>' + data.message);
+          resetBtn(action, btn);
+        }
+      })
+      .catch(() => {
+        showFeedback('danger', 'Network error — please try again.');
+        resetBtn(action, btn);
+      });
+    },
+    function(err) {
+      const msgs = {
+        1: '📍 Location access denied. Enable GPS in browser settings.',
+        2: '📍 Location unavailable. Try outdoors or near a window.',
+        3: '📍 Location request timed out. Please try again.'
+      };
+      showFeedback('warning', msgs[err.code] || 'Location error — please try again.');
+      resetBtn(action, btn);
+    },
+    { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
+  );
+}
+
+function resetBtn(action, btn) {
+  btn.disabled = false;
+  btn.style.opacity = '1';
+  if (action === 'in') {
+    btn.innerHTML = '<i class="bi bi-fingerprint" style="font-size:2.5rem;margin-bottom:4px;display:block;"></i>Punch In<small style="font-size:0.6rem;opacity:0.8;font-weight:500;display:block;margin-top:2px;text-transform:uppercase;letter-spacing:0.5px;">Tap to mark</small>';
+  } else {
+    btn.innerHTML = '<i class="bi bi-box-arrow-right" style="font-size:2.5rem;margin-bottom:4px;display:block;"></i>Punch Out<small style="font-size:0.6rem;opacity:0.8;font-weight:500;display:block;margin-top:2px;text-transform:uppercase;letter-spacing:0.5px;">Tap to punch out</small>';
+  }
+}
+
+function showFeedback(type, msg) {
+  const fb = document.getElementById('punch-feedback');
+  const styles = {
+    success: 'background:#e8fff2;color:#1a6640;border:1px solid #a3dfc0;',
+    danger:  'background:#fff0f0;color:#9b2335;border:1px solid #f5c0c0;',
+    warning: 'background:#fffbeb;color:#8a6800;border:1px solid #f5e0a0;',
+    info:    'background:#eff6ff;color:#1e40af;border:1px solid #bfdbfe;'
+  };
+  fb.innerHTML = `<div style="${styles[type]||styles.info}padding:10px 14px;border-radius:10px;font-size:0.83rem;font-weight:500;">${msg}</div>`;
+}
+</script>
+{% endblock %}

@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% block title %}Leaves{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="page-header mb-0">Leave Management</h4>
+    <a href="{{ url_for('apply_leave') }}" class="btn btn-sm" style="background:#FF6B35;color:white;border:none;">
+      <i class="bi bi-plus-circle-fill me-1"></i> Apply Leave
+    </a>
+  </div>
+
+  <!-- Filter Tabs -->
+  <div class="mb-3">
+    <div class="btn-group">
+      {% for s in ['pending','approved','rejected','all'] %}
+      <a href="{{ url_for('leaves', status=s) }}"
+         class="btn btn-sm {{ 'btn-warning' if s == 'pending' else 'btn-primary' if s == 'approved' else 'btn-danger' if s == 'rejected' else 'btn-secondary' }}
+         {{ '' if status_filter == s else 'btn-outline-' + ('warning' if s == 'pending' else 'primary' if s == 'approved' else 'danger' if s == 'rejected' else 'secondary') }}">
+        {{ s.title() }}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      {% if leaves %}
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Employee</th>
+              <th>Leave Type</th>
+              <th>From</th>
+              <th>To</th>
+              <th>Days</th>
+              <th>Reason</th>
+              <th>Applied On</th>
+              <th>Status</th>
+              <th class="text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for leave in leaves %}
+            <tr>
+              <td class="fw-semibold">{{ leave.employee.name }}</td>
+              <td><span class="badge bg-info text-capitalize">{{ leave.leave_type }}</span></td>
+              <td>{{ leave.start_date.strftime('%d %b %Y') }}</td>
+              <td>{{ leave.end_date.strftime('%d %b %Y') }}</td>
+              <td>{{ leave.days }}</td>
+              <td>{{ leave.reason or '-' }}</td>
+              <td>{{ leave.applied_on.strftime('%d %b') if leave.applied_on else '-' }}</td>
+              <td>
+                {% if leave.status == 'pending' %}
+                  <span class="badge bg-warning text-dark">Pending</span>
+                {% elif leave.status == 'approved' %}
+                  <span class="badge bg-success">Approved</span>
+                {% else %}
+                  <span class="badge bg-danger">Rejected</span>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                {% if leave.status == 'pending' %}
+                <form method="POST" action="{{ url_for('approve_leave', leave_id=leave.id) }}" class="d-inline">
+                  <button class="btn btn-sm btn-success" title="Approve">
+                    <i class="bi bi-check-lg"></i>
+                  </button>
+                </form>
+                <form method="POST" action="{{ url_for('reject_leave', leave_id=leave.id) }}" class="d-inline">
+                  <button class="btn btn-sm btn-danger" title="Reject">
+                    <i class="bi bi-x-lg"></i>
+                  </button>
+                </form>
+                {% else %}
+                <span class="text-muted">-</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="text-center py-5 text-muted">
+        <i class="bi bi-calendar2-x fs-1"></i>
+        <p class="mt-2">No leave applications found.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

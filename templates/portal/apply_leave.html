@@ -1,0 +1,117 @@
+{% extends 'portal/base.html' %}
+{% block title %}Apply Leave{% endblock %}
+
+{% block head %}
+<style>
+  .back-btn { display:inline-flex;align-items:center;gap:6px;color:#1565C0;font-weight:600;font-size:0.9rem;text-decoration:none;margin-bottom:16px; }
+  .form-label { font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#888;margin-bottom:5px; }
+  .form-control, .form-select { border-radius:12px;height:50px;font-size:1rem;border:1.5px solid #e0e0e0; }
+  .form-control:focus, .form-select:focus { border-color:#1565C0;box-shadow:0 0 0 3px rgba(255,107,53,0.12); }
+  textarea.form-control { height:90px!important; }
+  .balance-hint { display:inline-block;background:#e8f0fe;color:#1565C0;padding:4px 12px;border-radius:8px;font-size:0.78rem;font-weight:600;margin-top:6px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<a href="{{ url_for('portal_leaves') }}" class="back-btn">
+  <i class="bi bi-arrow-left"></i> Leave Applications
+</a>
+
+<h5 class="fw-bold mb-3">Apply for Leave</h5>
+
+<div class="card">
+  <div class="card-body px-4 py-4">
+    <form method="post">
+      <div class="mb-4">
+        <label class="form-label">Leave Type</label>
+        <select name="leave_type" class="form-select" required id="leaveTypeSelect" onchange="updateBalance()">
+          <option value="">Select type…</option>
+          <option value="casual">Casual Leave</option>
+          <option value="sick">Sick Leave</option>
+          <option value="earned">Earned Leave</option>
+        </select>
+        <div id="balanceHint"></div>
+      </div>
+
+      <div class="row g-3 mb-4">
+        <div class="col-6">
+          <label class="form-label">From Date</label>
+          <input type="date" name="start_date" id="startDate" class="form-control" required
+                 onchange="calcDays()">
+        </div>
+        <div class="col-6">
+          <label class="form-label">To Date</label>
+          <input type="date" name="end_date" id="endDate" class="form-control" required onchange="calcDays()">
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="half_day" id="halfDay" onchange="calcDays()">
+          <label class="form-check-label" for="halfDay" style="font-size:0.95rem;">Half Day</label>
+        </div>
+        <div id="daysCalc" class="mt-2" style="font-size:0.85rem;color:#1565C0;font-weight:600;"></div>
+      </div>
+
+      <div class="mb-4">
+        <label class="form-label">Reason <span style="font-weight:400;color:#aaa;">(optional)</span></label>
+        <textarea name="reason" class="form-control" placeholder="Brief reason for leave…"></textarea>
+      </div>
+
+      <button type="submit" class="btn btn-touch w-100"
+              style="background:linear-gradient(135deg,#0A1628,#1565C0);color:white;border:none;">
+        <i class="bi bi-send me-2"></i>Submit Application
+      </button>
+    </form>
+  </div>
+</div>
+
+<div style="height:10px;"></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const balances = {
+    {% for lb in leave_balances %}
+    '{{ lb.leave_type }}': {{ lb.remaining_days }},
+    {% endfor %}
+  };
+
+  function updateBalance() {
+    const type = document.getElementById('leaveTypeSelect').value;
+    const hint = document.getElementById('balanceHint');
+    if (type && balances[type] !== undefined) {
+      hint.innerHTML = `<span class="balance-hint"><i class="bi bi-info-circle"></i> Available: ${balances[type]} day(s)</span>`;
+    } else {
+      hint.innerHTML = '';
+    }
+  }
+
+  function calcDays() {
+    const s = document.getElementById('startDate').value;
+    const e = document.getElementById('endDate').value;
+    const half = document.getElementById('halfDay').checked;
+    const calc = document.getElementById('daysCalc');
+    if (s && e) {
+      const days = half ? 0.5 : Math.floor((new Date(e) - new Date(s)) / 86400000) + 1;
+      if (days >= 1 || half) {
+        calc.textContent = `→ ${days} day(s) of leave`;
+      } else {
+        calc.textContent = 'End date must be on or after start date';
+      }
+    }
+  }
+
+  // Set min dates
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('startDate').min = today;
+  document.getElementById('endDate').min = today;
+  document.getElementById('startDate').addEventListener('change', function() {
+    document.getElementById('endDate').min = this.value;
+    if (document.getElementById('endDate').value < this.value) {
+      document.getElementById('endDate').value = this.value;
+    }
+    calcDays();
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Edit' if edit else 'Add' }} School{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex align-items-center gap-2 mb-4">
+    <a href="{{ url_for('schools') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+    <h4 class="page-header mb-0">{{ 'Edit School' if edit else 'Add School' }}</h4>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+          <form method="post" id="schoolForm">
+            <div class="mb-3">
+              <label class="form-label fw-semibold">School Name <span class="text-danger">*</span></label>
+              <input type="text" name="name" class="form-control"
+                     value="{{ school.name if school else '' }}" required
+                     placeholder="e.g. Delhi Public School, Sector 5">
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Address</label>
+              <textarea name="address" class="form-control" rows="2"
+                        placeholder="Full address of the school">{{ school.address if school else '' }}</textarea>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">
+                Geofence Radius (metres)
+                <span class="text-muted small fw-normal">— employees must be within this distance to punch in</span>
+              </label>
+              <input type="number" name="geofence_radius" class="form-control"
+                     value="{{ school.geofence_radius if school else 150 }}"
+                     min="10" max="2000" step="10">
+            </div>
+
+            <hr>
+            <h6 class="fw-bold mb-3"><i class="bi bi-geo-alt text-success"></i> GPS Coordinates</h6>
+
+            <div class="row g-3 mb-3">
+              <div class="col-6">
+                <label class="form-label fw-semibold">Latitude</label>
+                <input type="number" name="latitude" id="latInput" class="form-control"
+                       value="{{ school.latitude if school else '' }}"
+                       step="0.000001" placeholder="e.g. 28.613939">
+              </div>
+              <div class="col-6">
+                <label class="form-label fw-semibold">Longitude</label>
+                <input type="number" name="longitude" id="lngInput" class="form-control"
+                       value="{{ school.longitude if school else '' }}"
+                       step="0.000001" placeholder="e.g. 77.209021">
+              </div>
+            </div>
+
+            <button type="button" class="btn btn-outline-success btn-sm mb-3" onclick="useMyLocation()">
+              <i class="bi bi-crosshair"></i> Use My Current Location
+            </button>
+
+            <div class="d-flex gap-2 mt-2">
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-lg"></i> {{ 'Update School' if edit else 'Add School' }}
+              </button>
+              <a href="{{ url_for('schools') }}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom">
+          <h6 class="mb-0 fw-bold"><i class="bi bi-map text-info"></i> Pick Location on Map</h6>
+          <small class="text-muted">Click on the map to set school GPS coordinates</small>
+        </div>
+        <div class="card-body p-0">
+          <div id="map" style="height:420px;border-radius:0 0 8px 8px;"></div>
+        </div>
+      </div>
+      <div class="text-muted small mt-2 px-1">
+        <i class="bi bi-info-circle"></i>
+        Tip: Search for the school address on the map, then click to place the marker precisely.
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  const initLat = parseFloat(document.getElementById('latInput').value) || 20.5937;
+  const initLng = parseFloat(document.getElementById('lngInput').value) || 78.9629;
+  const initZoom = (document.getElementById('latInput').value) ? 15 : 5;
+
+  const map = L.map('map').setView([initLat, initLng], initZoom);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+  }).addTo(map);
+
+  let marker = null;
+  if (document.getElementById('latInput').value) {
+    marker = L.marker([initLat, initLng], {draggable: true}).addTo(map);
+    marker.on('dragend', updateFromMarker);
+    // draw geofence circle
+    updateCircle(initLat, initLng);
+  }
+
+  let circle = null;
+  function updateCircle(lat, lng) {
+    const radius = parseFloat(document.querySelector('[name=geofence_radius]').value) || 150;
+    if (circle) map.removeLayer(circle);
+    circle = L.circle([lat, lng], {radius: radius, color: '#0f3460', fillOpacity: 0.1}).addTo(map);
+  }
+
+  map.on('click', function(e) {
+    const lat = e.latlng.lat;
+    const lng = e.latlng.lng;
+    document.getElementById('latInput').value = lat.toFixed(6);
+    document.getElementById('lngInput').value = lng.toFixed(6);
+    if (marker) {
+      marker.setLatLng(e.latlng);
+    } else {
+      marker = L.marker(e.latlng, {draggable: true}).addTo(map);
+      marker.on('dragend', updateFromMarker);
+    }
+    updateCircle(lat, lng);
+  });
+
+  function updateFromMarker(e) {
+    const pos = e.target.getLatLng();
+    document.getElementById('latInput').value = pos.lat.toFixed(6);
+    document.getElementById('lngInput').value = pos.lng.toFixed(6);
+    updateCircle(pos.lat, pos.lng);
+  }
+
+  // Update circle when radius changes
+  document.querySelector('[name=geofence_radius]').addEventListener('input', function() {
+    if (marker) {
+      const pos = marker.getLatLng();
+      updateCircle(pos.lat, pos.lng);
+    }
+  });
+
+  function useMyLocation() {
+    if (!navigator.geolocation) { alert('GPS not supported.'); return; }
+    navigator.geolocation.getCurrentPosition(function(pos) {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      document.getElementById('latInput').value = lat.toFixed(6);
+      document.getElementById('lngInput').value = lng.toFixed(6);
+      map.setView([lat, lng], 16);
+      if (marker) {
+        marker.setLatLng([lat, lng]);
+      } else {
+        marker = L.marker([lat, lng], {draggable: true}).addTo(map);
+        marker.on('dragend', updateFromMarker);
+      }
+      updateCircle(lat, lng);
+    }, function() { alert('Could not get your location.'); });
+  }
+</script>
+{% endblock %}

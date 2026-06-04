@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+{% block title %}Leave Balance Setup{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex align-items-center gap-2 mb-4">
+    <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+    <h4 class="page-header mb-0">Leave Balance Setup</h4>
+  </div>
+
+  <div class="row">
+    <!-- Quick Setup -->
+    <div class="col-lg-5 mb-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom">
+          <h6 class="mb-0 fw-bold"><i class="bi bi-lightning-charge-fill text-warning"></i> Quick Setup</h6>
+        </div>
+        <div class="card-body">
+          <form method="POST" action="{{ url_for('setup_leave_quick') }}">
+            <p class="text-muted small mb-3">Assign same leave balance to all employees for {{ today.year }}</p>
+
+            <div class="mb-3">
+              <label class="form-label">Casual Leave Days</label>
+              <input type="number" name="casual_days" class="form-control" value="12" min="0" step="0.5">
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Sick Leave Days</label>
+              <input type="number" name="sick_days" class="form-control" value="5" min="0" step="0.5">
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Earned Leave Days</label>
+              <input type="number" name="earned_days" class="form-control" value="20" min="0" step="0.5">
+            </div>
+
+            <button type="submit" class="btn btn-warning w-100">
+              <i class="bi bi-check-circle me-1"></i> Apply to All Employees
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Individual Setup -->
+    <div class="col-lg-7">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom">
+          <h6 class="mb-0 fw-bold"><i class="bi bi-person-check text-primary"></i> Set Individual Balances</h6>
+        </div>
+        <div class="card-body p-0">
+          {% if employees %}
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead style="background: #f8f9fa;">
+                <tr>
+                  <th>Employee</th>
+                  <th>Casual</th>
+                  <th>Sick</th>
+                  <th>Earned</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for emp in employees %}
+                <tr>
+                  <td class="fw-semibold">{{ emp.name }}</td>
+                  <td>
+                    {% set casual = leave_balances.get((emp.id, 'casual'), None) %}
+                    {{ casual.total_days if casual else '-' }}
+                  </td>
+                  <td>
+                    {% set sick = leave_balances.get((emp.id, 'sick'), None) %}
+                    {{ sick.total_days if sick else '-' }}
+                  </td>
+                  <td>
+                    {% set earned = leave_balances.get((emp.id, 'earned'), None) %}
+                    {{ earned.total_days if earned else '-' }}
+                  </td>
+                  <td>
+                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#setupModal"
+                            onclick="setupEmployee({{ emp.id }}, '{{ emp.name }}')">
+                      <i class="bi bi-pencil"></i> Edit
+                    </button>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-center py-5 text-muted">
+            <i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:12px;"></i>
+            <p>No employees found</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Setup Modal -->
+<div class="modal fade" id="setupModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Set Leave Balance</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="{{ url_for('setup_employee_leaves') }}">
+        <div class="modal-body">
+          <input type="hidden" name="employee_id" id="empId">
+
+          <p class="text-muted mb-3">Setting balances for: <strong id="empName"></strong></p>
+
+          <div class="mb-3">
+            <label class="form-label">Casual Leave Days</label>
+            <input type="number" name="casual_days" class="form-control" min="0" step="0.5" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Sick Leave Days</label>
+            <input type="number" name="sick_days" class="form-control" min="0" step="0.5" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Earned Leave Days</label>
+            <input type="number" name="earned_days" class="form-control" min="0" step="0.5" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Year</label>
+            <input type="number" name="year" class="form-control" value="{{ today.year }}" min="2020" max="2030">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-save me-1"></i> Save
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function setupEmployee(empId, empName) {
+  document.getElementById('empId').value = empId;
+  document.getElementById('empName').textContent = empName;
+}
+</script>
+{% endblock %}

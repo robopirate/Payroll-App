@@ -1,0 +1,406 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<style>
+  /* ── Header Section ─────────────────────────── */
+  .admin-header {
+    margin-bottom: 40px;
+    padding-bottom: 24px;
+    border-bottom: 2px solid #f0f4f8;
+  }
+  .admin-header h4 {
+    font-family: 'Poppins', sans-serif;
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: #0A1628;
+    margin: 0 0 8px 0;
+    letter-spacing: -0.5px;
+  }
+  .admin-header small {
+    color: #9aa5b4;
+    font-size: 0.95rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+  }
+
+  /* ── Stat Card Animations ──────────────────── */
+  .stat-card-modern {
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    border-radius: 16px;
+    padding: 24px 20px !important;
+    min-height: 160px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+  .stat-card-modern::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.15), transparent 70%);
+    pointer-events: none;
+  }
+  .stat-card-modern:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 56px rgba(10, 22, 40, 0.22) !important;
+  }
+  .stat-number {
+    font-family: 'Poppins', sans-serif;
+    font-size: 3rem;
+    font-weight: 800;
+    color: white;
+    line-height: 1;
+    margin-bottom: 10px;
+    letter-spacing: -0.5px;
+    text-align: center;
+  }
+  .stat-label {
+    font-size: 0.88rem;
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    text-align: center;
+    line-height: 1.3;
+  }
+  .stat-emoji {
+    font-size: 2.8rem;
+    opacity: 0.9;
+    line-height: 1;
+  }
+
+  /* ── Gradient Backgrounds ──────────────────── */
+  .grad-blue { background: linear-gradient(135deg, #1565C0 0%, #0D47A1 100%); }
+  .grad-teal { background: linear-gradient(135deg, #00897B 0%, #00695C 100%); }
+  .grad-orange { background: linear-gradient(135deg, #FF6B35 0%, #E64A19 100%); }
+  .grad-purple { background: linear-gradient(135deg, #7B1FA2 0%, #4A148C 100%); }
+  .grad-cyan { background: linear-gradient(135deg, #0097A7 0%, #00838F 100%); }
+
+  /* ── Quick Actions Grid ────────────────────── */
+  .actions-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  @media (max-width: 1200px) {
+    .actions-grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+  }
+  @media (max-width: 768px) {
+    .actions-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+  }
+  @media (max-width: 500px) {
+    .actions-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+  .action-card {
+    background: white;
+    border-radius: 14px;
+    padding: 24px 16px;
+    text-align: center;
+    border: 1.5px solid #e8ecf2;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    min-height: 140px;
+    justify-content: center;
+  }
+  .action-card:hover {
+    border-color: #1565C0;
+    background: #f8faff;
+    transform: translateY(-6px);
+    box-shadow: 0 12px 32px rgba(21, 101, 192, 0.15);
+  }
+  .action-card i {
+    font-size: 2.2rem;
+    color: #1565C0;
+    transition: transform 0.25s;
+    line-height: 1;
+  }
+  .action-card:hover i {
+    transform: scale(1.15);
+  }
+  .action-card span {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #0A1628;
+    letter-spacing: 0.3px;
+    line-height: 1.4;
+  }
+
+  /* ── Recent Payrolls Table ─────────────────── */
+  .payroll-table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+  .payroll-table thead th {
+    background: #f8faff;
+    border-bottom: 2px solid #e8ecf2;
+    font-weight: 700;
+    color: #0A1628;
+    font-size: 0.87rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 16px 18px;
+    text-align: left;
+  }
+  .payroll-table tbody tr {
+    border-bottom: 1px solid #f0f4f8;
+    transition: all 0.15s;
+  }
+  .payroll-table tbody tr:hover {
+    background: #fafbff;
+  }
+  .payroll-table tbody tr:last-child {
+    border-bottom: none;
+  }
+  .payroll-table td {
+    padding: 16px 18px;
+    font-size: 0.9rem;
+  }
+  .emp-name {
+    font-weight: 700;
+    color: #0A1628;
+    text-align: left;
+  }
+  .month-badge {
+    background: #EEF2FF;
+    color: #3730A3;
+    font-weight: 700;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    display: inline-block;
+    text-align: center;
+  }
+  .salary-amount {
+    font-weight: 800;
+    font-family: 'Poppins', sans-serif;
+    color: #00C853;
+    text-align: right;
+  }
+
+  /* ── Section Title ─────────────────────────── */
+  .section-title {
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #0A1628;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-align: left;
+  }
+  .section-title i {
+    color: #1565C0;
+    font-size: 1.2rem;
+  }
+</style>
+
+<div class="container-fluid" style="max-width: 1600px; margin: 0 auto; padding: 28px 24px;">
+  <!-- ── Header ──────────────────────────────── -->
+  <div class="admin-header">
+    <h4>Dashboard</h4>
+    <small><i class="bi bi-calendar-event me-2"></i>{{ today.strftime('%A, %d %B %Y') }}</small>
+  </div>
+
+  <!-- ── Key Metrics Grid ────────────────────── -->
+  <div class="row g-4 mb-5" style="display: flex; flex-wrap: wrap; gap: 16px;">
+    <div class="col-sm-6 col-lg-2.4" style="flex: 1 1 calc(20% - 16px);">
+      <div class="card stat-card-modern grad-blue">
+        <div>
+          <div class="stat-number">{{ total_employees }}</div>
+          <div class="stat-label">Active Employees</div>
+        </div>
+        <div class="stat-emoji">👥</div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-2.4" style="flex: 1 1 calc(20% - 16px);">
+      <div class="card stat-card-modern grad-teal">
+        <div>
+          <div class="stat-number">{{ present_today }}</div>
+          <div class="stat-label">Present Today</div>
+        </div>
+        <div class="stat-emoji">✅</div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-2.4" style="flex: 1 1 calc(20% - 16px);">
+      <div class="card stat-card-modern grad-orange">
+        <div>
+          <div class="stat-number">{{ pending_leaves }}</div>
+          <div class="stat-label">Pending Leaves</div>
+        </div>
+        <div class="stat-emoji">🏖️</div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-2.4" style="flex: 1 1 calc(20% - 16px);">
+      <div class="card stat-card-modern grad-purple">
+        <div>
+          <div class="stat-number">{{ pending_advances }}</div>
+          <div class="stat-label">Pending Advances</div>
+        </div>
+        <div class="stat-emoji">💰</div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-2.4" style="flex: 1 1 calc(20% - 16px);">
+      <div class="card stat-card-modern grad-cyan">
+        <div>
+          <div class="stat-number">{{ schools_count }}</div>
+          <div class="stat-label">Schools</div>
+        </div>
+        <div class="stat-emoji">🏫</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Quick Actions ──────────────────────── -->
+  <div class="mb-5">
+    <div class="section-title">
+      <i class="bi bi-lightning-charge-fill"></i> Quick Actions
+    </div>
+    <div class="actions-grid">
+      <a href="{{ url_for('attendance', date=today.isoformat()) }}" class="action-card">
+        <i class="bi bi-calendar-check-fill"></i>
+        <span>Mark Attendance</span>
+      </a>
+      <a href="{{ url_for('add_employee') }}" class="action-card">
+        <i class="bi bi-person-plus-fill"></i>
+        <span>Add Employee</span>
+      </a>
+      <a href="{{ url_for('payroll') }}" class="action-card">
+        <i class="bi bi-receipt-cutoff"></i>
+        <span>Generate Payroll</span>
+      </a>
+      <a href="{{ url_for('apply_leave') }}" class="action-card">
+        <i class="bi bi-calendar2-x-fill"></i>
+        <span>Manage Leaves</span>
+      </a>
+      <a href="{{ url_for('advances') }}" class="action-card">
+        <i class="bi bi-cash-coin"></i>
+        <span>Track Advances</span>
+      </a>
+      <a href="{{ url_for('schools') }}" class="action-card">
+        <i class="bi bi-building-fill"></i>
+        <span>Manage Schools</span>
+      </a>
+      <a href="{{ url_for('sms_panel') }}" class="action-card">
+        <i class="bi bi-chat-dots-fill"></i>
+        <span>Send SMS</span>
+      </a>
+      <a href="{{ url_for('departments') }}" class="action-card">
+        <i class="bi bi-diagram-3"></i>
+        <span>Departments</span>
+      </a>
+      <a href="{{ url_for('settings') }}" class="action-card">
+        <i class="bi bi-gear-fill"></i>
+        <span>Settings</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- ── Recent Payrolls ────────────────────── -->
+  <div class="card border-0 shadow-sm" style="border-radius: 16px; overflow: hidden;">
+    <div class="card-body p-0">
+      <div style="padding: 28px 28px 24px 28px; border-bottom: 2px solid #f0f4f8; background: #fafbff;">
+        <div class="section-title mb-0" style="margin-bottom: 0;">
+          <i class="bi bi-receipt-cutoff"></i> Recent Payroll Activity
+        </div>
+      </div>
+
+      {% if recent_payrolls %}
+      <div class="table-responsive">
+        <table class="table payroll-table mb-0">
+          <thead>
+            <tr>
+              <th style="width: 25%;">Employee</th>
+              <th style="width: 15%;">Month / Year</th>
+              <th style="width: 20%;">Gross Salary</th>
+              <th style="width: 20%;">Net Salary</th>
+              <th style="width: 20%;">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in recent_payrolls %}
+            <tr>
+              <td class="emp-name">{{ p.employee.name }}</td>
+              <td>
+                <span class="month-badge">{{ '%02d'|format(p.month) }}/{{ p.year }}</span>
+              </td>
+              <td style="color: #666;">₹{{ "%.2f"|format(p.gross_salary) }}</td>
+              <td class="salary-amount">₹{{ "%.2f"|format(p.net_salary) }}</td>
+              <td>
+                {% if p.status == 'paid' %}
+                  <span class="badge bg-success" style="padding: 6px 12px;"><i class="bi bi-check-circle me-1"></i>Paid</span>
+                {% elif p.status == 'finalized' %}
+                  <span class="badge bg-primary" style="padding: 6px 12px;">Finalized</span>
+                {% else %}
+                  <span class="badge bg-secondary" style="padding: 6px 12px;">Draft</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="text-center py-5" style="padding: 48px 28px !important;">
+        <i class="bi bi-inbox" style="font-size: 3rem; color: #c0cada; display: block; margin-bottom: 16px;"></i>
+        <p style="color: #9aa5b4; margin-bottom: 24px; font-size: 0.95rem;">No payrolls generated yet</p>
+        <a href="{{ url_for('payroll') }}" class="btn btn-primary btn-sm" style="padding: 8px 20px; border-radius: 8px;">
+          <i class="bi bi-plus-circle me-1"></i> Generate First Payroll
+        </a>
+      </div>
+      {% endif %}
+      <div style="padding: 16px 28px; border-top: 1px solid #f0f4f8; text-align: right;">
+        <a href="{{ url_for('payroll') }}" style="color: #1565C0; font-weight: 700; text-decoration: none; font-size: 0.92rem; display: inline-flex; align-items: center; gap: 6px;">
+          View All Payrolls <i class="bi bi-arrow-right"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div style="height: 48px;"></div>
+</div>
+
+<script>
+  // Smooth number counter animation
+  document.querySelectorAll('.stat-number').forEach(el => {
+    const finalNum = parseInt(el.innerText);
+    let currentNum = 0;
+    const increment = Math.ceil(finalNum / 20);
+    const interval = setInterval(() => {
+      currentNum += increment;
+      if (currentNum >= finalNum) {
+        el.innerText = finalNum;
+        clearInterval(interval);
+      } else {
+        el.innerText = currentNum;
+      }
+    }, 30);
+  });
+</script>
+{% endblock %}
