@@ -225,7 +225,8 @@ async function submitPunch() {
   const action = checkedIn ? 'out' : 'in';
 
   try {
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    var csrfMeta = document.querySelector('meta[name="csrf-token"]');
+    var csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : '';
     const response = await fetch('{{ url_for("api_punch") }}', {
       method: 'POST',
       headers: {

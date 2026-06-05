@@ -142,17 +142,20 @@
 <script>
   // Auto-inject CSRF token into all forms
   (function() {
-    const token = document.querySelector('meta[name="csrf-token"]')?.content;
+    var meta = document.querySelector('meta[name="csrf-token"]');
+    var token = meta ? meta.getAttribute('content') : '';
     if (token) {
-      document.querySelectorAll('form').forEach(function(form) {
+      var forms = document.querySelectorAll('form');
+      for (var i = 0; i < forms.length; i++) {
+        var form = forms[i];
         if (!form.querySelector('input[name="csrf_token"]')) {
-          const input = document.createElement('input');
+          var input = document.createElement('input');
           input.type = 'hidden';
           input.name = 'csrf_token';
           input.value = token;
           form.appendChild(input);
         }
-      });
+      }
     }
   })();
 </script>
