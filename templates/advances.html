@@ -103,7 +103,7 @@
                   </td>
                   <td>
                     {% if adv.status == 'pending' %}
-                    <form method="POST" action="{{ url_for('approve_advance', adv_id=adv.id) }}" class="d-inline">
+                    <form method="POST" action="{{ url_for('admin.approve_advance', adv_id=adv.id) }}" class="d-inline">
                       <button class="btn btn-sm btn-success"><i class="bi bi-check-lg"></i> Approve</button>
                     </form>
                     {% endif %}

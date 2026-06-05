@@ -4,6 +4,9 @@
 <div class="container-fluid py-4">
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h4 class="page-header mb-0">Payroll Management</h4>
+    <a href="{{ url_for('admin.export_payroll', month=month, year=year) }}" class="btn btn-sm btn-outline-primary">
+      <i class="bi bi-download"></i> Export Excel
+    </a>
   </div>
 
   <!-- Month/Year Selector + Generate -->
@@ -31,7 +34,7 @@
           </form>
         </div>
         <div class="col-auto ms-auto">
-          <form method="POST" action="{{ url_for('generate_payroll') }}" class="d-flex gap-2">
+          <form method="POST" action="{{ url_for('admin.generate_payroll') }}" class="d-flex gap-2">
             <input type="hidden" name="month" value="{{ month }}">
             <input type="hidden" name="year" value="{{ year }}">
             <button type="submit" class="btn btn-success"
@@ -42,7 +45,7 @@
         </div>
         {% if payrolls %}
         <div class="col-auto">
-          <form method="POST" action="{{ url_for('send_bulk_sms') }}">
+          <form method="POST" action="{{ url_for('admin.send_bulk_sms') }}">
             <input type="hidden" name="month" value="{{ month }}">
             <input type="hidden" name="year" value="{{ year }}">
             <button type="submit" class="btn btn-outline-secondary"
@@ -134,19 +137,19 @@
               </td>
               <td class="text-center">
                 <div class="d-flex gap-1 justify-content-center flex-wrap">
-                  <a href="{{ url_for('download_payslip', payroll_id=p.id) }}"
+                  <a href="{{ url_for('admin.download_payslip', payroll_id=p.id) }}"
                      class="btn btn-xs btn-outline-primary" title="Download Payslip">
                     <i class="bi bi-file-pdf"></i>
                   </a>
                   {% if p.status == 'draft' %}
-                  <form method="POST" action="{{ url_for('finalize_payroll', payroll_id=p.id) }}" class="d-inline">
+                  <form method="POST" action="{{ url_for('admin.finalize_payroll', payroll_id=p.id) }}" class="d-inline">
                     <button class="btn btn-xs btn-outline-success" title="Finalize">
                       <i class="bi bi-check-circle"></i>
                     </button>
                   </form>
                   {% endif %}
                   {% if p.status == 'finalized' %}
-                  <form method="POST" action="{{ url_for('mark_paid', payroll_id=p.id) }}" class="d-inline">
+                  <form method="POST" action="{{ url_for('admin.mark_paid', payroll_id=p.id) }}" class="d-inline">
                     <button class="btn btn-xs btn-outline-info" title="Mark Paid"
                             onclick="return confirm('Mark as paid?')">
                       <i class="bi bi-bank"></i>
@@ -154,7 +157,7 @@
                   </form>
                   {% endif %}
                   {% if not p.sms_sent %}
-                  <form method="POST" action="{{ url_for('send_payroll_sms', payroll_id=p.id) }}" class="d-inline">
+                  <form method="POST" action="{{ url_for('admin.send_payroll_sms', payroll_id=p.id) }}" class="d-inline">
                     <button class="btn btn-xs btn-outline-secondary" title="Send SMS">
                       <i class="bi bi-chat-dots"></i>
                     </button>

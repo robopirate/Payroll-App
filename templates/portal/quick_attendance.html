@@ -1,0 +1,215 @@
+{% extends 'portal/base.html' %}
+{% block title %}Quick Attendance{% endblock %}
+
+{% block head %}
+<style>
+  .qa-date-picker {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .qa-date-picker input[type="date"] {
+    flex: 1;
+    height: 48px;
+    font-size: 1rem;
+    border-radius: 12px;
+    border: 1.5px solid #dde3ed;
+    padding: 0 12px;
+  }
+  .qa-school-select {
+    width: 100%;
+    height: 48px;
+    font-size: 1rem;
+    border-radius: 12px;
+    margin-bottom: 14px;
+  }
+  .qa-emp-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .qa-emp-name {
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: #0A1628;
+  }
+  .qa-emp-meta {
+    font-size: 0.78rem;
+    color: #8894a8;
+  }
+  .qa-status-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .qa-status-btn {
+    flex: 1;
+    min-width: 70px;
+    padding: 10px 6px;
+    border-radius: 10px;
+    border: 2px solid #e2e8f0;
+    background: #fff;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    color: #64748b;
+  }
+  .qa-status-btn.active-present {
+    background: #dcfce7;
+    border-color: #22c55e;
+    color: #15803d;
+  }
+  .qa-status-btn.active-absent {
+    background: #fee2e2;
+    border-color: #ef4444;
+    color: #b91c1c;
+  }
+  .qa-status-btn.active-half_day {
+    background: #fef9c3;
+    border-color: #eab308;
+    color: #a16207;
+  }
+  .qa-status-btn.active-leave {
+    background: #e0f2fe;
+    border-color: #0ea5e9;
+    color: #0369a1;
+  }
+  .qa-save-btn {
+    position: fixed;
+    bottom: 72px;
+    left: 14px;
+    right: 14px;
+    z-index: 400;
+    height: 54px;
+    border-radius: 14px;
+    background: #FF6B35;
+    color: white;
+    font-weight: 700;
+    font-size: 1.1rem;
+    border: none;
+    box-shadow: 0 6px 24px rgba(255,107,53,0.35);
+    cursor: pointer;
+  }
+  .qa-save-btn:active {
+    transform: scale(0.98);
+  }
+  .qa-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: #8894a8;
+  }
+  .qa-pres-count {
+    position: sticky;
+    top: 0;
+    z-index: 250;
+    background: #F0F4F8;
+    padding: 10px 0;
+    text-align: center;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #475569;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="padding-bottom: 140px;">
+  <div class="d-flex align-items-center gap-2 mb-3">
+    <a href="{{ url_for('.portal_dashboard') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+    <h5 class="mb-0 fw-bold">Quick Attendance</h5>
+  </div>
+
+  <form method="GET" class="qa-date-picker">
+    <input type="date" name="date" value="{{ sel_date.isoformat() }}" onchange="this.form.submit()">
+    {% if schools|length > 1 %}
+    <select name="school_id" class="form-select qa-school-select" onchange="this.form.submit()">
+      <option value="">Select School</option>
+      {% for s in schools %}
+      <option value="{{ s.id }}" {% if selected_school and selected_school.id == s.id %}selected{% endif %}>{{ s.name }}</option>
+      {% endfor %}
+    </select>
+    {% elif schools|length == 1 %}
+    <input type="hidden" name="school_id" value="{{ schools[0].id }}">
+    <span class="badge bg-primary">{{ schools[0].name }}</span>
+    {% endif %}
+  </form>
+
+  {% if selected_school %}
+  <div class="qa-pres-count">
+    <span id="countPresent">0</span> Present &nbsp;|&nbsp; <span id="countAbsent">0</span> Absent &nbsp;|&nbsp; <span id="countTotal">{{ employees|length }}</span> Total
+  </div>
+
+  <form method="POST" id="qaForm">
+    <input type="hidden" name="date" value="{{ sel_date.isoformat() }}">
+    <input type="hidden" name="school_id" value="{{ selected_school.id }}">
+
+    {% for e in employees %}
+    {% set att = existing.get(e.id) %}
+    {% set current_status = att.status if att else 'present' %}
+    <div class="qa-emp-card">
+      <div>
+        <div class="qa-emp-name">{{ e.name }}</div>
+        <div class="qa-emp-meta">{{ e.emp_id }} &middot; {{ e.designation or '-' }}</div>
+      </div>
+      <div class="qa-status-row">
+        <button type="button" class="qa-status-btn {% if current_status == 'present' %}active-present{% endif %}" onclick="setStatus(this, {{ e.id }}, 'present')">Present</button>
+        <button type="button" class="qa-status-btn {% if current_status == 'absent' %}active-absent{% endif %}" onclick="setStatus(this, {{ e.id }}, 'absent')">Absent</button>
+        <button type="button" class="qa-status-btn {% if current_status == 'half_day' %}active-half_day{% endif %}" onclick="setStatus(this, {{ e.id }}, 'half_day')">Half</button>
+        <button type="button" class="qa-status-btn {% if current_status == 'leave' %}active-leave{% endif %}" onclick="setStatus(this, {{ e.id }}, 'leave')">Leave</button>
+      </div>
+      <input type="hidden" name="status_{{ e.id }}" id="status_{{ e.id }}" value="{{ current_status }}">
+    </div>
+    {% endfor %}
+
+    {% if not employees %}
+    <div class="qa-empty">
+      <i class="bi bi-people fs-1"></i>
+      <p class="mt-2">No active employees in this school.</p>
+    </div>
+    {% endif %}
+
+    <button type="submit" class="qa-save-btn">
+      <i class="bi bi-check-circle-fill"></i> Save Attendance
+    </button>
+  </form>
+  {% else %}
+  <div class="qa-empty">
+    <i class="bi bi-building fs-1"></i>
+    <p class="mt-2">Select a school to mark attendance.</p>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+function setStatus(btn, empId, status) {
+  const card = btn.closest('.qa-emp-card');
+  card.querySelectorAll('.qa-status-btn').forEach(b => {
+    b.classList.remove('active-present', 'active-absent', 'active-half_day', 'active-leave');
+  });
+  btn.classList.add('active-' + status);
+  document.getElementById('status_' + empId).value = status;
+  updateCounts();
+}
+
+function updateCounts() {
+  let p = 0, a = 0;
+  document.querySelectorAll('input[type="hidden"][name^="status_"]').forEach(inp => {
+    if (inp.value === 'present' || inp.value === 'overtime') p++;
+    else if (inp.value === 'absent') a++;
+    else if (inp.value === 'half_day') { p += 0.5; a += 0.5; }
+  });
+  document.getElementById('countPresent').textContent = p;
+  document.getElementById('countAbsent').textContent = a;
+}
+
+updateCounts();
+</script>
+{% endblock %}

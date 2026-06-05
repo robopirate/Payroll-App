@@ -4,7 +4,7 @@
 <div class="container-fluid py-4">
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h4 class="page-header mb-0">Leave Management</h4>
-    <a href="{{ url_for('apply_leave') }}" class="btn btn-sm" style="background:#FF6B35;color:white;border:none;">
+    <a href="{{ url_for('admin.apply_leave') }}" class="btn btn-sm" style="background:#FF6B35;color:white;border:none;">
       <i class="bi bi-plus-circle-fill me-1"></i> Apply Leave
     </a>
   </div>
@@ -13,7 +13,7 @@
   <div class="mb-3">
     <div class="btn-group">
       {% for s in ['pending','approved','rejected','all'] %}
-      <a href="{{ url_for('leaves', status=s) }}"
+      <a href="{{ url_for('admin.leaves', status=s) }}"
          class="btn btn-sm {{ 'btn-warning' if s == 'pending' else 'btn-primary' if s == 'approved' else 'btn-danger' if s == 'rejected' else 'btn-secondary' }}
          {{ '' if status_filter == s else 'btn-outline-' + ('warning' if s == 'pending' else 'primary' if s == 'approved' else 'danger' if s == 'rejected' else 'secondary') }}">
         {{ s.title() }}
@@ -61,12 +61,12 @@
               </td>
               <td class="text-center">
                 {% if leave.status == 'pending' %}
-                <form method="POST" action="{{ url_for('approve_leave', leave_id=leave.id) }}" class="d-inline">
+                <form method="POST" action="{{ url_for('admin.approve_leave', leave_id=leave.id) }}" class="d-inline">
                   <button class="btn btn-sm btn-success" title="Approve">
                     <i class="bi bi-check-lg"></i>
                   </button>
                 </form>
-                <form method="POST" action="{{ url_for('reject_leave', leave_id=leave.id) }}" class="d-inline">
+                <form method="POST" action="{{ url_for('admin.reject_leave', leave_id=leave.id) }}" class="d-inline">
                   <button class="btn btn-sm btn-danger" title="Reject">
                     <i class="bi bi-x-lg"></i>
                   </button>

@@ -4,7 +4,7 @@
 <div class="container-fluid py-4">
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h4 class="page-header mb-0">Mark Attendance</h4>
-    <a href="{{ url_for('attendance_report') }}" class="btn btn-sm btn-outline-info">
+    <a href="{{ url_for('admin.attendance_report') }}" class="btn btn-sm btn-outline-info">
       <i class="bi bi-bar-chart"></i> View Report
     </a>
   </div>
@@ -104,7 +104,7 @@
         {% else %}
         <div class="text-center py-5 text-muted">
           <i class="bi bi-people fs-1"></i>
-          <p>No active employees. <a href="{{ url_for('add_employee') }}">Add employees first.</a></p>
+          <p>No active employees. <a href="{{ url_for('admin.add_employee') }}">Add employees first.</a></p>
         </div>
         {% endif %}
       </div>

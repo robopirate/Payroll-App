@@ -32,11 +32,11 @@
   {% set py = year if month > 1 else year - 1 %}
   {% set nm = month + 1 if month < 12 else 1 %}
   {% set ny = year if month < 12 else year + 1 %}
-  <a href="{{ url_for('portal_attendance', month=pm, year=py) }}" class="btn btn-light btn-sm" style="border-radius:10px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;">
+  <a href="{{ url_for('portal.portal_attendance', month=pm, year=py) }}" class="btn btn-light btn-sm" style="border-radius:10px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;">
     <i class="bi bi-chevron-left"></i>
   </a>
   <div class="month-title">{{ get_month_name(month) }} {{ year }}</div>
-  <a href="{{ url_for('portal_attendance', month=nm, year=ny) }}" class="btn btn-light btn-sm" style="border-radius:10px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;">
+  <a href="{{ url_for('portal.portal_attendance', month=nm, year=ny) }}" class="btn btn-light btn-sm" style="border-radius:10px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;">
     <i class="bi bi-chevron-right"></i>
   </a>
 </div>

@@ -3,7 +3,7 @@
 {% block content %}
 <div class="container-fluid py-4">
   <div class="d-flex align-items-center gap-2 mb-4">
-    <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+    <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
     <h4 class="page-header mb-0">Leave Balance Setup</h4>
   </div>
 
@@ -15,7 +15,7 @@
           <h6 class="mb-0 fw-bold"><i class="bi bi-lightning-charge-fill text-warning"></i> Quick Setup</h6>
         </div>
         <div class="card-body">
-          <form method="POST" action="{{ url_for('setup_leave_quick') }}">
+          <form method="POST" action="{{ url_for('admin.setup_leave_quick') }}">
             <p class="text-muted small mb-3">Assign same leave balance to all employees for {{ today.year }}</p>
 
             <div class="mb-3">
@@ -107,7 +107,7 @@
         <h5 class="modal-title">Set Leave Balance</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-      <form method="POST" action="{{ url_for('setup_employee_leaves') }}">
+      <form method="POST" action="{{ url_for('admin.setup_employee_leaves') }}">
         <div class="modal-body">
           <input type="hidden" name="employee_id" id="empId">
 

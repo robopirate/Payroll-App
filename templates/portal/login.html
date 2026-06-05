@@ -234,7 +234,7 @@
           <input class="form-check-input" type="checkbox" name="remember" id="remember">
           <label class="form-check-label" for="remember">Keep me logged in</label>
         </div>
-        <a href="{{ url_for('forgot_password') }}" style="font-size:0.84rem;color:var(--primary-blue);text-decoration:none;font-weight:600;">Forgot password?</a>
+        <a href="{{ url_for('auth.forgot_password') }}" style="font-size:0.84rem;color:var(--primary-blue);text-decoration:none;font-weight:600;">Forgot password?</a>
       </div>
 
       <button type="submit" class="btn-login">
@@ -243,13 +243,13 @@
     </form>
 
     <div class="admin-link">
-      Admin? <a href="{{ url_for('login') }}">Admin Dashboard Login →</a>
+      Admin? <a href="{{ url_for('auth.login') }}">Admin Dashboard Login →</a>
     </div>
 
     <hr style="margin: 20px 0; border: none; border-top: 1px solid #dde3ed;">
 
     <div class="admin-link">
-      <span style="display: block; margin-bottom: 10px;">New here? <a href="{{ url_for('register') }}">Register as Employee →</a></span>
+      <span style="display: block; margin-bottom: 10px;">New here? <a href="{{ url_for('portal.register') }}">Register as Employee →</a></span>
     </div>
   </div>
 </body>

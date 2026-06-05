@@ -3,9 +3,9 @@
 {% block content %}
 <div class="container-fluid py-4">
   <div class="d-flex align-items-center gap-2 mb-4">
-    <a href="{{ url_for('employees') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+    <a href="{{ url_for('admin.employees') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
     <h4 class="page-header mb-0">{{ emp.name }}</h4>
-    <a href="{{ url_for('edit_employee', emp_id=emp.id) }}" class="btn btn-sm btn-outline-primary ms-auto">
+    <a href="{{ url_for('admin.edit_employee', emp_id=emp.id) }}" class="btn btn-sm btn-outline-primary ms-auto">
       <i class="bi bi-pencil"></i> Edit
     </a>
   </div>
@@ -57,7 +57,7 @@
             <p class="text-muted small mb-3">Set a password to give this employee access to their portal.</p>
           {% endif %}
 
-          <form method="post" action="{{ url_for('set_employee_password', emp_id=emp.id) }}">
+          <form method="post" action="{{ url_for('admin.set_employee_password', emp_id=emp.id) }}">
             <div class="input-group">
               <input type="password" name="new_password" class="form-control form-control-sm"
                      placeholder="{{ 'New password (4+ chars)' }}" minlength="4" required>
@@ -87,7 +87,7 @@
             <p class="text-muted small mb-2">No schools assigned. Employee cannot use GPS punch.</p>
           {% endif %}
 
-          <form method="post" action="{{ url_for('assign_employee_schools', emp_id=emp.id) }}">
+          <form method="post" action="{{ url_for('admin.assign_employee_schools', emp_id=emp.id) }}">
             <div class="mb-2" style="max-height:140px;overflow-y:auto;">
               {% for school in all_schools %}
               <div class="form-check form-check-sm">
@@ -97,7 +97,7 @@
                 <label class="form-check-label small" for="sch_{{ school.id }}">{{ school.name }}</label>
               </div>
               {% else %}
-              <p class="text-muted small mb-0">No schools created yet. <a href="{{ url_for('add_school') }}">Add a school →</a></p>
+              <p class="text-muted small mb-0">No schools created yet. <a href="{{ url_for('admin.add_school') }}">Add a school →</a></p>
               {% endfor %}
             </div>
             {% if all_schools %}
@@ -218,7 +218,7 @@
       <div class="card border-0 shadow-sm mb-3">
         <div class="card-header bg-white border-bottom d-flex justify-content-between">
           <h6 class="mb-0 fw-bold"><i class="bi bi-clock-history text-info"></i> Recent Attendance Details</h6>
-          <a href="{{ url_for('attendance_report') }}" class="btn btn-sm btn-outline-info">View All Employees</a>
+          <a href="{{ url_for('admin.attendance_report') }}" class="btn btn-sm btn-outline-info">View All Employees</a>
         </div>
         <div class="card-body p-0">
           <div class="table-responsive">
@@ -266,7 +266,7 @@
       <div class="card border-0 shadow-sm">
         <div class="card-header bg-white border-bottom d-flex justify-content-between">
           <h6 class="mb-0 fw-bold"><i class="bi bi-receipt text-info"></i> Payroll History</h6>
-          <a href="{{ url_for('payroll') }}" class="btn btn-sm btn-outline-info">Manage</a>
+          <a href="{{ url_for('admin.payroll') }}" class="btn btn-sm btn-outline-info">Manage</a>
         </div>
         <div class="card-body p-0">
           <div class="table-responsive">
@@ -287,7 +287,7 @@
                     {% else %}<span class="badge bg-secondary">Draft</span>
                     {% endif %}
                   </td>
-                  <td><a href="{{ url_for('download_payslip', payroll_id=p.id) }}" class="btn btn-xs btn-outline-secondary"><i class="bi bi-download"></i></a></td>
+                  <td><a href="{{ url_for('admin.download_payslip', payroll_id=p.id) }}" class="btn btn-xs btn-outline-secondary"><i class="bi bi-download"></i></a></td>
                 </tr>
                 {% else %}
                 <tr><td colspan="6" class="text-center text-muted py-3">No payroll records</td></tr>

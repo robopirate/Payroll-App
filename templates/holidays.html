@@ -3,7 +3,7 @@
 {% block content %}
 <div class="container-fluid py-4">
   <div class="d-flex align-items-center gap-2 mb-4">
-    <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+    <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
     <h4 class="page-header mb-0">Holiday Management</h4>
   </div>
 
@@ -44,7 +44,7 @@
           <hr class="my-3">
 
           <div class="d-grid gap-2">
-            <form method="POST" action="{{ url_for('populate_national_holidays') }}" style="display:inline;">
+            <form method="POST" action="{{ url_for('admin.populate_national_holidays') }}" style="display:inline;">
               <input type="hidden" name="year" value="{{ today.year }}">
               <button type="submit" class="btn btn-outline-info w-100" onclick="return confirm('Add national holidays for {{ today.year }}?')">
                 <i class="bi bi-calendar-event me-1"></i> Add National Holidays
@@ -82,7 +82,7 @@
                   <td><small class="text-muted">{{ h.date.strftime('%A') }}</small></td>
                   <td><small class="text-muted">{{ h.description or '-' }}</small></td>
                   <td>
-                    <form method="POST" action="{{ url_for('delete_holiday', holiday_id=h.id) }}" style="display:inline;">
+                    <form method="POST" action="{{ url_for('admin.delete_holiday', holiday_id=h.id) }}" style="display:inline;">
                       <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this holiday?')">
                         <i class="bi bi-trash"></i>
                       </button>

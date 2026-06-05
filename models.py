@@ -1,9 +1,7 @@
-from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from datetime import datetime, date
 from werkzeug.security import generate_password_hash, check_password_hash
-
-db = SQLAlchemy()
+from extensions import db
 
 # Many-to-many: Employee <-> School
 employee_schools = db.Table('employee_schools',
@@ -207,4 +205,38 @@ class PasswordReset(db.Model):
     expires_at = db.Column(db.DateTime, nullable=False)
     is_used = db.Column(db.Boolean, default=False)
     user = db.relationship('User', backref='password_resets')
+
+
+class AttendanceLock(db.Model):
+    __tablename__ = 'attendance_locks'
+    id = db.Column(db.Integer, primary_key=True)
+    school_id = db.Column(db.Integer, db.ForeignKey('schools.id'), nullable=True)
+    month = db.Column(db.Integer, nullable=False)
+    year = db.Column(db.Integer, nullable=False)
+    locked_on = db.Column(db.DateTime, default=datetime.utcnow)
+    locked_by = db.Column(db.String(80))
+    __table_args__ = (db.UniqueConstraint('school_id', 'month', 'year', name='uq_lock_school_month_year'),)
+
+
+class AppConfig(db.Model):
+    __tablename__ = 'app_config'
+    id = db.Column(db.Integer, primary_key=True)
+    key = db.Column(db.String(100), unique=True, nullable=False)
+    value = db.Column(db.Text)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    @classmethod
+    def get(cls, key, default=None):
+        row = cls.query.filter_by(key=key).first()
+        return row.value if row else default
+
+    @classmethod
+    def set(cls, key, value):
+        row = cls.query.filter_by(key=key).first()
+        if row:
+            row.value = value
+            row.updated_at = datetime.utcnow()
+        else:
+            row = cls(key=key, value=value)
+            db.session.add(row)
 

@@ -3,7 +3,7 @@
 {% block content %}
 <div class="container-fluid py-4">
   <div class="d-flex align-items-center gap-2 mb-4">
-    <a href="{{ url_for('schools') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+    <a href="{{ url_for('admin.schools') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
     <h4 class="page-header mb-0">{{ 'Edit School' if edit else 'Add School' }}</h4>
   </div>
 
@@ -61,7 +61,7 @@
               <button type="submit" class="btn btn-primary">
                 <i class="bi bi-check-lg"></i> {{ 'Update School' if edit else 'Add School' }}
               </button>
-              <a href="{{ url_for('schools') }}" class="btn btn-outline-secondary">Cancel</a>
+              <a href="{{ url_for('admin.schools') }}" class="btn btn-outline-secondary">Cancel</a>
             </div>
           </form>
         </div>

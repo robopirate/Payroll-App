@@ -4,7 +4,7 @@
 <div class="container-fluid py-4">
   <div class="d-flex align-items-center justify-content-between mb-4">
     <h4 class="page-header mb-0">Schools Management</h4>
-    <a href="{{ url_for('add_school') }}" class="btn btn-primary">
+    <a href="{{ url_for('admin.add_school') }}" class="btn btn-primary">
       <i class="bi bi-plus-circle"></i> Add School
     </a>
   </div>
@@ -24,13 +24,13 @@
               {% endif %}
             </div>
             <div class="d-flex gap-1 ms-2">
-              <a href="{{ url_for('edit_school', school_id=school.id) }}" class="btn btn-sm btn-outline-primary" title="Edit">
+              <a href="{{ url_for('admin.edit_school', school_id=school.id) }}" class="btn btn-sm btn-outline-primary" title="Edit">
                 <i class="bi bi-pencil"></i>
               </a>
-              <a href="{{ url_for('view_school', school_id=school.id) }}" class="btn btn-sm btn-outline-secondary" title="View">
+              <a href="{{ url_for('admin.view_school', school_id=school.id) }}" class="btn btn-sm btn-outline-secondary" title="View">
                 <i class="bi bi-eye"></i>
               </a>
-              <form method="post" action="{{ url_for('delete_school', school_id=school.id) }}" style="display:inline;"
+              <form method="post" action="{{ url_for('admin.delete_school', school_id=school.id) }}" style="display:inline;"
                     onsubmit="return confirm('Remove {{ school.name }}?')">
                 <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
                   <i class="bi bi-trash"></i>
@@ -70,7 +70,7 @@
           {% endif %}
         </div>
         <div class="card-footer bg-transparent border-top py-2">
-          <a href="{{ url_for('view_school', school_id=school.id) }}" class="btn btn-sm btn-outline-primary w-100">
+          <a href="{{ url_for('admin.view_school', school_id=school.id) }}" class="btn btn-sm btn-outline-primary w-100">
             <i class="bi bi-people"></i> Manage Teachers & Attendance
           </a>
         </div>
@@ -83,7 +83,7 @@
     <i class="bi bi-building" style="font-size:4rem;color:#dee2e6;"></i>
     <h5 class="mt-3 text-muted">No schools added yet</h5>
     <p class="text-muted">Add schools to enable GPS-based attendance for employees.</p>
-    <a href="{{ url_for('add_school') }}" class="btn btn-primary">
+    <a href="{{ url_for('admin.add_school') }}" class="btn btn-primary">
       <i class="bi bi-plus-circle"></i> Add First School
     </a>
   </div>

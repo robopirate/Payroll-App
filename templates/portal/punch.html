@@ -1,9 +1,9 @@
-{% extends 'base.html' %}
+{% extends 'portal/base.html' %}
 {% block title %}Punch In/Out{% endblock %}
 {% block content %}
 <div class="container-fluid py-4">
   <div class="d-flex align-items-center gap-2 mb-4">
-    <a href="{{ url_for('portal_dashboard') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+    <a href="{{ url_for('portal.portal_dashboard') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
     <h4 class="page-header mb-0">Punch In/Out</h4>
   </div>
 
@@ -225,9 +225,13 @@ async function submitPunch() {
   const action = checkedIn ? 'out' : 'in';
 
   try {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
     const response = await fetch('{{ url_for("api_punch") }}', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken
+      },
       body: JSON.stringify({
         lat: userLat,
         lng: userLng,
