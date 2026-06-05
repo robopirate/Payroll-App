@@ -12,6 +12,7 @@
           </div>
 
           <form method="POST" id="registrationForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <!-- Personal Information Section -->
             <div class="mb-5">
               <h5 class="fw-bold mb-4 pb-2 border-bottom">

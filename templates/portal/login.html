@@ -213,6 +213,7 @@
     {% endwith %}
 
     <form method="post" autocomplete="on">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="input-wrap">
         <label class="field-label">Phone Number</label>
         <i class="bi bi-phone input-icon"></i>
