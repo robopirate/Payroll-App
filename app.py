@@ -222,6 +222,11 @@ def init_db():
         print("Employee portal: /portal/login  (phone + password set by admin)")
 
 
-if __name__ == '__main__':
+# Initialize database on startup (works for both local and production)
+try:
     init_db()
+except Exception as e:
+    print(f'DB init warning: {e}')
+
+if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
