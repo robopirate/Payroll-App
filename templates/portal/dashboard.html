@@ -534,7 +534,7 @@ function doPunch(action) {
       showFeedback('info', '<i class="bi bi-wifi me-1"></i>Verifying location…');
       var csrfMeta = document.querySelector('meta[name="csrf-token"]');
       var csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : '';
-      fetch('/api/punch', {
+      fetch('{{ url_for("api.api_punch") }}', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

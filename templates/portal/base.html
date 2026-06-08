@@ -218,7 +218,7 @@
   </a>
   <a href="{{ url_for('portal.portal_attendance') }}"
      class="{% if 'portal_attendance' in (request.endpoint or '') %}active{% endif %}">
-    <i class="bi bi-calendar-check{% if 'portal_attendance' in (request.endpoint or '') %}-fill{% endif %}"></i>Attendance
+    <i class="bi bi-calendar-check{% if 'portal_attendance' in (request.endpoint or '') %}-fill{% endif %}"></i>My Attendance
   </a>
   <a href="{{ url_for('portal.portal_payslips') }}"
      class="{% if 'payslip' in (request.endpoint or '') %}active{% endif %}">
@@ -226,7 +226,7 @@
   </a>
   <a href="{{ url_for('portal.portal_quick_attendance') }}"
      class="{% if 'portal_quick_attendance' in (request.endpoint or '') %}active{% endif %}">
-    <i class="bi bi-calendar-check{% if 'portal_quick_attendance' in (request.endpoint or '') %}-fill{% endif %}"></i>Attendance
+    <i class="bi bi-calendar-check{% if 'portal_quick_attendance' in (request.endpoint or '') %}-fill{% endif %}"></i>Quick Mark
   </a>
   <a href="{{ url_for('portal.portal_leaves') }}"
      class="{% if 'portal_leave' in (request.endpoint or '') %}active{% endif %}">

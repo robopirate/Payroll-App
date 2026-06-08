@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from flask_login import current_user
-from datetime import date, datetime
+from datetime import date, datetime, timezone, timedelta
 
 from extensions import db, limiter
 from services.attendance_service import haversine_distance
@@ -44,8 +44,9 @@ def api_punch():
                             f'(allowed radius: {int(closest_school.geofence_radius)}m).')
             })
 
-    today = date.today()
-    now_time = datetime.now().strftime('%H:%M')
+    ist = timezone(timedelta(hours=5, minutes=30))
+    today = datetime.now(ist).date()
+    now_time = datetime.now(ist).strftime('%H:%M')
     att = Attendance.query.filter_by(employee_id=emp.id, date=today).first()
 
     if action == 'in':

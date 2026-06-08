@@ -227,7 +227,7 @@ async function submitPunch() {
   try {
     var csrfMeta = document.querySelector('meta[name="csrf-token"]');
     var csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : '';
-    const response = await fetch('{{ url_for("api_punch") }}', {
+    const response = await fetch('{{ url_for("api.api_punch") }}', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
