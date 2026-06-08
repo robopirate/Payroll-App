@@ -5,9 +5,11 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY', 'payroll-secret-key-change-in-production')
+    # Store database outside project folder so code updates don't wipe data
+    DB_PATH = os.environ.get('DB_PATH', os.path.join(os.path.expanduser('~'), 'payroll.db'))
     SQLALCHEMY_DATABASE_URI = os.environ.get(
         'DATABASE_URL',
-        'sqlite:///' + os.path.join(BASE_DIR, 'payroll.db')
+        'sqlite:///' + DB_PATH
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     # Fast2SMS API Key
