@@ -3,6 +3,7 @@ from datetime import date
 import calendar
 
 from flask import current_app
+from sqlalchemy import extract
 from models import db, Attendance, Leave, Advance
 from services.attendance_service import get_working_days_in_month, count_working_days_between
 
@@ -10,8 +11,8 @@ from services.attendance_service import get_working_days_in_month, count_working
 def calculate_payroll(employee, month, year):
     working_days = get_working_days_in_month(year, month)
     attendances = Attendance.query.filter_by(employee_id=employee.id).filter(
-        db.func.strftime('%Y', Attendance.date) == str(year),
-        db.func.strftime('%m', Attendance.date) == f"{month:02d}"
+        extract('year', Attendance.date) == year,
+        extract('month', Attendance.date) == month
     ).all()
 
     present_days = 0.0
@@ -31,8 +32,8 @@ def calculate_payroll(employee, month, year):
     approved_leaves = Leave.query.filter_by(
         employee_id=employee.id, status='approved'
     ).filter(
-        db.func.strftime('%Y', Leave.start_date) == str(year),
-        db.func.strftime('%m', Leave.start_date) == f"{month:02d}"
+        extract('year', Leave.start_date) == year,
+        extract('month', Leave.start_date) == month
     ).all()
     leave_days_in_month = 0.0
     for leave in approved_leaves:

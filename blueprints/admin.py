@@ -418,8 +418,8 @@ def attendance_report():
     report = []
     for emp in emps:
         atts = {a.date.day: a for a in Attendance.query.filter_by(employee_id=emp.id).filter(
-            db.func.strftime('%Y', Attendance.date) == str(year),
-            db.func.strftime('%m', Attendance.date) == f"{month:02d}"
+            extract('year', Attendance.date) == year,
+            extract('month', Attendance.date) == month
         ).all()}
         present = sum(1 for a in atts.values() if a.status == 'present')
         half = sum(0.5 for a in atts.values() if a.status == 'half_day')
@@ -1049,8 +1049,8 @@ def export_attendance():
 
     for emp in emps:
         atts = {a.date.day: a for a in Attendance.query.filter_by(employee_id=emp.id).filter(
-            db.func.strftime('%Y', Attendance.date) == str(year),
-            db.func.strftime('%m', Attendance.date) == f"{month:02d}"
+            extract('year', Attendance.date) == year,
+            extract('month', Attendance.date) == month
         ).all()}
         row = [emp.emp_id, emp.name, emp.dept.name if emp.dept else '']
         present = absent = half = ot = 0

@@ -7,6 +7,7 @@ import io
 from extensions import db, limiter
 from decorators import portal_required
 from services.attendance_service import count_working_days_between
+from sqlalchemy import extract
 from models import Employee, Attendance, Leave, LeaveBalance, Payroll, Holiday, User
 from pdf_service import generate_payslip_pdf
 from sms_service import get_month_name
@@ -179,8 +180,8 @@ def portal_attendance():
     _, days_in_month = calendar.monthrange(year, month)
 
     atts = {a.date.day: a for a in Attendance.query.filter_by(employee_id=emp.id).filter(
-        db.func.strftime('%Y', Attendance.date) == str(year),
-        db.func.strftime('%m', Attendance.date) == f"{month:02d}"
+        extract('year', Attendance.date) == year,
+        extract('month', Attendance.date) == month
     ).all()}
 
     present = sum(1 for a in atts.values() if a.status == 'present')

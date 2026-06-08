@@ -1,6 +1,6 @@
 from flask import Flask, redirect, url_for, flash, request
 from flask_login import current_user, logout_user
-from sqlalchemy import text
+from sqlalchemy import text, extract
 from config import Config
 from extensions import db, login_manager, csrf, limiter
 from decorators import portal_required
@@ -85,8 +85,8 @@ def count_working_days_between(start_date, end_date):
 def calculate_payroll(employee, month, year):
     working_days = get_working_days_in_month(year, month)
     attendances = Attendance.query.filter_by(employee_id=employee.id).filter(
-        db.func.strftime('%Y', Attendance.date) == str(year),
-        db.func.strftime('%m', Attendance.date) == f"{month:02d}"
+        extract('year', Attendance.date) == year,
+        extract('month', Attendance.date) == month
     ).all()
 
     present_days = 0.0
@@ -106,8 +106,8 @@ def calculate_payroll(employee, month, year):
     approved_leaves = Leave.query.filter_by(
         employee_id=employee.id, status='approved'
     ).filter(
-        db.func.strftime('%Y', Leave.start_date) == str(year),
-        db.func.strftime('%m', Leave.start_date) == f"{month:02d}"
+        extract('year', Leave.start_date) == year,
+        extract('month', Leave.start_date) == month
     ).all()
     leave_days_in_month = 0.0
     for leave in approved_leaves:
@@ -180,6 +180,8 @@ register_blueprints()
 
 def safe_migrate():
     """Add new columns to existing tables without destroying data."""
+    if db.engine.dialect.name != 'sqlite':
+        return  # PostgreSQL handles schema via create_all/migrations
     with db.engine.connect() as conn:
         # Attendance table: GPS proof columns
         result = conn.execute(text("PRAGMA table_info(attendance)"))
