@@ -532,9 +532,14 @@ function doPunch(action) {
   navigator.geolocation.getCurrentPosition(
     function(pos) {
       showFeedback('info', '<i class="bi bi-wifi me-1"></i>Verifying location…');
+      var csrfMeta = document.querySelector('meta[name="csrf-token"]');
+      var csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : '';
       fetch('/api/punch', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken
+        },
         body: JSON.stringify({
           lat: pos.coords.latitude,
           lng: pos.coords.longitude,
