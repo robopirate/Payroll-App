@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+{% block title %}Payroll{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="page-header mb-0">Payroll Management</h4>
+    <a href="{{ url_for('admin.export_payroll', month=month, year=year) }}" class="btn btn-sm btn-outline-primary">
+      <i class="bi bi-download"></i> Export Excel
+    </a>
+  </div>
+
+  <!-- Month/Year Selector + Generate -->
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body">
+      <div class="row g-3 align-items-end">
+        <div class="col-auto">
+          <form method="GET" class="d-flex gap-2 align-items-end" id="filterForm">
+            <div>
+              <label class="form-label small mb-1">Month</label>
+              <select name="month" class="form-select form-select-sm" onchange="this.form.submit()">
+                {% for m in months %}
+                <option value="{{ m }}" {% if m == month %}selected{% endif %}>{{ get_month_name(m) }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div>
+              <label class="form-label small mb-1">Year</label>
+              <select name="year" class="form-select form-select-sm" onchange="this.form.submit()">
+                {% for y in years %}
+                <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </form>
+        </div>
+        <div class="col-auto ms-auto">
+          <form method="POST" action="{{ url_for('admin.generate_payroll') }}" class="d-flex gap-2">
+            <input type="hidden" name="month" value="{{ month }}">
+            <input type="hidden" name="year" value="{{ year }}">
+            <button type="submit" class="btn btn-success"
+                    onclick="return confirm('Generate payroll for all employees for {{ get_month_name(month) }} {{ year }}?')">
+              <i class="bi bi-calculator"></i> Generate All Payrolls
+            </button>
+          </form>
+        </div>
+        {% if payrolls %}
+        <div class="col-auto">
+          <form method="POST" action="{{ url_for('admin.send_bulk_sms') }}">
+            <input type="hidden" name="month" value="{{ month }}">
+            <input type="hidden" name="year" value="{{ year }}">
+            <button type="submit" class="btn btn-outline-secondary"
+                    onclick="return confirm('Send SMS to all paid employees?')">
+              <i class="bi bi-chat-dots"></i> Send Bulk SMS
+            </button>
+          </form>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary -->
+  {% if payrolls %}
+  <div class="row g-3 mb-3">
+    <div class="col-sm-3">
+      <div class="card border-0 bg-success-subtle text-center p-3">
+        <div class="fw-bold fs-5">Rs. {{ "%.0f"|format(payrolls|sum(attribute='net_salary')) }}</div>
+        <div class="text-muted small">Total Net Payroll</div>
+      </div>
+    </div>
+    <div class="col-sm-3">
+      <div class="card border-0 bg-primary-subtle text-center p-3">
+        <div class="fw-bold fs-5">{{ payrolls|selectattr('status','equalto','paid')|list|length }}</div>
+        <div class="text-muted small">Paid</div>
+      </div>
+    </div>
+    <div class="col-sm-3">
+      <div class="card border-0 bg-warning-subtle text-center p-3">
+        <div class="fw-bold fs-5">{{ payrolls|selectattr('status','equalto','finalized')|list|length }}</div>
+        <div class="text-muted small">Finalized</div>
+      </div>
+    </div>
+    <div class="col-sm-3">
+      <div class="card border-0 bg-secondary-subtle text-center p-3">
+        <div class="fw-bold fs-5">{{ payrolls|selectattr('status','equalto','draft')|list|length }}</div>
+        <div class="text-muted small">Draft</div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-bottom">
+      <h6 class="mb-0 fw-bold">{{ get_month_name(month) }} {{ year }} — Payroll Details</h6>
+    </div>
+    <div class="card-body p-0">
+      {% if payrolls %}
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Employee</th>
+              <th>Present</th>
+              <th>Basic</th>
+              <th>HRA</th>
+              <th>OT Pay</th>
+              <th>Gross</th>
+              <th>Deductions</th>
+              <th>Net Salary</th>
+              <th>Status</th>
+              <th class="text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in payrolls %}
+            <tr>
+              <td>
+                <div class="fw-semibold">{{ p.employee.name }}</div>
+                <small class="text-muted">{{ p.employee.emp_id }}</small>
+              </td>
+              <td>{{ p.present_days }}/{{ p.working_days }}</td>
+              <td>{{ "%.0f"|format(p.basic_salary) }}</td>
+              <td>{{ "%.0f"|format(p.hra) }}</td>
+              <td>{{ "%.0f"|format(p.overtime_pay) }}</td>
+              <td>{{ "%.0f"|format(p.gross_salary) }}</td>
+              <td class="text-danger">{{ "%.0f"|format(p.total_deductions) }}</td>
+              <td class="fw-bold text-success">Rs. {{ "%.2f"|format(p.net_salary) }}</td>
+              <td>
+                {% if p.status == 'paid' %}
+                  <span class="badge bg-success">Paid</span>
+                {% elif p.status == 'finalized' %}
+                  <span class="badge bg-primary">Finalized</span>
+                {% else %}
+                  <span class="badge bg-secondary">Draft</span>
+                {% endif %}
+                {% if p.sms_sent %}<i class="bi bi-chat-dots-fill text-info ms-1" title="SMS Sent"></i>{% endif %}
+              </td>
+              <td class="text-center">
+                <div class="d-flex gap-1 justify-content-center flex-wrap">
+                  <a href="{{ url_for('admin.download_payslip', payroll_id=p.id) }}"
+                     class="btn btn-xs btn-outline-primary" title="Download Payslip">
+                    <i class="bi bi-file-pdf"></i>
+                  </a>
+                  {% if p.status == 'draft' %}
+                  <form method="POST" action="{{ url_for('admin.finalize_payroll', payroll_id=p.id) }}" class="d-inline">
+                    <button class="btn btn-xs btn-outline-success" title="Finalize">
+                      <i class="bi bi-check-circle"></i>
+                    </button>
+                  </form>
+                  {% endif %}
+                  {% if p.status == 'finalized' %}
+                  <form method="POST" action="{{ url_for('admin.mark_paid', payroll_id=p.id) }}" class="d-inline">
+                    <button class="btn btn-xs btn-outline-info" title="Mark Paid"
+                            onclick="return confirm('Mark as paid?')">
+                      <i class="bi bi-bank"></i>
+                    </button>
+                  </form>
+                  {% endif %}
+                  {% if not p.sms_sent %}
+                  <form method="POST" action="{{ url_for('admin.send_payroll_sms', payroll_id=p.id) }}" class="d-inline">
+                    <button class="btn btn-xs btn-outline-secondary" title="Send SMS">
+                      <i class="bi bi-chat-dots"></i>
+                    </button>
+                  </form>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="text-center py-5 text-muted">
+        <i class="bi bi-receipt fs-1"></i>
+        <p class="mt-2">No payrolls for {{ get_month_name(month) }} {{ year }}.</p>
+        <p>Click "Generate All Payrolls" to create payroll records.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

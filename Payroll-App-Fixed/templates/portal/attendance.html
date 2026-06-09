@@ -1,0 +1,113 @@
+{% extends 'portal/base.html' %}
+{% block title %}My Attendance{% endblock %}
+
+{% block head %}
+<style>
+  .month-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .month-title { font-weight: 800; font-size: 1.1rem; color: #0A1628; }
+  .summary-row { display: flex; gap: 10px; margin-bottom: 14px; }
+  .summary-box {
+    flex: 1; background: white; border-radius: 14px;
+    padding: 14px 10px; text-align: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+  }
+  .summary-box .num { font-size: 1.6rem; font-weight: 800; line-height: 1; }
+  .summary-box .lbl { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #aaa; margin-top: 4px; }
+  .att-day-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 0; border-bottom: 1px solid #f5f5f5;
+  }
+  .att-day-row:last-child { border-bottom: none; }
+  .day-badge { width: 40px; height: 40px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .day-badge .d  { font-weight: 800; font-size: 1rem; line-height: 1; }
+  .day-badge .wd { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.3px; }
+  .gps-dot { width: 8px; height: 8px; border-radius: 50%; background: #28a745; display: inline-block; margin-left: 4px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Month selector -->
+<div class="month-nav">
+  {% set pm = month - 1 if month > 1 else 12 %}
+  {% set py = year if month > 1 else year - 1 %}
+  {% set nm = month + 1 if month < 12 else 1 %}
+  {% set ny = year if month < 12 else year + 1 %}
+  <a href="{{ url_for('portal.portal_attendance', month=pm, year=py) }}" class="btn btn-light btn-sm" style="border-radius:10px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;">
+    <i class="bi bi-chevron-left"></i>
+  </a>
+  <div class="month-title">{{ get_month_name(month) }} {{ year }}</div>
+  <a href="{{ url_for('portal.portal_attendance', month=nm, year=ny) }}" class="btn btn-light btn-sm" style="border-radius:10px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;">
+    <i class="bi bi-chevron-right"></i>
+  </a>
+</div>
+
+<!-- Summary -->
+<div class="summary-row">
+  <div class="summary-box">
+    <div class="num" style="color:#28a745;">{{ present|int }}</div>
+    <div class="lbl">Present</div>
+  </div>
+  <div class="summary-box">
+    <div class="num" style="color:#dc3545;">{{ absent|int }}</div>
+    <div class="lbl">Absent</div>
+  </div>
+  <div class="summary-box">
+    <div class="num" style="color:#1565C0;">{{ days_in_month - (present|int) - (absent|int) }}</div>
+    <div class="lbl">Remaining</div>
+  </div>
+</div>
+
+<!-- Day list -->
+<div class="card">
+  <div class="card-body px-4 py-2">
+    {% for day in range(1, days_in_month + 1) %}
+      {% set att = atts.get(day) %}
+      {% if att %}
+      <div class="att-day-row">
+        <div class="d-flex align-items-center gap-3">
+          {% if att.status == 'present' %}
+            <div class="day-badge" style="background:#d4edda;color:#155724;">
+          {% elif att.status == 'absent' %}
+            <div class="day-badge" style="background:#f8d7da;color:#721c24;">
+          {% elif att.status == 'half_day' %}
+            <div class="day-badge" style="background:#fff3cd;color:#856404;">
+          {% else %}
+            <div class="day-badge" style="background:#e9ecef;color:#495057;">
+          {% endif %}
+            <span class="d">{{ "%02d"|format(day) }}</span>
+            <span class="wd">{{ att.date.strftime('%a') }}</span>
+          </div>
+          <div>
+            {% if att.status == 'present' %}
+              {% if att.location_type == 'field' %}<span class="badge-status" style="background:#e3f2fd;color:#1565C0;">Present · Field</span>
+              {% else %}<span class="badge-status badge-present">Present</span>
+              {% endif %}
+            {% elif att.status == 'absent' %}<span class="badge-status badge-absent">Absent</span>
+            {% elif att.status == 'half_day' %}<span class="badge-status badge-half">Half Day</span>
+            {% elif att.status == 'leave' %}<span class="badge-status badge-leave">On Leave</span>
+            {% else %}<span class="badge-status" style="background:#e9ecef;color:#495057;">{{ att.status|title }}</span>
+            {% endif %}
+            {% if att.gps_verified %}<span class="gps-dot" title="GPS verified"></span>{% endif %}
+            {% if att.check_in or att.check_out %}
+              <div style="font-size:0.72rem;color:#888;margin-top:3px;">
+                {% if att.check_in %}In: {{ att.check_in }}{% endif %}
+                {% if att.check_out %} · Out: {{ att.check_out }}{% endif %}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+        {% if att.overtime_hours %}
+          <span style="font-size:0.75rem;color:#e67e22;font-weight:600;">+{{ att.overtime_hours }}h OT</span>
+        {% endif %}
+      </div>
+      {% endif %}
+    {% endfor %}
+
+    {% if not atts %}
+    <p class="text-center text-muted py-4 mb-0">No attendance records for this month.</p>
+    {% endif %}
+  </div>
+</div>
+
+<div style="height:10px;"></div>
+{% endblock %}

@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% block title %}Advances{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <h4 class="page-header mb-4">Salary Advances</h4>
+
+  <div class="row g-4">
+    <!-- Add Advance Form -->
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom">
+          <h6 class="mb-0 fw-bold"><i class="bi bi-plus-circle text-danger"></i> Record Advance</h6>
+        </div>
+        <div class="card-body">
+          <form method="POST">
+            <div class="mb-3">
+              <label class="form-label">Employee <span class="text-danger">*</span></label>
+              <select name="employee_id" class="form-select" required>
+                <option value="">Select Employee</option>
+                {% for emp in employees %}
+                <option value="{{ emp.id }}">{{ emp.name }} ({{ emp.emp_id }})</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Amount (Rs.) <span class="text-danger">*</span></label>
+              <input type="number" step="0.01" name="amount" class="form-control" placeholder="5000" min="0" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Date</label>
+              <input type="date" name="date" class="form-control" value="{{ today }}">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Deduct in Month</label>
+              <div class="row g-2">
+                <div class="col-7">
+                  <select name="month_deducted" class="form-select">
+                    <option value="">Month</option>
+                    {% for m in months %}
+                    <option value="{{ m }}">{{ get_month_name(m) }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-5">
+                  <select name="year_deducted" class="form-select">
+                    {% for y in years %}
+                    <option value="{{ y }}">{{ y }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Reason</label>
+              <textarea name="reason" class="form-control" rows="2" placeholder="Medical emergency..."></textarea>
+            </div>
+            <button type="submit" class="btn btn-danger w-100">
+              <i class="bi bi-save"></i> Record Advance
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Advances List -->
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom">
+          <h6 class="mb-0 fw-bold">All Advances</h6>
+        </div>
+        <div class="card-body p-0">
+          {% if advances %}
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Employee</th>
+                  <th>Amount</th>
+                  <th>Date</th>
+                  <th>Reason</th>
+                  <th>Deduct In</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for adv in advances %}
+                <tr>
+                  <td class="fw-semibold">{{ adv.employee.name }}</td>
+                  <td>Rs. {{ "%.2f"|format(adv.amount) }}</td>
+                  <td>{{ adv.date.strftime('%d %b %Y') if adv.date else '-' }}</td>
+                  <td>{{ adv.reason or '-' }}</td>
+                  <td>
+                    {% if adv.month_deducted %}
+                      {{ get_month_name(adv.month_deducted) }} {{ adv.year_deducted }}
+                    {% else %}-{% endif %}
+                  </td>
+                  <td>
+                    {% if adv.status == 'approved' %}<span class="badge bg-success">Approved</span>
+                    {% elif adv.status == 'deducted' %}<span class="badge bg-info">Deducted</span>
+                    {% else %}<span class="badge bg-warning text-dark">Pending</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if adv.status == 'pending' %}
+                    <form method="POST" action="{{ url_for('admin.approve_advance', adv_id=adv.id) }}" class="d-inline">
+                      <button class="btn btn-sm btn-success"><i class="bi bi-check-lg"></i> Approve</button>
+                    </form>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-center py-5 text-muted">
+            <i class="bi bi-cash-coin fs-1"></i>
+            <p>No advances recorded yet.</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

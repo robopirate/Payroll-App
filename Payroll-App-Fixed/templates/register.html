@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+{% block title %}Employee Registration{% endblock %}
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-lg">
+        <div class="card-body p-5">
+          <div class="text-center mb-5">
+            <h2 class="fw-bold text-primary mb-2">Employee Registration</h2>
+            <p class="text-muted">Complete your profile to get started</p>
+          </div>
+
+          <form method="POST" id="registrationForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <!-- Personal Information Section -->
+            <div class="mb-5">
+              <h5 class="fw-bold mb-4 pb-2 border-bottom">
+                <i class="bi bi-person-fill text-primary"></i> Personal Information
+              </h5>
+
+              <div class="row g-3">
+                <div class="col-sm-6">
+                  <label class="form-label fw-semibold">Full Name <span class="text-danger">*</span></label>
+                  <input type="text" name="name" class="form-control" placeholder="John Doe" required>
+                </div>
+
+                <div class="col-sm-6">
+                  <label class="form-label fw-semibold">Phone <span class="text-danger">*</span></label>
+                  <input type="tel" name="phone" class="form-control" placeholder="9876543210"
+                         pattern="[0-9]{10}" required>
+                  <small class="text-muted">10-digit mobile number (used for login)</small>
+                </div>
+
+                <div class="col-sm-6">
+                  <label class="form-label fw-semibold">Email</label>
+                  <input type="email" name="email" class="form-control" placeholder="john@example.com">
+                </div>
+
+                <div class="col-sm-6">
+                  <label class="form-label fw-semibold">Designation <span class="text-danger">*</span></label>
+                  <input type="text" name="designation" class="form-control" placeholder="e.g., Teacher, Principal, Coordinator" required>
+                </div>
+
+                <div class="col-sm-6">
+                  <label class="form-label fw-semibold">Department/Subject</label>
+                  <input type="text" name="department" class="form-control" placeholder="e.g., Mathematics, English">
+                </div>
+
+                <div class="col-sm-6">
+                  <label class="form-label fw-semibold">Joining Date <span class="text-danger">*</span></label>
+                  <input type="date" name="joining_date" class="form-control" required>
+                </div>
+
+                <div class="col-sm-6">
+                  <label class="form-label fw-semibold">PAN Number</label>
+                  <input type="text" name="pan_number" class="form-control" placeholder="ABCDE1234F" maxlength="10">
+                </div>
+
+                <div class="col-sm-6">
+                  <label class="form-label fw-semibold">Aadhar Number</label>
+                  <input type="text" name="aadhar_number" class="form-control" placeholder="1234 5678 9012" maxlength="12">
+                </div>
+              </div>
+            </div>
+
+            <!-- Bank Details Section -->
+            <div class="mb-5">
+              <h5 class="fw-bold mb-4 pb-2 border-bottom">
+                <i class="bi bi-bank text-success"></i> Bank Details
+              </h5>
+
+              <div class="row g-3">
+                <div class="col-12">
+                  <label class="form-label fw-semibold">Bank Name <span class="text-danger">*</span></label>
+                  <input type="text" name="bank_name" class="form-control" placeholder="State Bank of India" required>
+                </div>
+
+                <div class="col-sm-6">
+                  <label class="form-label fw-semibold">Account Number <span class="text-danger">*</span></label>
+                  <input type="text" name="account_number" class="form-control" placeholder="00000000000000" required>
+                </div>
+
+                <div class="col-sm-6">
+                  <label class="form-label fw-semibold">IFSC Code <span class="text-danger">*</span></label>
+                  <input type="text" name="ifsc_code" class="form-control" placeholder="SBIN0001234" required>
+                </div>
+              </div>
+
+              <div class="alert alert-info mt-3" role="alert">
+                <i class="bi bi-info-circle"></i> Your bank details are securely stored for salary payments
+              </div>
+            </div>
+
+            <!-- Security Section -->
+            <div class="mb-5">
+              <h5 class="fw-bold mb-4 pb-2 border-bottom">
+                <i class="bi bi-shield-lock text-warning"></i> Security
+              </h5>
+
+              <div class="row g-3">
+                <div class="col-sm-6">
+                  <label class="form-label fw-semibold">Password <span class="text-danger">*</span></label>
+                  <input type="password" name="password" id="password" class="form-control"
+                         placeholder="Enter a strong password" required minlength="6">
+                  <small class="text-muted">Minimum 6 characters</small>
+                </div>
+
+                <div class="col-sm-6">
+                  <label class="form-label fw-semibold">Confirm Password <span class="text-danger">*</span></label>
+                  <input type="password" name="confirm_password" id="confirm_password" class="form-control"
+                         placeholder="Re-enter password" required minlength="6">
+                </div>
+
+                <div class="col-12">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="termsCheck" required>
+                    <label class="form-check-label" for="termsCheck">
+                      I agree to the terms and conditions <span class="text-danger">*</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Buttons -->
+            <div class="d-flex gap-3 justify-content-between">
+              <a href="{{ url_for('portal.portal_login') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Login
+              </a>
+              <button type="submit" class="btn btn-primary btn-lg">
+                <i class="bi bi-check-circle"></i> Register
+              </button>
+            </div>
+
+            <p class="text-center text-muted mt-4">
+              Already have an account? <a href="{{ url_for('portal.portal_login') }}" class="text-primary fw-semibold">Login here</a>
+            </p>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Form validation
+  document.getElementById('registrationForm').addEventListener('submit', function(e) {
+    const phone = document.querySelector('input[name="phone"]').value;
+    const pwd = document.getElementById('password').value;
+    const confirmPwd = document.getElementById('confirm_password').value;
+
+    // Phone validation
+    if (!/^\d{10}$/.test(phone)) {
+      e.preventDefault();
+      alert('Phone number must be exactly 10 digits!');
+      return false;
+    }
+
+    // Password validation
+    if (pwd !== confirmPwd) {
+      e.preventDefault();
+      alert('Passwords do not match!');
+      return false;
+    }
+
+    if (pwd.length < 6) {
+      e.preventDefault();
+      alert('Password must be at least 6 characters long!');
+      return false;
+    }
+  });
+</script>
+{% endblock %}

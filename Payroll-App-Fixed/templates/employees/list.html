@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block title %}Employees{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="page-header mb-0">Employees</h4>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('admin.departments') }}" class="btn btn-sm" style="background:#F0F4F8;color:#37474F;border:1px solid #dde3ed;">
+        <i class="bi bi-diagram-3"></i> Departments
+      </a>
+      <a href="{{ url_for('admin.export_employees') }}" class="btn btn-sm btn-outline-success">
+        <i class="bi bi-download"></i> Export
+      </a>
+      <a href="{{ url_for('admin.import_employees') }}" class="btn btn-sm btn-outline-info">
+        <i class="bi bi-upload"></i> Import
+      </a>
+      <a href="{{ url_for('admin.add_employee') }}" class="btn btn-primary btn-sm">
+        <i class="bi bi-person-plus-fill me-1"></i> Add Employee
+      </a>
+    </div>
+  </div>
+
+  <!-- Filter -->
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-2">
+      <form method="GET" class="row g-2 align-items-end">
+        <div class="col-auto">
+          <label class="form-label small mb-1">Filter by Department</label>
+          <select name="dept" class="form-select form-select-sm" onchange="this.form.submit()">
+            <option value="">All Departments</option>
+            {% for d in departments %}
+            <option value="{{ d.name }}" {% if dept_filter == d.name %}selected{% endif %}>{{ d.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      {% if employees %}
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Emp ID</th>
+              <th>Name</th>
+              <th>Phone</th>
+              <th>Department</th>
+              <th>Designation</th>
+              <th>Basic Salary</th>
+              <th>Joining Date</th>
+              <th class="text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for emp in employees %}
+            <tr>
+              <td><span class="badge bg-secondary">{{ emp.emp_id }}</span></td>
+              <td class="fw-semibold">{{ emp.name }}</td>
+              <td>{{ emp.phone }}</td>
+              <td>{{ emp.dept.name if emp.dept else '-' }}</td>
+              <td>{{ emp.designation or '-' }}</td>
+              <td>₹{{ "%.2f"|format(emp.basic_salary) }}</td>
+              <td>{{ emp.joining_date.strftime('%d %b %Y') if emp.joining_date else '-' }}</td>
+              <td class="text-center">
+                <a href="{{ url_for('admin.view_employee', emp_id=emp.id) }}" class="btn btn-sm btn-outline-info me-1" title="View">
+                  <i class="bi bi-eye"></i>
+                </a>
+                <a href="{{ url_for('admin.edit_employee', emp_id=emp.id) }}" class="btn btn-sm btn-outline-primary me-1" title="Edit">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                <form method="POST" action="{{ url_for('admin.deactivate_employee', emp_id=emp.id) }}"
+                      class="d-inline" onsubmit="return confirm('Deactivate {{ emp.name }}?')">
+                  <button type="submit" class="btn btn-sm btn-outline-danger" title="Deactivate">
+                    <i class="bi bi-person-x"></i>
+                  </button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="text-center py-5 text-muted">
+        <i class="bi bi-people fs-1"></i>
+        <p class="mt-2">No employees found. <a href="{{ url_for('admin.add_employee') }}">Add one now.</a></p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

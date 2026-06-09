@@ -1,0 +1,303 @@
+{% extends 'base.html' %}
+{% block title %}{{ emp.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex align-items-center gap-2 mb-4">
+    <a href="{{ url_for('admin.employees') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+    <h4 class="page-header mb-0">{{ emp.name }}</h4>
+    <a href="{{ url_for('admin.edit_employee', emp_id=emp.id) }}" class="btn btn-sm btn-outline-primary ms-auto">
+      <i class="bi bi-pencil"></i> Edit
+    </a>
+  </div>
+
+  <div class="row g-4">
+    <!-- Left column -->
+    <div class="col-lg-4">
+      <!-- Profile Card -->
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body text-center py-4">
+          <div class="avatar-lg rounded-circle bg-primary d-inline-flex align-items-center justify-content-center mb-3">
+            <span class="text-white fs-2 fw-bold">{{ emp.name[0].upper() }}</span>
+          </div>
+          <h5 class="fw-bold">{{ emp.name }}</h5>
+          <p class="text-muted mb-1">{{ emp.designation or 'N/A' }}</p>
+          <span class="badge bg-primary">{{ emp.dept.name if emp.dept else 'No Dept' }}</span>
+        </div>
+        <div class="card-body border-top">
+          <div class="info-row"><i class="bi bi-hash text-muted"></i> <strong>Emp ID:</strong> {{ emp.emp_id }}</div>
+          <div class="info-row"><i class="bi bi-phone text-muted"></i> <strong>Phone:</strong> {{ emp.phone }}</div>
+          <div class="info-row"><i class="bi bi-envelope text-muted"></i> <strong>Email:</strong> {{ emp.email or 'N/A' }}</div>
+          <div class="info-row"><i class="bi bi-calendar text-muted"></i> <strong>Joined:</strong> {{ emp.joining_date.strftime('%d %b %Y') if emp.joining_date else 'N/A' }}</div>
+          <div class="info-row"><i class="bi bi-currency-rupee text-muted"></i> <strong>Basic Salary:</strong> Rs. {{ "%.2f"|format(emp.basic_salary) }}</div>
+        </div>
+        <div class="card-body border-top">
+          <h6 class="fw-bold"><i class="bi bi-bank"></i> Bank Details</h6>
+          <div class="info-row"><strong>Bank:</strong> {{ emp.bank_name or 'N/A' }}</div>
+          <div class="info-row"><strong>Account:</strong> {{ emp.account_number or 'N/A' }}</div>
+          <div class="info-row"><strong>IFSC:</strong> {{ emp.ifsc_code or 'N/A' }}</div>
+          <div class="info-row"><strong>PAN:</strong> {{ emp.pan_number or 'N/A' }}</div>
+        </div>
+      </div>
+
+      <!-- Portal Access Card -->
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white border-bottom">
+          <h6 class="mb-0 fw-bold"><i class="bi bi-shield-lock text-success"></i> Employee Portal Access</h6>
+        </div>
+        <div class="card-body">
+          {% if portal_user %}
+            <div class="d-flex align-items-center gap-2 mb-3">
+              <span class="badge bg-success"><i class="bi bi-check-circle"></i> Portal Active</span>
+              <span class="text-muted small">Login: {{ emp.phone }}</span>
+            </div>
+          {% else %}
+            <div class="d-flex align-items-center gap-2 mb-3">
+              <span class="badge bg-secondary"><i class="bi bi-x-circle"></i> No Portal Access</span>
+            </div>
+            <p class="text-muted small mb-3">Set a password to give this employee access to their portal.</p>
+          {% endif %}
+
+          <form method="post" action="{{ url_for('admin.set_employee_password', emp_id=emp.id) }}">
+            <div class="input-group">
+              <input type="password" name="new_password" class="form-control form-control-sm"
+                     placeholder="{{ 'New password (4+ chars)' }}" minlength="4" required>
+              <button type="submit" class="btn btn-sm btn-success">
+                <i class="bi bi-key"></i> {{ 'Reset' if portal_user else 'Set' }} Password
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Assigned Schools -->
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom">
+          <h6 class="mb-0 fw-bold"><i class="bi bi-building text-warning"></i> Assigned Schools</h6>
+        </div>
+        <div class="card-body">
+          {% if emp.schools %}
+            <div class="mb-2">
+              {% for school in emp.schools %}
+                <span class="badge bg-light text-dark border me-1 mb-1">
+                  <i class="bi bi-building"></i> {{ school.name }}
+                </span>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p class="text-muted small mb-2">No schools assigned. Employee cannot use GPS punch.</p>
+          {% endif %}
+
+          <form method="post" action="{{ url_for('admin.assign_employee_schools', emp_id=emp.id) }}">
+            <div class="mb-2" style="max-height:140px;overflow-y:auto;">
+              {% for school in all_schools %}
+              <div class="form-check form-check-sm">
+                <input class="form-check-input" type="checkbox" name="school_ids"
+                       value="{{ school.id }}" id="sch_{{ school.id }}"
+                       {% if school in emp.schools %}checked{% endif %}>
+                <label class="form-check-label small" for="sch_{{ school.id }}">{{ school.name }}</label>
+              </div>
+              {% else %}
+              <p class="text-muted small mb-0">No schools created yet. <a href="{{ url_for('admin.add_school') }}">Add a school →</a></p>
+              {% endfor %}
+            </div>
+            {% if all_schools %}
+            <button type="submit" class="btn btn-warning btn-sm">
+              <i class="bi bi-save"></i> Update Schools
+            </button>
+            {% endif %}
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right column -->
+    <div class="col-lg-8">
+      <!-- Leave Balances -->
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white border-bottom">
+          <h6 class="mb-0 fw-bold"><i class="bi bi-calendar2-x text-warning"></i> Leave Balances</h6>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            {% for lb in emp.leave_balances %}
+            <div class="col-sm-4">
+              <div class="border rounded p-3 text-center">
+                <div class="fw-bold text-capitalize">{{ lb.leave_type }}</div>
+                <div class="fs-4 fw-bold text-primary">{{ lb.remaining_days }}</div>
+                <div class="text-muted small">{{ lb.used_days }}/{{ lb.total_days }} used</div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Monthly Attendance Breakdown -->
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+          <h6 class="mb-0 fw-bold"><i class="bi bi-calendar-check text-success"></i> Monthly Attendance</h6>
+          <form method="GET" class="d-flex gap-1" style="font-size:0.9rem;">
+            <select name="month" class="form-select form-select-sm" style="width:120px;" onchange="this.form.submit()">
+              {% for m in months %}
+              <option value="{{ m }}" {% if m == month %}selected{% endif %}>{{ get_month_name(m) }}</option>
+              {% endfor %}
+            </select>
+            <select name="year" class="form-select form-select-sm" style="width:90px;" onchange="this.form.submit()">
+              {% for y in years %}
+              <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+              {% endfor %}
+            </select>
+          </form>
+        </div>
+
+        <!-- Monthly Summary -->
+        <div class="card-body border-bottom">
+          <div class="row g-3 text-center">
+            <div class="col-sm-3">
+              <div class="fw-bold text-success">{{ "%.1f"|format(present_days + half_days) }}</div>
+              <div class="text-muted small">Days Present</div>
+              <div class="text-muted small" style="font-size:0.75rem;">Out of {{ working_days }} working</div>
+            </div>
+            <div class="col-sm-3">
+              <div class="fw-bold text-danger">{{ absent_days }}</div>
+              <div class="text-muted small">Days Absent</div>
+            </div>
+            <div class="col-sm-3">
+              <div class="fw-bold">{{ days_in_month }}</div>
+              <div class="text-muted small">Days in Month</div>
+            </div>
+            <div class="col-sm-3">
+              <div class="fw-bold text-info">{{ "%.1f"|format((present_days + half_days) / working_days * 100 if working_days > 0 else 0) }}%</div>
+              <div class="text-muted small">Attendance %</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Day Grid -->
+        <div class="card-body p-0">
+          <table class="table table-sm mb-0" style="font-size:0.85rem;">
+            <tbody>
+              {% for d in range(1, days_in_month + 1) %}
+                {% if loop.first or (d - 1) % 7 == 0 %}<tr>{% endif %}
+                {% set att = att_dict.get(d) %}
+                <td class="p-2 text-center" style="border:1px solid #e0e0e0;background:{% if att %}{% if att.status == 'present' %}#d4edda{% elif att.status == 'absent' %}#f8d7da{% elif att.status == 'half_day' %}#fff3cd{% elif att.status == 'leave' %}#d1ecf1{% elif att.status == 'holiday' %}#f0f0f0{% else %}#f9f9f9{% endif %}{% else %}#fafafa{% endif %}">
+                  <div class="fw-semibold">{{ d }}</div>
+                  {% if att %}
+                    <small class="text-muted d-block">
+                      {% if att.status == 'present' %}✓ P
+                      {% elif att.status == 'absent' %}✗ A
+                      {% elif att.status == 'half_day' %}½ H
+                      {% elif att.status == 'leave' %}🏖 L
+                      {% elif att.status == 'holiday' %}🎉 H
+                      {% elif att.status == 'overtime' %}⚡ OT
+                      {% else %}{{ att.status|title }}
+                      {% endif %}
+                    </small>
+                  {% else %}
+                    <small class="text-muted">-</small>
+                  {% endif %}
+                </td>
+                {% if d % 7 == 0 or loop.last %}</tr>{% endif %}
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card-footer bg-light" style="font-size:0.8rem;">
+          <div class="d-flex flex-wrap gap-2">
+            <span><span style="display:inline-block;width:16px;height:16px;background:#d4edda;"></span> Present</span>
+            <span><span style="display:inline-block;width:16px;height:16px;background:#f8d7da;"></span> Absent</span>
+            <span><span style="display:inline-block;width:16px;height:16px;background:#fff3cd;"></span> Half Day</span>
+            <span><span style="display:inline-block;width:16px;height:16px;background:#d1ecf1;"></span> Leave</span>
+            <span><span style="display:inline-block;width:16px;height:16px;background:#f0f0f0;"></span> Holiday</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Attendance -->
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white border-bottom d-flex justify-content-between">
+          <h6 class="mb-0 fw-bold"><i class="bi bi-clock-history text-info"></i> Recent Attendance Details</h6>
+          <a href="{{ url_for('admin.attendance_report') }}" class="btn btn-sm btn-outline-info">View All Employees</a>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm mb-0">
+              <thead class="table-light">
+                <tr><th>Date</th><th>Status</th><th>Check In</th><th>Check Out</th><th>GPS</th><th>OT</th></tr>
+              </thead>
+              <tbody>
+                {% for att in recent_att %}
+                <tr>
+                  <td>{{ att.date.strftime('%d %b %Y') }}</td>
+                  <td>
+                    {% if att.status == 'present' %}<span class="badge bg-success">Present</span>
+                    {% elif att.status == 'absent' %}<span class="badge bg-danger">Absent</span>
+                    {% elif att.status == 'half_day' %}<span class="badge bg-warning text-dark">Half Day</span>
+                    {% elif att.status == 'leave' %}<span class="badge bg-info">Leave</span>
+                    {% else %}<span class="badge bg-secondary">{{ att.status }}</span>
+                    {% endif %}
+                  </td>
+                  <td>{{ att.check_in or '-' }}</td>
+                  <td>{{ att.check_out or '-' }}</td>
+                  <td>
+                    {% if att.gps_verified %}
+                      <span class="text-success" title="GPS verified {{ '%.4f'|format(att.gps_lat) }}, {{ '%.4f'|format(att.gps_lng) }}">
+                        <i class="bi bi-geo-alt-fill"></i>
+                      </span>
+                    {% elif att.admin_override %}
+                      <span class="text-warning" title="Admin override"><i class="bi bi-shield-check"></i></span>
+                    {% else %}
+                      <span class="text-muted">-</span>
+                    {% endif %}
+                  </td>
+                  <td>{{ att.overtime_hours or '-' }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" class="text-center text-muted py-3">No attendance records</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Payrolls -->
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom d-flex justify-content-between">
+          <h6 class="mb-0 fw-bold"><i class="bi bi-receipt text-info"></i> Payroll History</h6>
+          <a href="{{ url_for('admin.payroll') }}" class="btn btn-sm btn-outline-info">Manage</a>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm mb-0">
+              <thead class="table-light">
+                <tr><th>Month</th><th>Gross</th><th>Deductions</th><th>Net</th><th>Status</th><th></th></tr>
+              </thead>
+              <tbody>
+                {% for p in payrolls %}
+                <tr>
+                  <td>{{ get_month_name(p.month) }} {{ p.year }}</td>
+                  <td>Rs. {{ "%.0f"|format(p.gross_salary) }}</td>
+                  <td>Rs. {{ "%.0f"|format(p.total_deductions) }}</td>
+                  <td class="fw-semibold">Rs. {{ "%.0f"|format(p.net_salary) }}</td>
+                  <td>
+                    {% if p.status == 'paid' %}<span class="badge bg-success">Paid</span>
+                    {% elif p.status == 'finalized' %}<span class="badge bg-primary">Finalized</span>
+                    {% else %}<span class="badge bg-secondary">Draft</span>
+                    {% endif %}
+                  </td>
+                  <td><a href="{{ url_for('admin.download_payslip', payroll_id=p.id) }}" class="btn btn-xs btn-outline-secondary"><i class="bi bi-download"></i></a></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" class="text-center text-muted py-3">No payroll records</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

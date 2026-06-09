@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Edit' if edit else 'Add' }} Employee{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex align-items-center gap-2 mb-4">
+    <a href="{{ url_for('admin.employees') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+    <h4 class="page-header mb-0">{{ 'Edit Employee' if edit else 'Add New Employee' }}</h4>
+  </div>
+
+  <form method="POST">
+    <div class="row g-4">
+      <!-- Personal Info -->
+      <div class="col-lg-6">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header bg-white border-bottom">
+            <h6 class="mb-0 fw-bold"><i class="bi bi-person text-primary"></i> Personal Information</h6>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-sm-6">
+                <label class="form-label">Employee ID <span class="text-danger">*</span></label>
+                <input type="text" name="emp_id" class="form-control"
+                       value="{{ form.emp_id if edit else form.get('emp_id','') }}"
+                       placeholder="EMP001" required {% if edit %}readonly{% endif %}>
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">Full Name <span class="text-danger">*</span></label>
+                <input type="text" name="name" class="form-control"
+                       value="{{ form.name if edit else form.get('name','') }}"
+                       placeholder="John Doe" required>
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">Phone <span class="text-danger">*</span></label>
+                <input type="tel" name="phone" class="form-control"
+                       value="{{ form.phone if edit else form.get('phone','') }}"
+                       placeholder="9876543210" pattern="[0-9]{10}" required>
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">Email</label>
+                <input type="email" name="email" class="form-control"
+                       value="{{ form.email if edit else form.get('email','') }}"
+                       placeholder="john@example.com">
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">Department</label>
+                <select name="department_id" class="form-select">
+                  <option value="">Select Department</option>
+                  {% for d in departments %}
+                  <option value="{{ d.id }}"
+                    {% if edit and form.department_id == d.id %}selected
+                    {% elif not edit and form.get('department_id')|int == d.id %}selected
+                    {% endif %}>{{ d.name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">Designation</label>
+                <input type="text" name="designation" class="form-control"
+                       value="{{ form.designation if edit else form.get('designation','') }}"
+                       placeholder="Software Engineer">
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">Basic Salary (Rs.)</label>
+                <input type="number" step="0.01" name="basic_salary" class="form-control"
+                       value="{{ form.basic_salary if edit else form.get('basic_salary','') }}"
+                       placeholder="25000" min="0">
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">Joining Date</label>
+                <input type="date" name="joining_date" class="form-control"
+                       value="{{ form.joining_date.isoformat() if edit and form.joining_date else form.get('joining_date','') }}">
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">PAN Number</label>
+                <input type="text" name="pan_number" class="form-control"
+                       value="{{ form.pan_number if edit else form.get('pan_number','') }}"
+                       placeholder="ABCDE1234F">
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">Aadhar Number</label>
+                <input type="text" name="aadhar_number" class="form-control"
+                       value="{{ form.aadhar_number if edit else form.get('aadhar_number','') }}"
+                       placeholder="1234 5678 9012">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bank Details -->
+      <div class="col-lg-6">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header bg-white border-bottom">
+            <h6 class="mb-0 fw-bold"><i class="bi bi-bank text-success"></i> Bank Details</h6>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label">Bank Name</label>
+                <input type="text" name="bank_name" class="form-control"
+                       value="{{ form.bank_name if edit else form.get('bank_name','') }}"
+                       placeholder="State Bank of India">
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">Account Number</label>
+                <input type="text" name="account_number" class="form-control"
+                       value="{{ form.account_number if edit else form.get('account_number','') }}"
+                       placeholder="00000000000000">
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">IFSC Code</label>
+                <input type="text" name="ifsc_code" class="form-control"
+                       value="{{ form.ifsc_code if edit else form.get('ifsc_code','') }}"
+                       placeholder="SBIN0001234">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4 d-flex gap-2 justify-content-end">
+          <a href="{{ url_for('admin.employees') }}" class="btn btn-outline-secondary">Cancel</a>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-lg"></i> {{ 'Update Employee' if edit else 'Add Employee' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,246 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Edit' if edit else 'Add' }} Location{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex align-items-center gap-2 mb-4">
+    <a href="{{ url_for('admin.schools') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+    <h4 class="page-header mb-0">{{ 'Edit Location' if edit else 'Add Location' }}</h4>
+  </div>
+
+  {% if not google_maps_api_key %}
+  <div class="alert alert-warning mb-4">
+    <strong>Google Maps API key not set.</strong>
+    Get a key from <a href="https://console.cloud.google.com/google/maps/apis" target="_blank">Google Cloud Console</a>,
+    then set it in PythonAnywhere under <em>Web → Environment Variables</em> as <code>GOOGLE_MAPS_API_KEY</code>.
+  </div>
+  {% endif %}
+
+  <div class="row g-4">
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+          <form method="post" id="schoolForm">
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Location Name <span class="text-danger">*</span></label>
+              <input type="text" name="name" class="form-control"
+                     value="{{ school.name if school else '' }}" required
+                     placeholder="e.g. Robo Pirate Baner, Head Office">
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Location Type</label>
+              <select name="location_type" class="form-select">
+                {% set types = ['School', 'Office', 'Warehouse', 'Store', 'Site', 'Other'] %}
+                {% for t in types %}
+                <option value="{{ t }}" {% if school and school.location_type == t %}selected{% elif not school and t == 'School' %}selected{% endif %}>{{ t }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Address</label>
+              <textarea name="address" class="form-control" rows="2"
+                        placeholder="Full address of the location">{{ school.address if school else '' }}</textarea>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">
+                Geofence Radius (metres)
+                <span class="text-muted small fw-normal">— employees must be within this distance to punch in (field punch allowed outside)</span>
+              </label>
+              <input type="number" name="geofence_radius" class="form-control" id="radiusInput"
+                     value="{{ school.geofence_radius if school else 150 }}"
+                     min="10" max="2000" step="10">
+            </div>
+
+            <hr>
+            <h6 class="fw-bold mb-3"><i class="bi bi-geo-alt text-success"></i> GPS Coordinates</h6>
+
+            <div class="row g-3 mb-3">
+              <div class="col-6">
+                <label class="form-label fw-semibold">Latitude</label>
+                <input type="number" name="latitude" id="latInput" class="form-control"
+                       value="{{ school.latitude if school else '' }}"
+                       step="0.000001" placeholder="e.g. 18.5679">
+              </div>
+              <div class="col-6">
+                <label class="form-label fw-semibold">Longitude</label>
+                <input type="number" name="longitude" id="lngInput" class="form-control"
+                       value="{{ school.longitude if school else '' }}"
+                       step="0.000001" placeholder="e.g. 73.9143">
+              </div>
+            </div>
+
+            <button type="button" class="btn btn-outline-success btn-sm mb-3" id="useMyLocationBtn">
+              <i class="bi bi-crosshair"></i> Use My Current Location
+            </button>
+
+            <div class="d-flex gap-2 mt-2">
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-lg"></i> {{ 'Update Location' if edit else 'Add Location' }}
+              </button>
+              <a href="{{ url_for('admin.schools') }}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom">
+          <h6 class="mb-0 fw-bold"><i class="bi bi-map text-info"></i> Pick Location on Map</h6>
+          <small class="text-muted">Search for a place or click on the map to set GPS coordinates</small>
+        </div>
+        <div class="card-body p-2">
+          {% if google_maps_api_key %}
+          <input id="pac-input" class="form-control mb-2" type="text" placeholder="Search place or address (e.g. Robo Pirate Baner)">
+          <div id="map" style="height:420px;border-radius:8px;"></div>
+          {% else %}
+          <div class="alert alert-info mb-0">
+            Map view requires a Google Maps API key. Without it, enter latitude and longitude manually.
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      <div class="text-muted small mt-2 px-1">
+        <i class="bi bi-info-circle"></i>
+        Tip: Search for the address above the map, then click to place the marker precisely.
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if google_maps_api_key %}
+<script>
+(function() {
+  const apiKey = '{{ google_maps_api_key }}';
+  const script = document.createElement('script');
+  script.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(apiKey) + '&libraries=places&callback=initMap';
+  script.async = true;
+  script.defer = true;
+  document.head.appendChild(script);
+})();
+
+let map, marker, circle, autocomplete;
+
+function initMap() {
+  const latInput = document.getElementById('latInput');
+  const lngInput = document.getElementById('lngInput');
+  const radiusInput = document.getElementById('radiusInput');
+
+  const initialLat = parseFloat(latInput.value) || 20.5937;
+  const initialLng = parseFloat(lngInput.value) || 78.9629;
+  const hasCoords = latInput.value && lngInput.value;
+
+  map = new google.maps.Map(document.getElementById('map'), {
+    center: { lat: initialLat, lng: initialLng },
+    zoom: hasCoords ? 17 : 5,
+    mapTypeControl: false,
+    streetViewControl: false
+  });
+
+  // Places autocomplete
+  const input = document.getElementById('pac-input');
+  autocomplete = new google.maps.places.Autocomplete(input, {
+    fields: ['geometry', 'name', 'formatted_address']
+  });
+  autocomplete.bindTo('bounds', map);
+
+  autocomplete.addListener('place_changed', function() {
+    const place = autocomplete.getPlace();
+    if (!place.geometry || !place.geometry.location) return;
+
+    map.setCenter(place.geometry.location);
+    map.setZoom(18);
+    setMarker(place.geometry.location.lat(), place.geometry.location.lng());
+
+    // Optionally fill address if empty
+    const addressField = document.querySelector('textarea[name="address"]');
+    if (!addressField.value && place.formatted_address) {
+      addressField.value = place.formatted_address;
+    }
+  });
+
+  // Click on map to place marker
+  map.addListener('click', function(e) {
+    setMarker(e.latLng.lat(), e.latLng.lng());
+  });
+
+  if (hasCoords) {
+    setMarker(initialLat, initialLng, false);
+  }
+
+  // Update circle when radius changes
+  radiusInput.addEventListener('input', function() {
+    if (marker) updateCircle(marker.getPosition());
+  });
+
+  document.getElementById('useMyLocationBtn').addEventListener('click', useMyLocation);
+}
+
+function setMarker(lat, lng, pan = true) {
+  const latInput = document.getElementById('latInput');
+  const lngInput = document.getElementById('lngInput');
+
+  latInput.value = lat.toFixed(6);
+  lngInput.value = lng.toFixed(6);
+
+  const position = new google.maps.LatLng(lat, lng);
+
+  if (!marker) {
+    marker = new google.maps.Marker({
+      position: position,
+      map: map,
+      draggable: true,
+      title: 'Drag to adjust'
+    });
+    marker.addListener('dragend', function() {
+      const pos = marker.getPosition();
+      latInput.value = pos.lat().toFixed(6);
+      lngInput.value = pos.lng().toFixed(6);
+      updateCircle(pos);
+    });
+  } else {
+    marker.setPosition(position);
+  }
+
+  if (pan) map.panTo(position);
+  updateCircle(position);
+}
+
+function updateCircle(center) {
+  const radius = parseFloat(document.getElementById('radiusInput').value) || 150;
+  if (circle) circle.setMap(null);
+  circle = new google.maps.Circle({
+    map: map,
+    center: center,
+    radius: radius,
+    fillColor: '#0f3460',
+    fillOpacity: 0.1,
+    strokeColor: '#0f3460',
+    strokeOpacity: 0.8,
+    strokeWeight: 2
+  });
+}
+
+function useMyLocation() {
+  if (!navigator.geolocation) {
+    alert('GPS not supported by this browser.');
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(function(pos) {
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+    map.setCenter({ lat: lat, lng: lng });
+    map.setZoom(17);
+    setMarker(lat, lng);
+  }, function() {
+    alert('Could not get your location. Make sure GPS is enabled.');
+  }, { enableHighAccuracy: true, timeout: 10000 });
+}
+</script>
+{% endif %}
+{% endblock %}

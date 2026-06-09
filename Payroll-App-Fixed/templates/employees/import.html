@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}Import Employees{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex align-items-center gap-2 mb-4">
+    <a href="{{ url_for('admin.employees') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+    <h4 class="page-header mb-0">Import Employees</h4>
+  </div>
+
+  <div class="row">
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+          <h6 class="fw-bold mb-3">Upload CSV File</h6>
+          <form method="POST" enctype="multipart/form-data">
+            <div class="mb-3">
+              <input type="file" name="csv_file" accept=".csv" class="form-control" required>
+            </div>
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-upload me-1"></i> Import
+            </button>
+          </form>
+
+          <hr class="my-4">
+
+          <h6 class="fw-bold mb-2">Expected CSV Format</h6>
+          <p class="text-muted small">First row must be headers. Columns:</p>
+          <code class="d-block bg-light p-2 rounded small">
+            Employee ID, Name, Phone, Email, Department, Designation, Basic Salary, Joining Date, Bank Name, Account Number, IFSC, PAN, Aadhar
+          </code>
+          <p class="text-muted small mt-2">
+            <strong>Note:</strong> <code>Joining Date</code> should be YYYY-MM-DD. Departments must already exist.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

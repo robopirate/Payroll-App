@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% block title %}Send SMS{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <h4 class="page-header mb-4">Send SMS</h4>
+
+  <div class="row g-4">
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom">
+          <h6 class="mb-0 fw-bold">Compose SMS</h6>
+        </div>
+        <div class="card-body">
+          <form method="POST">
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Select Employees</label>
+              <div class="mb-2">
+                <button type="button" class="btn btn-sm btn-outline-primary me-2" onclick="selectAll(true)">Select All</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="selectAll(false)">Deselect All</button>
+              </div>
+              <div class="border rounded p-2" style="max-height:250px; overflow-y:auto">
+                {% for emp in employees %}
+                <div class="form-check">
+                  <input type="checkbox" name="employee_ids" value="{{ emp.id }}"
+                         class="form-check-input emp-check" id="emp_{{ emp.id }}">
+                  <label class="form-check-label" for="emp_{{ emp.id }}">
+                    {{ emp.name }} — {{ emp.phone }}
+                    <span class="text-muted small">({{ emp.dept.name if emp.dept else 'No dept' }})</span>
+                  </label>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Message <span class="text-danger">*</span></label>
+              <textarea name="message" class="form-control" rows="4" maxlength="160"
+                        placeholder="Type your SMS message (max 160 characters)..."
+                        oninput="updateCount(this)" required></textarea>
+              <div class="text-end text-muted small mt-1"><span id="charCount">0</span>/160 characters</div>
+            </div>
+            <div class="alert alert-info py-2 small">
+              <i class="bi bi-info-circle"></i>
+              SMS is sent via Fast2SMS API. Ensure your API key is configured in Settings.
+            </div>
+            <button type="submit" class="btn btn-primary w-100">
+              <i class="bi bi-send"></i> Send SMS
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom">
+          <h6 class="mb-0 fw-bold">Message Templates</h6>
+        </div>
+        <div class="card-body d-grid gap-2">
+          <button class="btn btn-outline-secondary text-start" onclick="setTemplate('Your salary for this month has been credited to your bank account. - HR Team')">
+            <i class="bi bi-currency-rupee text-success"></i> Salary Credited
+          </button>
+          <button class="btn btn-outline-secondary text-start" onclick="setTemplate('This is a reminder that tomorrow is a working day. Please be present on time. - HR Team')">
+            <i class="bi bi-bell text-warning"></i> Attendance Reminder
+          </button>
+          <button class="btn btn-outline-secondary text-start" onclick="setTemplate('Your leave application has been approved. - HR Team')">
+            <i class="bi bi-calendar2-check text-info"></i> Leave Approved
+          </button>
+          <button class="btn btn-outline-secondary text-start" onclick="setTemplate('Please submit your attendance for this week. - HR Team')">
+            <i class="bi bi-clipboard-check text-primary"></i> Attendance Submission
+          </button>
+          <button class="btn btn-outline-secondary text-start" onclick="setTemplate('Holiday notice: The office will be closed tomorrow. - HR Team')">
+            <i class="bi bi-house text-danger"></i> Holiday Notice
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function selectAll(val) {
+  document.querySelectorAll('.emp-check').forEach(c => c.checked = val);
+}
+function setTemplate(msg) {
+  const ta = document.querySelector('textarea[name=message]');
+  ta.value = msg;
+  updateCount(ta);
+}
+function updateCount(ta) {
+  document.getElementById('charCount').textContent = ta.value.length;
+}
+</script>
+{% endblock %}

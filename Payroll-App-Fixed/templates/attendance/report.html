@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% block title %}Attendance Report{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="page-header mb-0">Attendance Report</h4>
+    <a href="{{ url_for('admin.export_attendance', month=month, year=year) }}" class="btn btn-sm btn-outline-primary">
+      <i class="bi bi-download"></i> Export CSV
+    </a>
+    <a href="{{ url_for('admin.attendance') }}" class="btn btn-sm btn-outline-success">
+      <i class="bi bi-calendar-check"></i> Mark Attendance
+    </a>
+  </div>
+
+  <!-- Filters -->
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-2">
+      <form method="GET" class="row g-2 align-items-end">
+        <div class="col-auto">
+          <label class="form-label small mb-1">Month</label>
+          <select name="month" class="form-select form-select-sm">
+            {% for m in months %}
+            <option value="{{ m }}" {% if m == month %}selected{% endif %}>{{ get_month_name(m) }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-auto">
+          <label class="form-label small mb-1">Year</label>
+          <select name="year" class="form-select form-select-sm">
+            {% for y in years %}
+            <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-auto">
+          <button type="submit" class="btn btn-primary btn-sm">Apply</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-bottom">
+      <h6 class="mb-0 fw-bold">{{ get_month_name(month) }} {{ year }} — Monthly Summary</h6>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-sm table-bordered mb-0" style="font-size:0.82rem">
+          <thead class="table-dark">
+            <tr>
+              <th class="sticky-col">Employee</th>
+              {% for d in range(1, days_in_month + 1) %}
+              <th class="text-center" style="min-width:32px">{{ d }}</th>
+              {% endfor %}
+              <th class="text-center">Present</th>
+              <th class="text-center">Absent</th>
+              <th class="text-center">OT hrs</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in report %}
+            <tr>
+              <td class="fw-semibold sticky-col" style="white-space:nowrap">{{ row.employee.name }}</td>
+              {% for d in range(1, days_in_month + 1) %}
+              {% set att = row.atts.get(d) %}
+              <td class="text-center p-1">
+                {% if att %}
+                  {% if att.status == 'present' %}
+                    {% if att.location_type == 'field' %}
+                      <span class="badge bg-primary" style="font-size:0.65rem">F</span>
+                    {% else %}
+                      <span class="badge bg-success" style="font-size:0.65rem">P</span>
+                    {% endif %}
+                  {% elif att.status == 'absent' %}
+                    <span class="badge bg-danger" style="font-size:0.65rem">A</span>
+                  {% elif att.status == 'half_day' %}
+                    <span class="badge bg-warning text-dark" style="font-size:0.65rem">H</span>
+                  {% elif att.status == 'overtime' %}
+                    <span class="badge bg-info" style="font-size:0.65rem">OT</span>
+                  {% elif att.status == 'leave' %}
+                    <span class="badge bg-secondary" style="font-size:0.65rem">L</span>
+                  {% elif att.status == 'holiday' %}
+                    <span class="badge bg-light text-dark" style="font-size:0.65rem">H</span>
+                  {% endif %}
+                {% else %}
+                  <span class="text-muted" style="font-size:0.65rem">-</span>
+                {% endif %}
+              </td>
+              {% endfor %}
+              <td class="text-center fw-semibold text-success">{{ row.present }}</td>
+              <td class="text-center fw-semibold text-danger">{{ row.absent }}</td>
+              <td class="text-center fw-semibold text-info">{{ row.overtime }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card-footer bg-white">
+      <div class="d-flex gap-3 flex-wrap">
+        <span><span class="badge bg-success">P</span> Present (School)</span>
+        <span><span class="badge bg-primary">F</span> Present (Field)</span>
+        <span><span class="badge bg-danger">A</span> Absent</span>
+        <span><span class="badge bg-warning text-dark">H</span> Half Day</span>
+        <span><span class="badge bg-info">OT</span> Overtime</span>
+        <span><span class="badge bg-secondary">L</span> Leave</span>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

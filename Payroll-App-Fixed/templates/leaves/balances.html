@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block title %}Leave Balances{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="page-header mb-0">Leave Balances</h4>
+    <form method="GET" class="d-flex gap-2 align-items-center">
+      <select name="year" class="form-select form-select-sm" onchange="this.form.submit()">
+        {% for y in years %}
+        <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Employee</th>
+              <th class="text-center">Casual Leave</th>
+              <th class="text-center">Sick Leave</th>
+              <th class="text-center">Earned Leave</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for emp in employees %}
+            <tr>
+              <td class="fw-semibold">
+                <div>{{ emp.name }}</div>
+                <small class="text-muted">{{ emp.emp_id }}</small>
+              </td>
+              {% for ltype in ['casual', 'sick', 'earned'] %}
+              {% set lb = emp.leave_balances | selectattr('leave_type', 'equalto', ltype) | selectattr('year', 'equalto', year) | first %}
+              <td class="text-center">
+                {% if lb %}
+                <div class="fw-bold fs-5 {{ 'text-success' if lb.remaining_days > 3 else 'text-warning' if lb.remaining_days > 0 else 'text-danger' }}">
+                  {{ lb.remaining_days }}
+                </div>
+                <div class="text-muted small">{{ lb.used_days }}/{{ lb.total_days }}</div>
+                {% else %}
+                <span class="text-muted">-</span>
+                {% endif %}
+              </td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

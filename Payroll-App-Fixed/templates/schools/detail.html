@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+{% block title %}{{ school.name }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex align-items-center gap-2 mb-4">
+    <a href="{{ url_for('admin.schools') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+    <h4 class="page-header mb-0">{{ school.name }}</h4>
+    <a href="{{ url_for('admin.edit_school', school_id=school.id) }}" class="btn btn-sm btn-outline-primary ms-auto">
+      <i class="bi bi-pencil"></i> Edit
+    </a>
+  </div>
+
+  <div class="row g-4">
+    <!-- Location Info -->
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h6 class="fw-bold mb-3"><i class="bi bi-info-circle text-info"></i> Location Details</h6>
+          {% if school.address %}
+            <div class="mb-2"><i class="bi bi-geo text-muted me-2"></i>{{ school.address }}</div>
+          {% endif %}
+          {% if school.latitude and school.longitude %}
+            <div class="mb-2 text-muted small">
+              <i class="bi bi-crosshair text-success me-2"></i>
+              GPS: {{ "%.5f"|format(school.latitude) }}, {{ "%.5f"|format(school.longitude) }}
+            </div>
+          {% endif %}
+          <div class="mb-2">
+            <i class="bi bi-record-circle text-primary me-2"></i>
+            Geofence: <strong>{{ school.geofence_radius|int }} metres</strong>
+          </div>
+          <div>
+            <i class="bi bi-people text-muted me-2"></i>
+            <strong>{{ employees_with_status|length }}</strong> assigned employee(s)
+          </div>
+        </div>
+        {% if school.latitude and school.longitude %}
+        <div class="card-body border-top p-0">
+          <div id="school-map" style="height:200px;border-radius:0 0 8px 8px;"></div>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Today's Stats -->
+      <div class="card border-0 shadow-sm mt-3">
+        <div class="card-body">
+          <h6 class="fw-bold mb-3"><i class="bi bi-calendar-check text-success"></i> Today — {{ today.strftime('%d %b %Y') }}</h6>
+          {% set present_count = employees_with_status|selectattr('attendance')|list|length %}
+          {% set present_actual = [] %}
+          {% for item in employees_with_status %}
+            {% if item.attendance and item.attendance.status in ['present', 'overtime'] %}
+              {% set _ = present_actual.append(1) %}
+            {% endif %}
+          {% endfor %}
+          <div class="row g-2 text-center">
+            <div class="col-6">
+              <div class="border rounded p-2">
+                <div class="fw-bold text-success fs-4">{{ present_actual|length }}</div>
+                <div class="text-muted small">Present</div>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="border rounded p-2">
+                <div class="fw-bold text-danger fs-4">{{ employees_with_status|length - present_actual|length }}</div>
+                <div class="text-muted small">Absent/NM</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Employee Assignment -->
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white border-bottom">
+          <h6 class="mb-0 fw-bold"><i class="bi bi-person-check text-primary"></i> Today's Attendance</h6>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm mb-0">
+              <thead class="table-light">
+                <tr><th>Employee</th><th>Status</th><th>Check In</th><th>Check Out</th><th>GPS</th></tr>
+              </thead>
+              <tbody>
+                {% for item in employees_with_status %}
+                <tr>
+                  <td>
+                    <a href="{{ url_for('admin.view_employee', emp_id=item.employee.id) }}" class="text-decoration-none fw-semibold">
+                      {{ item.employee.name }}
+                    </a>
+                    <div class="text-muted small">{{ item.employee.designation or '' }}</div>
+                  </td>
+                  <td>
+                    {% if item.attendance %}
+                      {% if item.attendance.status == 'present' %}<span class="badge bg-success">Present</span>
+                      {% elif item.attendance.status == 'absent' %}<span class="badge bg-danger">Absent</span>
+                      {% elif item.attendance.status == 'half_day' %}<span class="badge bg-warning text-dark">Half Day</span>
+                      {% elif item.attendance.status == 'leave' %}<span class="badge bg-info">On Leave</span>
+                      {% else %}<span class="badge bg-secondary">{{ item.attendance.status }}</span>
+                      {% endif %}
+                    {% else %}
+                      <span class="badge bg-secondary">Not Marked</span>
+                    {% endif %}
+                  </td>
+                  <td>{{ item.attendance.check_in if item.attendance and item.attendance.check_in else '—' }}</td>
+                  <td>{{ item.attendance.check_out if item.attendance and item.attendance.check_out else '—' }}</td>
+                  <td>
+                    {% if item.attendance and item.attendance.gps_verified %}
+                      <span class="text-success" title="GPS verified"><i class="bi bi-geo-alt-fill"></i></span>
+                    {% elif item.attendance and item.attendance.admin_override %}
+                      <span class="text-warning" title="Admin override"><i class="bi bi-shield-check"></i></span>
+                    {% else %}
+                      <span class="text-muted">—</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" class="text-center text-muted py-3">No employees assigned to this location.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Assign Employees -->
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom">
+          <h6 class="mb-0 fw-bold"><i class="bi bi-person-plus text-warning"></i> Assign Employees</h6>
+        </div>
+        <div class="card-body">
+          <form method="post" action="{{ url_for('admin.assign_school_employees', school_id=school.id) }}">
+            <div class="row g-2 mb-3">
+              {% for emp in all_employees %}
+              <div class="col-md-6 col-lg-4">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="employee_ids"
+                         value="{{ emp.id }}" id="emp_{{ emp.id }}"
+                         {% if emp in school.assigned_employees %}checked{% endif %}>
+                  <label class="form-check-label" for="emp_{{ emp.id }}">
+                    {{ emp.name }}
+                    <span class="text-muted small">{{ emp.emp_id }}</span>
+                  </label>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+            <button type="submit" class="btn btn-warning btn-sm">
+              <i class="bi bi-save"></i> Save Assignments
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% if school.latitude and school.longitude %}
+{% block scripts %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  const map = L.map('school-map').setView([{{ school.latitude }}, {{ school.longitude }}], 15);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap'
+  }).addTo(map);
+  L.marker([{{ school.latitude }}, {{ school.longitude }}])
+    .addTo(map)
+    .bindPopup('{{ school.name }}')
+    .openPopup();
+  L.circle([{{ school.latitude }}, {{ school.longitude }}], {
+    radius: {{ school.geofence_radius }},
+    color: '#0f3460', fillOpacity: 0.12
+  }).addTo(map);
+</script>
+{% endblock %}
+{% endif %}
