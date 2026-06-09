@@ -22,8 +22,11 @@
     <div class="col-md-6">
       <div class="card border-0 shadow-sm">
         <div class="card-body text-center">
-          <p class="text-muted small mb-2">Assigned School</p>
+          <p class="text-muted small mb-2">Assigned Location</p>
           <h5 class="mb-0">{{ school.name if school else 'Not Assigned' }}</h5>
+          {% if school and school.location_type %}
+            <span class="badge bg-light text-dark" style="font-size:0.7rem;">{{ school.location_type }}</span>
+          {% endif %}
           <small class="text-muted">{{ school.address if school else '-' }}</small>
         </div>
       </div>
@@ -196,7 +199,7 @@ function getLocation() {
           status.className = 'text-success';
           setButtonState(checkedIn ? 'out' : 'in');
         } else {
-          status.textContent = '⚠ Field punch (' + Math.round(distance) + 'm from ' + '{{ school.name|default("school")|e }}' + ')';
+          status.textContent = '⚠ Field punch (' + Math.round(distance) + 'm from ' + '{{ school.name|default("location")|e }}' + ')';
           status.className = 'text-warning';
           setButtonState(checkedIn ? 'out-field' : 'in-field');
         }

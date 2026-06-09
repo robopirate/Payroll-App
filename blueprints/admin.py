@@ -294,10 +294,11 @@ def add_school():
             latitude=float(f.get('latitude')) if f.get('latitude') else None,
             longitude=float(f.get('longitude')) if f.get('longitude') else None,
             geofence_radius=float(f.get('geofence_radius') or 150),
+            location_type=f.get('location_type', 'School').strip(),
         )
         db.session.add(school)
         db.session.commit()
-        flash(f'School "{school.name}" added.', 'success')
+        flash(f'Location "{school.name}" added.', 'success')
         return redirect(url_for('.schools'))
     return render_template('schools/form.html', school=None, edit=False)
 
@@ -313,8 +314,9 @@ def edit_school(school_id):
         school.latitude = float(f.get('latitude')) if f.get('latitude') else None
         school.longitude = float(f.get('longitude')) if f.get('longitude') else None
         school.geofence_radius = float(f.get('geofence_radius') or school.geofence_radius)
+        school.location_type = f.get('location_type', school.location_type or 'School').strip()
         db.session.commit()
-        flash('School updated.', 'success')
+        flash('Location updated.', 'success')
         return redirect(url_for('.schools'))
     return render_template('schools/form.html', school=school, edit=True)
 
@@ -325,7 +327,7 @@ def delete_school(school_id):
     school = School.query.get_or_404(school_id)
     school.is_active = False
     db.session.commit()
-    flash(f'School "{school.name}" removed.', 'info')
+    flash(f'Location "{school.name}" removed.', 'info')
     return redirect(url_for('.schools'))
 
 

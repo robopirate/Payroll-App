@@ -1,10 +1,10 @@
 {% extends 'base.html' %}
-{% block title %}{{ 'Edit' if edit else 'Add' }} School{% endblock %}
+{% block title %}{{ 'Edit' if edit else 'Add' }} Location{% endblock %}
 {% block content %}
 <div class="container-fluid py-4">
   <div class="d-flex align-items-center gap-2 mb-4">
     <a href="{{ url_for('admin.schools') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
-    <h4 class="page-header mb-0">{{ 'Edit School' if edit else 'Add School' }}</h4>
+    <h4 class="page-header mb-0">{{ 'Edit Location' if edit else 'Add Location' }}</h4>
   </div>
 
   <div class="row g-4">
@@ -13,22 +13,32 @@
         <div class="card-body p-4">
           <form method="post" id="schoolForm">
             <div class="mb-3">
-              <label class="form-label fw-semibold">School Name <span class="text-danger">*</span></label>
+              <label class="form-label fw-semibold">Location Name <span class="text-danger">*</span></label>
               <input type="text" name="name" class="form-control"
                      value="{{ school.name if school else '' }}" required
-                     placeholder="e.g. Delhi Public School, Sector 5">
+                     placeholder="e.g. Robo Pirate Baner, Head Office">
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Location Type</label>
+              <select name="location_type" class="form-select">
+                {% set types = ['School', 'Office', 'Warehouse', 'Store', 'Site', 'Other'] %}
+                {% for t in types %}
+                <option value="{{ t }}" {% if school and school.location_type == t %}selected{% elif not school and t == 'School' %}selected{% endif %}>{{ t }}</option>
+                {% endfor %}
+              </select>
             </div>
 
             <div class="mb-3">
               <label class="form-label fw-semibold">Address</label>
               <textarea name="address" class="form-control" rows="2"
-                        placeholder="Full address of the school">{{ school.address if school else '' }}</textarea>
+                        placeholder="Full address of the location">{{ school.address if school else '' }}</textarea>
             </div>
 
             <div class="mb-3">
               <label class="form-label fw-semibold">
                 Geofence Radius (metres)
-                <span class="text-muted small fw-normal">— employees must be within this distance to punch in</span>
+                <span class="text-muted small fw-normal">— employees must be within this distance to punch in (field punch allowed outside)</span>
               </label>
               <input type="number" name="geofence_radius" class="form-control"
                      value="{{ school.geofence_radius if school else 150 }}"
@@ -59,7 +69,7 @@
 
             <div class="d-flex gap-2 mt-2">
               <button type="submit" class="btn btn-primary">
-                <i class="bi bi-check-lg"></i> {{ 'Update School' if edit else 'Add School' }}
+                <i class="bi bi-check-lg"></i> {{ 'Update Location' if edit else 'Add Location' }}
               </button>
               <a href="{{ url_for('admin.schools') }}" class="btn btn-outline-secondary">Cancel</a>
             </div>
@@ -72,7 +82,7 @@
       <div class="card border-0 shadow-sm">
         <div class="card-header bg-white border-bottom">
           <h6 class="mb-0 fw-bold"><i class="bi bi-map text-info"></i> Pick Location on Map</h6>
-          <small class="text-muted">Click on the map to set school GPS coordinates</small>
+          <small class="text-muted">Click on the map to set GPS coordinates</small>
         </div>
         <div class="card-body p-0">
           <div id="map" style="height:420px;border-radius:0 0 8px 8px;"></div>
@@ -80,7 +90,7 @@
       </div>
       <div class="text-muted small mt-2 px-1">
         <i class="bi bi-info-circle"></i>
-        Tip: Search for the school address on the map, then click to place the marker precisely.
+        Tip: Search for the address on the map, then click to place the marker precisely.
       </div>
     </div>
   </div>

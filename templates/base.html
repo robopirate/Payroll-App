@@ -55,7 +55,7 @@
       <i class="bi bi-people-fill"></i> Employees
     </a>
     <a href="{{ url_for('admin.schools') }}" class="{% if 'school' in (request.endpoint or '') %}active{% endif %}">
-      <i class="bi bi-building-fill"></i> Schools
+      <i class="bi bi-building-fill"></i> Locations
     </a>
     <a href="{{ url_for('admin.attendance') }}" class="{% if 'attendance' in (request.endpoint or '') %}active{% endif %}">
       <i class="bi bi-calendar-check-fill"></i> Attendance

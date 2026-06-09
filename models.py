@@ -41,6 +41,7 @@ class School(db.Model):
     longitude = db.Column(db.Float)
     geofence_radius = db.Column(db.Float, default=150.0)
     is_active = db.Column(db.Boolean, default=True)
+    location_type = db.Column(db.String(30), default='School')
 
 
 class Employee(db.Model):
