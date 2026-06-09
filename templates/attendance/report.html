@@ -66,7 +66,11 @@
               <td class="text-center p-1">
                 {% if att %}
                   {% if att.status == 'present' %}
-                    <span class="badge bg-success" style="font-size:0.65rem">P</span>
+                    {% if att.location_type == 'field' %}
+                      <span class="badge bg-primary" style="font-size:0.65rem">F</span>
+                    {% else %}
+                      <span class="badge bg-success" style="font-size:0.65rem">P</span>
+                    {% endif %}
                   {% elif att.status == 'absent' %}
                     <span class="badge bg-danger" style="font-size:0.65rem">A</span>
                   {% elif att.status == 'half_day' %}
@@ -94,7 +98,8 @@
     </div>
     <div class="card-footer bg-white">
       <div class="d-flex gap-3 flex-wrap">
-        <span><span class="badge bg-success">P</span> Present</span>
+        <span><span class="badge bg-success">P</span> Present (School)</span>
+        <span><span class="badge bg-primary">F</span> Present (Field)</span>
         <span><span class="badge bg-danger">A</span> Absent</span>
         <span><span class="badge bg-warning text-dark">H</span> Half Day</span>
         <span><span class="badge bg-info">OT</span> Overtime</span>

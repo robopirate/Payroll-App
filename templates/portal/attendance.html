@@ -78,7 +78,10 @@
             <span class="wd">{{ att.date.strftime('%a') }}</span>
           </div>
           <div>
-            {% if att.status == 'present' %}<span class="badge-status badge-present">Present</span>
+            {% if att.status == 'present' %}
+              {% if att.location_type == 'field' %}<span class="badge-status" style="background:#e3f2fd;color:#1565C0;">Present · Field</span>
+              {% else %}<span class="badge-status badge-present">Present</span>
+              {% endif %}
             {% elif att.status == 'absent' %}<span class="badge-status badge-absent">Absent</span>
             {% elif att.status == 'half_day' %}<span class="badge-status badge-half">Half Day</span>
             {% elif att.status == 'leave' %}<span class="badge-status badge-leave">On Leave</span>

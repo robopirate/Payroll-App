@@ -550,9 +550,11 @@ function doPunch(action) {
       .then(r => r.json())
       .then(data => {
         if (data.success) {
-          showFeedback('success', '<i class="bi bi-check-circle-fill me-1"></i>' + data.message);
+          var fbType = data.location_type === 'field' ? 'warning' : 'success';
+          var fbIcon = data.location_type === 'field' ? 'bi-geo-alt' : 'bi-check-circle-fill';
+          showFeedback(fbType, '<i class="bi ' + fbIcon + ' me-1"></i>' + data.message);
           btn.style.opacity = '1';
-          btn.innerHTML = '<i class="bi bi-check-circle-fill" style="font-size:2.5rem;"></i>';
+          btn.innerHTML = '<i class="bi ' + fbIcon + '" style="font-size:2.5rem;"></i>';
           setTimeout(() => location.reload(), 2200);
         } else {
           showFeedback('danger', '<i class="bi bi-x-circle-fill me-1"></i>' + data.message);

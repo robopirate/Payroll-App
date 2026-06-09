@@ -89,6 +89,8 @@ class Attendance(db.Model):
     gps_lng = db.Column(db.Float)
     gps_verified = db.Column(db.Boolean, default=False)
     admin_override = db.Column(db.Boolean, default=False)
+    # Location type: 'school' = within geofence, 'field' = outside all geofences
+    location_type = db.Column(db.String(20), default='school')
     __table_args__ = (db.UniqueConstraint('employee_id', 'date', name='uq_emp_date'),)
 
 

@@ -25,24 +25,21 @@ def api_punch():
     if not emp:
         return jsonify({'success': False, 'message': 'Employee not found.'})
 
-    # Geofence check
+    # Geofence check — determine if school or field punch
     assigned_schools = [s for s in emp.schools if s.latitude and s.longitude]
+    location_type = 'field'
+    closest_school = None
+    min_distance = float('inf')
+
     if assigned_schools:
-        closest_school = None
-        min_distance = float('inf')
         for school in assigned_schools:
             dist = haversine_distance(lat, lng, school.latitude, school.longitude)
             if dist < min_distance:
                 min_distance = dist
                 closest_school = school
 
-        if closest_school and min_distance > closest_school.geofence_radius:
-            return jsonify({
-                'success': False,
-                'message': (f'You are not at your assigned location. '
-                            f'You are {int(min_distance)}m away from {closest_school.name} '
-                            f'(allowed radius: {int(closest_school.geofence_radius)}m).')
-            })
+        if closest_school and min_distance <= closest_school.geofence_radius:
+            location_type = 'school'
 
     ist = timezone(timedelta(hours=5, minutes=30))
     today = datetime.now(ist).date()
@@ -52,18 +49,31 @@ def api_punch():
     if action == 'in':
         if att and att.check_in:
             return jsonify({'success': False, 'message': f'Already punched IN at {att.check_in}.'})
+        field_note = ''
+        if location_type == 'field' and closest_school:
+            field_note = f'Field punch — {int(min_distance)}m from {closest_school.name}'
         if att:
             att.check_in = now_time
             att.status = 'present'
             att.gps_lat = lat
             att.gps_lng = lng
             att.gps_verified = True
+            att.location_type = location_type
+            if field_note:
+                att.notes = field_note
         else:
-            att = Attendance(employee_id=emp.id, date=today, status='present',
-                             check_in=now_time, gps_lat=lat, gps_lng=lng, gps_verified=True)
+            att = Attendance(
+                employee_id=emp.id, date=today, status='present',
+                check_in=now_time, gps_lat=lat, gps_lng=lng,
+                gps_verified=True, location_type=location_type,
+                notes=field_note or None
+            )
             db.session.add(att)
         db.session.commit()
-        return jsonify({'success': True, 'message': f'Punched IN at {now_time} ✓'})
+        msg = f'Punched IN at {now_time} ✓'
+        if location_type == 'field':
+            msg += ' (Field)'
+        return jsonify({'success': True, 'message': msg, 'location_type': location_type})
     else:
         if not att or not att.check_in:
             return jsonify({'success': False, 'message': 'No punch-in record found for today.'})
@@ -71,6 +81,9 @@ def api_punch():
             return jsonify({'success': False, 'message': f'Already punched OUT at {att.check_out}.'})
         att.check_out = now_time
         db.session.commit()
-        return jsonify({'success': True, 'message': f'Punched OUT at {now_time} ✓'})
+        msg = f'Punched OUT at {now_time} ✓'
+        if att.location_type == 'field':
+            msg += ' (Field)'
+        return jsonify({'success': True, 'message': msg, 'location_type': att.location_type or 'school'})
 
 

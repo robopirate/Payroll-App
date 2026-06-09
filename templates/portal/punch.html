@@ -142,6 +142,16 @@ function setButtonState(state) {
     icon.classList.add('bi', 'bi-box-arrow-right');
     text.textContent = 'Punch Out';
     btn.disabled = false;
+  } else if (state === 'in-field') {
+    btn.classList.add('btn-warning');
+    icon.classList.add('bi', 'bi-geo-alt');
+    text.textContent = 'Field Punch In';
+    btn.disabled = false;
+  } else if (state === 'out-field') {
+    btn.classList.add('btn-warning');
+    icon.classList.add('bi', 'bi-geo-alt');
+    text.textContent = 'Field Punch Out';
+    btn.disabled = false;
   } else if (state === 'done') {
     btn.classList.add('btn-success');
     icon.classList.add('bi', 'bi-check-circle-fill');
@@ -186,9 +196,9 @@ function getLocation() {
           status.className = 'text-success';
           setButtonState(checkedIn ? 'out' : 'in');
         } else {
-          status.textContent = '✗ Outside geofence (' + Math.round(distance - geofenceRadius) + 'm away)';
-          status.className = 'text-danger';
-          setButtonState('disabled');
+          status.textContent = '⚠ Field punch (' + Math.round(distance) + 'm from ' + '{{ school.name|default("school")|e }}' + ')';
+          status.className = 'text-warning';
+          setButtonState(checkedIn ? 'out-field' : 'in-field');
         }
       } else {
         setButtonState(checkedIn ? 'out' : 'in');
@@ -245,12 +255,21 @@ async function submitPunch() {
     if (data.success) {
       checkedIn = (action === 'in');
       const statusText = document.getElementById('statusText');
+      const isField = data.location_type === 'field';
 
       if (checkedIn) {
-        statusText.innerHTML = '<span class="badge bg-success">Checked In</span>';
-        setButtonState('out');
+        if (isField) {
+          statusText.innerHTML = '<span class="badge bg-warning text-dark">Checked In (Field)</span>';
+        } else {
+          statusText.innerHTML = '<span class="badge bg-success">Checked In</span>';
+        }
+        setButtonState(isField ? 'out-field' : 'out');
       } else {
-        statusText.innerHTML = '<span class="badge bg-secondary">Checked Out</span>';
+        if (isField) {
+          statusText.innerHTML = '<span class="badge bg-warning text-dark">Checked Out (Field)</span>';
+        } else {
+          statusText.innerHTML = '<span class="badge bg-secondary">Checked Out</span>';
+        }
         setButtonState('done');
       }
 
