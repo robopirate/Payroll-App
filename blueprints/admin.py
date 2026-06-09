@@ -138,6 +138,13 @@ def edit_employee(emp_id):
         emp.ifsc_code = f.get('ifsc_code', '').strip()
         emp.pan_number = f.get('pan_number', '').strip()
         emp.aadhar_number = f.get('aadhar_number', '').strip()
+        # Update joining date if provided
+        joining_date_str = f.get('joining_date', '').strip()
+        if joining_date_str:
+            try:
+                emp.joining_date = datetime.strptime(joining_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                pass  # Keep existing date if invalid
         db.session.commit()
         flash('Employee updated successfully.', 'success')
         return redirect(url_for('.employees'))
