@@ -14,6 +14,8 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     # Fast2SMS API Key
     FAST2SMS_API_KEY = os.environ.get('FAST2SMS_API_KEY', '')
+    # Google Maps API Key (for Places Autocomplete on location form)
+    GOOGLE_MAPS_API_KEY = os.environ.get('GOOGLE_MAPS_API_KEY', '')
     # Payroll settings
     OVERTIME_RATE_MULTIPLIER = 2.0   # overtime hourly rate = (basic/26/8) * multiplier
     PF_RATE = 0.12                   # 12% of basic

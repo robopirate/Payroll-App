@@ -300,7 +300,8 @@ def add_school():
         db.session.commit()
         flash(f'Location "{school.name}" added.', 'success')
         return redirect(url_for('.schools'))
-    return render_template('schools/form.html', school=None, edit=False)
+    return render_template('schools/form.html', school=None, edit=False,
+                           google_maps_api_key=current_app.config.get('GOOGLE_MAPS_API_KEY', ''))
 
 
 @bp.route('/schools/<int:school_id>/edit', methods=['GET', 'POST'])
@@ -318,7 +319,8 @@ def edit_school(school_id):
         db.session.commit()
         flash('Location updated.', 'success')
         return redirect(url_for('.schools'))
-    return render_template('schools/form.html', school=school, edit=True)
+    return render_template('schools/form.html', school=school, edit=True,
+                           google_maps_api_key=current_app.config.get('GOOGLE_MAPS_API_KEY', ''))
 
 
 @bp.route('/schools/<int:school_id>/delete', methods=['POST'])
