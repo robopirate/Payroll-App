@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Employee Login — Robo Pirate HR</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,64 +14,107 @@
       --primary-dark:  #0A1628;
       --primary-blue:  #1565C0;
       --accent-orange: #FF6B35;
+      --glass-bg:      rgba(255, 255, 255, 0.08);
+      --glass-border:  rgba(255, 255, 255, 0.18);
+      --glass-highlight: rgba(255, 255, 255, 0.05);
     }
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: rgba(255, 107, 53, 0.15);
+    }
+
     body {
       min-height: 100vh;
-      background: var(--primary-dark);
+      margin: 0;
       display: flex;
       align-items: center;
       justify-content: center;
       font-family: 'Inter', -apple-system, sans-serif;
       padding: 20px;
       position: relative;
-      overflow: hidden;
+      overflow-x: hidden;
+      /* Animated mesh gradient background */
+      background:
+        radial-gradient(ellipse 80% 60% at 10% 20%, rgba(21, 101, 192, 0.35), transparent),
+        radial-gradient(ellipse 60% 80% at 90% 80%, rgba(255, 107, 53, 0.3), transparent),
+        radial-gradient(ellipse 50% 50% at 50% 50%, rgba(0, 188, 212, 0.12), transparent),
+        linear-gradient(135deg, #0A1628 0%, #0d1f3c 40%, #0A1628 100%);
+      background-attachment: fixed;
     }
 
-    /* Animated background blobs */
-    .bg-blob {
+    /* Animated floating orbs */
+    .orb {
       position: fixed;
       border-radius: 50%;
       pointer-events: none;
-      opacity: 0.06;
+      filter: blur(60px);
+      z-index: 0;
     }
-    .bg-blob-1 {
-      width: 500px; height: 500px;
-      background: var(--accent-orange);
-      top: -150px; right: -100px;
-      animation: blobPulse 8s ease-in-out infinite;
+    .orb-1 {
+      width: 350px; height: 350px;
+      background: radial-gradient(circle, rgba(255,107,53,0.35), transparent 70%);
+      top: -100px; right: -80px;
+      animation: orbFloat1 10s ease-in-out infinite;
     }
-    .bg-blob-2 {
-      width: 400px; height: 400px;
-      background: var(--primary-blue);
-      bottom: -100px; left: -80px;
-      animation: blobPulse 10s ease-in-out infinite reverse;
+    .orb-2 {
+      width: 280px; height: 280px;
+      background: radial-gradient(circle, rgba(21,101,192,0.4), transparent 70%);
+      bottom: -60px; left: -60px;
+      animation: orbFloat2 12s ease-in-out infinite reverse;
     }
-    @keyframes blobPulse {
-      0%,100% { transform: scale(1); }
-      50%      { transform: scale(1.15); }
+    .orb-3 {
+      width: 200px; height: 200px;
+      background: radial-gradient(circle, rgba(0,188,212,0.2), transparent 70%);
+      top: 50%; left: 50%;
+      animation: orbFloat3 15s ease-in-out infinite;
+    }
+    @keyframes orbFloat1 {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33%      { transform: translate(-40px, 30px) scale(1.1); }
+      66%      { transform: translate(20px, -20px) scale(0.95); }
+    }
+    @keyframes orbFloat2 {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33%      { transform: translate(30px, -40px) scale(1.08); }
+      66%      { transform: translate(-20px, 20px) scale(0.92); }
+    }
+    @keyframes orbFloat3 {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); }
+      50%      { transform: translate(-40%, -60%) scale(1.15); }
     }
 
+    /* Glassmorphism Login Card */
     .login-card {
-      background: white;
+      background: rgba(255, 255, 255, 0.07);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
       border-radius: 24px;
       padding: 40px 36px;
       width: 100%;
       max-width: 400px;
-      box-shadow: 0 32px 80px rgba(0,0,0,0.5);
+      box-shadow:
+        0 32px 80px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.03);
       position: relative;
       z-index: 10;
+      animation: cardEnter 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    @keyframes cardEnter {
+      from { opacity: 0; transform: translateY(30px) scale(0.96); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
     }
 
-    /* Orange top accent bar */
+    /* Orange top glow accent */
     .login-card::before {
       content: '';
-      display: block;
-      height: 4px;
-      background: var(--accent-orange);
-      border-radius: 24px 24px 0 0;
       position: absolute;
-      top: 0; left: 0; right: 0;
+      top: 0; left: 24px; right: 24px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(255,107,53,0.7), transparent);
+      border-radius: 2px;
     }
 
     .logo {
@@ -79,6 +122,7 @@
       text-align: center;
       margin-bottom: 4px;
       animation: floatLogo 4s ease-in-out infinite;
+      filter: drop-shadow(0 4px 12px rgba(255,107,53,0.3));
     }
     @keyframes floatLogo {
       0%,100% { transform: translateY(0); }
@@ -89,12 +133,13 @@
       font-family: 'Poppins', sans-serif;
       font-weight: 700;
       font-size: 1.4rem;
-      color: #0A1628;
+      color: #fff;
       text-align: center;
       margin: 0;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.3);
     }
     .brand-sub {
-      color: #9aa5b4;
+      color: rgba(255, 255, 255, 0.5);
       font-size: 0.82rem;
       text-align: center;
       margin-top: 4px;
@@ -109,21 +154,22 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      background: rgba(255,107,53,0.08);
-      border: 1px solid rgba(255,107,53,0.25);
-      color: var(--accent-orange);
+      background: rgba(255, 107, 53, 0.12);
+      border: 1px solid rgba(255, 107, 53, 0.3);
+      color: #FF9E73;
       padding: 5px 16px;
       border-radius: 20px;
       font-size: 0.75rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.8px;
+      backdrop-filter: blur(8px);
     }
 
     .field-label {
       font-size: 0.74rem;
       font-weight: 600;
-      color: #6b7a99;
+      color: rgba(255, 255, 255, 0.55);
       text-transform: uppercase;
       letter-spacing: 0.07em;
       margin-bottom: 6px;
@@ -135,43 +181,74 @@
       position: absolute;
       left: 14px; top: 50%;
       transform: translateY(-50%);
-      color: #b0bac9;
+      color: rgba(255, 255, 255, 0.4);
       font-size: 1.05rem;
       pointer-events: none;
+      transition: color 0.2s;
+      z-index: 2;
     }
     .form-control {
-      border-radius: 12px;
+      border-radius: 14px;
       height: 52px;
       font-size: 1rem;
-      border: 1.5px solid #dde3ed;
+      border: 1.5px solid rgba(255, 255, 255, 0.12);
       padding-left: 44px;
+      padding-right: 44px;
       transition: border-color 0.2s, box-shadow 0.2s;
+      background: rgba(255, 255, 255, 0.06);
+      color: #fff;
+      backdrop-filter: blur(8px);
     }
+    .form-control::placeholder { color: rgba(255, 255, 255, 0.3); }
     .form-control:focus {
-      border-color: var(--accent-orange);
-      box-shadow: 0 0 0 3px rgba(255,107,53,0.12);
+      border-color: rgba(255, 107, 53, 0.6);
+      box-shadow: 0 0 0 4px rgba(255, 107, 53, 0.1), inset 0 1px 0 rgba(255,255,255,0.1);
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
       outline: none;
     }
+    .input-wrap:focus-within .input-icon { color: rgba(255, 107, 53, 0.8); }
+
+    /* Password visibility toggle */
+    .pw-toggle {
+      position: absolute;
+      right: 12px; top: 50%;
+      transform: translateY(-50%);
+      color: rgba(255, 255, 255, 0.35);
+      font-size: 1.1rem;
+      cursor: pointer;
+      z-index: 2;
+      background: none;
+      border: none;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .pw-toggle:hover { color: rgba(255, 255, 255, 0.7); }
 
     .btn-login {
       width: 100%;
       height: 52px;
-      background: var(--accent-orange);
+      background: linear-gradient(135deg, rgba(255, 107, 53, 0.9), rgba(230, 74, 25, 0.9));
       color: white;
       border: none;
-      border-radius: 12px;
+      border-radius: 14px;
       font-size: 1rem;
       font-family: 'Poppins', sans-serif;
       font-weight: 700;
       letter-spacing: 0.03em;
       cursor: pointer;
       margin-top: 8px;
-      transition: filter 0.2s, transform 0.15s, box-shadow 0.2s;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 8px 24px rgba(255, 107, 53, 0.25), inset 0 1px 0 rgba(255,255,255,0.15);
     }
     .btn-login:hover {
-      filter: brightness(0.9);
-      transform: translateY(-1px);
-      box-shadow: 0 8px 24px rgba(255,107,53,0.35);
+      transform: translateY(-2px);
+      box-shadow: 0 12px 32px rgba(255, 107, 53, 0.4), inset 0 1px 0 rgba(255,255,255,0.2);
+      background: linear-gradient(135deg, rgba(255, 107, 53, 1), rgba(230, 74, 25, 1));
     }
     .btn-login:active { transform: translateY(0); }
 
@@ -179,24 +256,81 @@
       text-align: center;
       margin-top: 20px;
       font-size: 0.84rem;
-      color: #9aa5b4;
+      color: rgba(255, 255, 255, 0.4);
     }
     .admin-link a {
-      color: var(--primary-blue);
+      color: rgba(255, 255, 255, 0.7);
       font-weight: 600;
       text-decoration: none;
+      transition: color 0.2s;
     }
-    .admin-link a:hover { text-decoration: underline; }
+    .admin-link a:hover { color: #FF9E73; }
 
-    .form-check-label { font-size: 0.88rem; color: #6b7a99; cursor: pointer; }
+    .form-check-label { font-size: 0.88rem; color: rgba(255, 255, 255, 0.5); cursor: pointer; }
+    .form-check-input {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+    .form-check-input:checked { background-color: var(--accent-orange); border-color: var(--accent-orange); }
+
+    /* Glassmorphism alert */
+    .alert-glass {
+      background: rgba(255, 255, 255, 0.06) !important;
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1) !important;
+      border-radius: 12px;
+      font-size: 0.88rem;
+      color: rgba(255, 255, 255, 0.8);
+    }
+    .alert-glass.alert-danger {
+      background: rgba(220, 53, 69, 0.15) !important;
+      border-color: rgba(220, 53, 69, 0.3) !important;
+      color: #ff8a95;
+    }
+    .alert-glass.alert-success {
+      background: rgba(25, 135, 84, 0.15) !important;
+      border-color: rgba(25, 135, 84, 0.3) !important;
+      color: #7ee0ad;
+    }
+    .alert-glass.alert-warning {
+      background: rgba(255, 193, 7, 0.15) !important;
+      border-color: rgba(255, 193, 7, 0.3) !important;
+      color: #ffe066;
+    }
+
+    /* Shimmer effect on card border */
+    .shimmer-line {
+      position: absolute;
+      top: 0; left: -100%;
+      width: 60%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(255,107,53,0.5), rgba(21,101,192,0.5), transparent);
+      animation: shimmer 4s ease-in-out infinite;
+      border-radius: 2px;
+    }
+    @keyframes shimmer {
+      0%   { left: -60%; }
+      50%  { left: 100%; }
+      100% { left: 100%; }
+    }
+
+    /* Separator */
+    .glass-sep {
+      margin: 20px 0;
+      border: none;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+    }
   </style>
 </head>
 <body>
-  <!-- Background blobs -->
-  <div class="bg-blob bg-blob-1"></div>
-  <div class="bg-blob bg-blob-2"></div>
+  <!-- Floating orbs -->
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
 
   <div class="login-card">
+    <div class="shimmer-line"></div>
     <div class="logo">🤖</div>
     <h1 class="brand-name">Robo Pirate HR</h1>
     <p class="brand-sub">Powering the Humans Behind the Robots</p>
@@ -206,13 +340,13 @@
 
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% for cat, msg in messages %}
-        <div class="alert alert-{{ cat }} rounded-3 py-2 px-3 mb-3" style="font-size:0.88rem;border:none;">
+        <div class="alert alert-glass alert-{{ cat }} rounded-3 py-2 px-3 mb-3">
           {{ msg }}
         </div>
       {% endfor %}
     {% endwith %}
 
-    <form method="post" autocomplete="on">
+    <form method="post" autocomplete="on" id="loginForm">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="input-wrap">
         <label class="field-label">Phone Number</label>
@@ -225,9 +359,12 @@
       <div class="input-wrap">
         <label class="field-label">Password</label>
         <i class="bi bi-lock input-icon"></i>
-        <input type="password" name="password" class="form-control"
+        <input type="password" name="password" class="form-control" id="passwordInput"
                placeholder="Enter your password"
                required autocomplete="current-password">
+        <button type="button" class="pw-toggle" id="pwToggle" onclick="togglePassword()">
+          <i class="bi bi-eye" id="pwToggleIcon"></i>
+        </button>
       </div>
 
       <div class="d-flex justify-content-between align-items-center mb-3">
@@ -235,7 +372,7 @@
           <input class="form-check-input" type="checkbox" name="remember" id="remember">
           <label class="form-check-label" for="remember">Keep me logged in</label>
         </div>
-        <a href="{{ url_for('auth.forgot_password') }}" style="font-size:0.84rem;color:var(--primary-blue);text-decoration:none;font-weight:600;">Forgot password?</a>
+        <a href="{{ url_for('auth.forgot_password') }}" style="font-size:0.84rem;color:rgba(255,255,255,0.55);text-decoration:none;font-weight:600;">Forgot password?</a>
       </div>
 
       <button type="submit" class="btn-login">
@@ -247,11 +384,25 @@
       Admin? <a href="{{ url_for('auth.login') }}">Admin Dashboard Login →</a>
     </div>
 
-    <hr style="margin: 20px 0; border: none; border-top: 1px solid #dde3ed;">
+    <hr class="glass-sep">
 
     <div class="admin-link">
       <span style="display: block; margin-bottom: 10px;">New here? <a href="{{ url_for('portal.register') }}">Register as Employee →</a></span>
     </div>
   </div>
+
+<script>
+function togglePassword() {
+  const input = document.getElementById('passwordInput');
+  const icon = document.getElementById('pwToggleIcon');
+  if (input.type === 'password') {
+    input.type = 'text';
+    icon.className = 'bi bi-eye-slash';
+  } else {
+    input.type = 'password';
+    icon.className = 'bi bi-eye';
+  }
+}
+</script>
 </body>
 </html>

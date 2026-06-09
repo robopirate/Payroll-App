@@ -1,9 +1,0 @@
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-venv/
-venv_new/
-.env
-.pytest_cache/
-payroll.db

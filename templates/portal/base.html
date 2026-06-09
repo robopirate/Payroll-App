@@ -2,8 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <meta name="theme-color" content="#0A1628">
   <meta property="og:title" content="Robo Pirate HR — Payroll & Attendance">
@@ -23,64 +22,85 @@
       --accent-orange: #FF6B35;
       --accent-cyan:   #00BCD4;
       --success:       #00C853;
+      --glass-bg:      rgba(255, 255, 255, 0.07);
+      --glass-border:  rgba(255, 255, 255, 0.15);
     }
-    * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+
+    * {
+      -webkit-tap-highlight-color: rgba(255, 107, 53, 0.12);
+      box-sizing: border-box;
+    }
+
     body {
-      background: #F0F4F8;
+      background:
+        radial-gradient(ellipse 70% 50% at 0% 100%, rgba(21, 101, 192, 0.12), transparent),
+        radial-gradient(ellipse 60% 60% at 100% 0%, rgba(255, 107, 53, 0.1), transparent),
+        #F0F4F8;
+      background-attachment: fixed;
       padding-bottom: 72px;
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
       color: #1A1A2E;
     }
 
-    /* ── Portal Header ────────────────────────── */
+    /* Glassmorphism Portal Header */
     .portal-header {
-      background: var(--primary-dark);
+      background: rgba(10, 22, 40, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
       color: white;
       padding: 12px 18px;
       position: sticky;
       top: 0;
       z-index: 300;
-      box-shadow: 0 2px 20px rgba(0,0,0,0.4);
+      box-shadow: 0 2px 20px rgba(0,0,0,0.25);
       display: flex;
       align-items: center;
       justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     }
     .portal-header .app-name {
       font-family: 'Poppins', sans-serif;
       font-weight: 700;
       font-size: 1rem;
       color: white;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.3);
     }
     .portal-header .emp-name {
       font-size: 0.68rem;
       color: var(--accent-orange);
       margin-top: 2px;
       font-weight: 500;
+      opacity: 0.85;
     }
     .portal-logout-btn {
-      color: rgba(255,255,255,0.7);
-      border: 1px solid rgba(255,255,255,0.2);
+      color: rgba(255,255,255,0.65);
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(8px);
       padding: 5px 12px;
       border-radius: 8px;
       font-size: 0.78rem;
       text-decoration: none;
-      transition: background 0.2s, color 0.2s;
+      transition: all 0.2s;
       white-space: nowrap;
     }
     .portal-logout-btn:hover {
-      background: rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.12);
       color: white;
+      border-color: rgba(255,255,255,0.2);
     }
 
-    /* ── Bottom Navigation ────────────────────── */
+    /* Glassmorphism Bottom Navigation */
     .bottom-nav {
       position: fixed;
       bottom: 0; left: 0; right: 0;
-      background: #fff;
-      border-top: 1px solid #e8eef5;
+      background: rgba(255, 255, 255, 0.72);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top: 1px solid rgba(255, 255, 255, 0.5);
       z-index: 300;
       display: flex;
-      box-shadow: 0 -4px 24px rgba(0,0,0,0.1);
+      box-shadow: 0 -4px 24px rgba(0,0,0,0.08);
     }
     .bottom-nav a {
       flex: 1;
@@ -97,34 +117,56 @@
       letter-spacing: 0.3px;
       text-transform: uppercase;
       transition: color 0.15s;
+      position: relative;
     }
-    .bottom-nav a i { font-size: 1.4rem; }
+    .bottom-nav a i { font-size: 1.4rem; transition: transform 0.2s; }
     .bottom-nav a.active { color: var(--accent-orange); }
-    .bottom-nav a:hover  { color: var(--accent-orange); }
+    .bottom-nav a.active::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 25%; right: 25%;
+      height: 2.5px;
+      background: linear-gradient(90deg, transparent, var(--accent-orange), transparent);
+      border-radius: 0 0 2px 2px;
+    }
+    .bottom-nav a:hover { color: var(--accent-orange); }
+    .bottom-nav a:active i { transform: scale(0.85); }
 
-    /* ── Portal Body ──────────────────────────── */
     .portal-body { padding: 14px 14px 0; }
 
-    /* ── Cards ────────────────────────────────── */
+    /* Glassmorphism Cards */
     .card {
       border: none !important;
-      border-radius: 16px !important;
-      box-shadow: 0 2px 18px rgba(0,0,0,0.07) !important;
+      border-radius: 20px !important;
+      background: rgba(255, 255, 255, 0.72) !important;
+      backdrop-filter: blur(16px) !important;
+      -webkit-backdrop-filter: blur(16px) !important;
+      box-shadow:
+        0 4px 24px rgba(0,0,0,0.06),
+        0 1px 3px rgba(0,0,0,0.04),
+        inset 0 1px 0 rgba(255,255,255,0.6) !important;
       overflow: hidden;
     }
     .card + .card { margin-top: 14px; }
-
-    /* ── Section Title ────────────────────────── */
-    .section-title {
-      font-size: 0.7rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.9px;
-      color: #a0aab8;
-      margin: 20px 0 8px;
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 20px; right: 20px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
+      pointer-events: none;
     }
 
-    /* ── Status Badges ────────────────────────── */
+    .section-title {
+      font-family: 'Poppins', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #0A1628;
+      margin-bottom: 14px;
+      margin-top: 20px;
+      letter-spacing: -0.2px;
+    }
+
     .badge-status {
       display: inline-block;
       padding: 4px 12px;
@@ -132,48 +174,57 @@
       font-size: 0.71rem;
       font-weight: 700;
       letter-spacing: 0.3px;
+      backdrop-filter: blur(4px);
     }
-    .badge-present  { background: #d4edda; color: #155724; }
-    .badge-absent   { background: #f8d7da; color: #721c24; }
-    .badge-half     { background: #fff3cd; color: #856404; }
-    .badge-leave    { background: #d1ecf1; color: #0c5460; }
-    .badge-pending  { background: #fff3cd; color: #856404; }
-    .badge-approved { background: #d4edda; color: #155724; }
-    .badge-rejected { background: #f8d7da; color: #721c24; }
+    .badge-present  { background: rgba(40, 167, 69, 0.12); color: #155724; border: 1px solid rgba(40, 167, 69, 0.2); }
+    .badge-absent   { background: rgba(220, 53, 69, 0.1); color: #721c24; border: 1px solid rgba(220, 53, 69, 0.15); }
+    .badge-half     { background: rgba(255, 193, 7, 0.12); color: #856404; border: 1px solid rgba(255, 193, 7, 0.2); }
+    .badge-leave    { background: rgba(23, 162, 184, 0.1); color: #0c5460; border: 1px solid rgba(23, 162, 184, 0.15); }
+    .badge-pending  { background: rgba(255, 193, 7, 0.12); color: #856404; border: 1px solid rgba(255, 193, 7, 0.2); }
+    .badge-approved { background: rgba(40, 167, 69, 0.12); color: #155724; border: 1px solid rgba(40, 167, 69, 0.2); }
+    .badge-rejected { background: rgba(220, 53, 69, 0.1); color: #721c24; border: 1px solid rgba(220, 53, 69, 0.15); }
 
-    /* ── Touch Button ─────────────────────────── */
     .btn-touch {
       min-height: 48px;
       font-weight: 600;
-      border-radius: 12px;
+      border-radius: 14px;
       font-size: 0.95rem;
+      backdrop-filter: blur(8px);
     }
 
-    /* ── Form Controls ────────────────────────── */
     .form-control:focus, .form-select:focus {
       border-color: var(--accent-orange);
       box-shadow: 0 0 0 3px rgba(255,107,53,0.12);
     }
     .form-control, .form-select {
-      border-radius: 10px;
+      border-radius: 12px;
       height: 48px;
       font-size: 15px;
       border: 1.5px solid #dde3ed;
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(4px);
     }
 
-    /* ── Alerts ───────────────────────────────── */
-    .alert { border-radius: 12px; border: none; font-size: 0.88rem; }
+    .alert {
+      border-radius: 14px;
+      border: none;
+      font-size: 0.88rem;
+      backdrop-filter: blur(8px);
+    }
+    .alert-success { background: rgba(25, 135, 84, 0.1); color: #0f5132; }
+    .alert-danger  { background: rgba(220, 53, 69, 0.1); color: #842029; }
+    .alert-warning { background: rgba(255, 193, 7, 0.1); color: #664d03; }
+    .alert-info    { background: rgba(13, 202, 240, 0.1); color: #055160; }
 
-    /* ── Scrollbar ────────────────────────────── */
     ::-webkit-scrollbar { width: 5px; height: 5px; }
-    ::-webkit-scrollbar-track { background: #f0f4f8; }
-    ::-webkit-scrollbar-thumb { background: #c0cce0; border-radius: 3px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(10, 22, 40, 0.15); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(10, 22, 40, 0.25); }
   </style>
   {% block head %}{% endblock %}
 </head>
 <body>
 
-<!-- ── Portal Header ──────────────────────────── -->
 <header class="portal-header">
   <div>
     <div class="app-name">🤖 Robo Pirate HR</div>
@@ -186,7 +237,6 @@
   </a>
 </header>
 
-<!-- ── Flash Messages ─────────────────────────── -->
 {% with messages = get_flashed_messages(with_categories=true) %}
   {% if messages %}
     <div style="padding: 10px 14px 0;">
@@ -200,12 +250,10 @@
   {% endif %}
 {% endwith %}
 
-<!-- ── Main Content ───────────────────────────── -->
 <main class="portal-body">
   {% block content %}{% endblock %}
 </main>
 
-<!-- ── Bottom Navigation ──────────────────────── -->
 {% if current_user.is_authenticated and not current_user.is_admin %}
 <nav class="bottom-nav">
   <a href="{{ url_for('portal.portal_dashboard') }}"
@@ -237,7 +285,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-  // Register PWA service worker
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('{{ url_for("static", filename="sw.js") }}')
       .then(() => console.log('SW registered'))
@@ -245,7 +292,6 @@
   }
 </script>
 <script>
-  // Auto-inject CSRF token into all forms
   (function() {
     var meta = document.querySelector('meta[name="csrf-token"]');
     var token = meta ? meta.getAttribute('content') : '';
@@ -265,7 +311,6 @@
   })();
 </script>
 <script>
-  // Auto-dismiss alerts after 5 seconds
   setTimeout(() => {
     document.querySelectorAll('.alert').forEach(el => {
       try { bootstrap.Alert.getOrCreateInstance(el).close(); } catch(e) {}
