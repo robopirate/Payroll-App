@@ -15,6 +15,8 @@ from models import (
 from sms_service import send_salary_credited_sms, send_sms, get_month_name
 from pdf_service import generate_payslip_pdf
 
+from sqlalchemy import func, distinct
+
 bp = Blueprint('admin', __name__)
 
 # ─── Dashboard ───────────────────────────────────────────────────────────────
@@ -24,8 +26,26 @@ bp = Blueprint('admin', __name__)
 def dashboard():
     total_employees = Employee.query.filter_by(is_active=True).count()
     today = date.today()
-    present_today = Attendance.query.filter_by(date=today, status='present').count()
-    absent_today = Attendance.query.filter_by(date=today, status='absent').count()
+    
+    # Count distinct active employees who are present today
+    # present = present, half_day, or overtime status
+    present_today = db.session.query(func.count(distinct(Attendance.employee_id))).join(
+        Employee, Attendance.employee_id == Employee.id
+    ).filter(
+        Attendance.date == today,
+        Attendance.status.in_(['present', 'half_day', 'overtime']),
+        Employee.is_active == True
+    ).scalar() or 0
+    
+    # Count distinct active employees who are absent today
+    absent_today = db.session.query(func.count(distinct(Attendance.employee_id))).join(
+        Employee, Attendance.employee_id == Employee.id
+    ).filter(
+        Attendance.date == today,
+        Attendance.status == 'absent',
+        Employee.is_active == True
+    ).scalar() or 0
+    
     pending_leaves = Leave.query.filter_by(status='pending').count()
     pending_advances = Advance.query.filter_by(status='pending').count()
     recent_payrolls = Payroll.query.order_by(Payroll.generated_on.desc()).limit(5).all()
