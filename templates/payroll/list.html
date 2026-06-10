@@ -35,7 +35,7 @@
         </div>
         <div class="col-auto ms-auto">
           <form method="POST" action="{{ url_for('admin.generate_payroll') }}" class="d-flex gap-2">
-            {{ csrf_token() }}
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="month" value="{{ month }}">
             <input type="hidden" name="year" value="{{ year }}">
             <button type="submit" class="btn btn-success"
@@ -47,7 +47,7 @@
         {% if payrolls %}
         <div class="col-auto">
           <form method="POST" action="{{ url_for('admin.send_bulk_sms') }}">
-            {{ csrf_token() }}
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="month" value="{{ month }}">
             <input type="hidden" name="year" value="{{ year }}">
             <button type="submit" class="btn btn-outline-secondary"
