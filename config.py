@@ -17,6 +17,13 @@ class Config:
     SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', 'False').lower() == 'true'
     SESSION_COOKIE_SAMESITE = 'Lax'
     PERMANENT_SESSION_LIFETIME = 86400  # 24 hours
+    # JWT Configuration
+    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', SECRET_KEY)
+    JWT_ACCESS_TOKEN_EXPIRES = 900  # 15 minutes
+    JWT_REFRESH_TOKEN_EXPIRES = 604800  # 7 days
+    JWT_TOKEN_LOCATION = ['headers']
+    JWT_HEADER_NAME = 'Authorization'
+    JWT_HEADER_TYPE = 'Bearer'
     # Fast2SMS API Key
     FAST2SMS_API_KEY = os.environ.get('FAST2SMS_API_KEY', '')
     # Google Maps API Key (for Places Autocomplete on location form)
