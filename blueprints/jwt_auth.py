@@ -29,13 +29,74 @@ def check_if_token_revoked(jwt_header, jwt_payload):
 def api_login():
     """
     Authenticate and receive JWT access + refresh tokens.
-    
-    Body (JSON):
-        - For admin: {"username": "admin", "password": "admin123"}
-        - For employee: {"phone": "9876543210", "password": "password123"}
-    
-    Returns:
-        {"access_token": "...", "refresh_token": "...", "user_type": "admin|employee"}
+    ---
+    tags:
+      - Authentication
+    summary: Login (Admin or Employee)
+    description: |
+      Authenticate as either an admin (using username) or an employee (using phone number).
+      Returns a JWT access token (15 min expiry) and refresh token (7 day expiry).
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          properties:
+            username:
+              type: string
+              description: Admin username (for admin login)
+              example: admin
+            phone:
+              type: string
+              description: Employee phone number (for employee login)
+              example: "7039368447"
+            password:
+              type: string
+              description: Password
+              example: admin123
+          required:
+            - password
+    responses:
+      200:
+        description: Login successful
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+              example: true
+            access_token:
+              type: string
+              example: eyJhbGciOiJIUzI1NiIs...
+            refresh_token:
+              type: string
+              example: eyJhbGciOiJIUzI1NiIs...
+            token_type:
+              type: string
+              example: Bearer
+            expires_in:
+              type: integer
+              example: 900
+            user_type:
+              type: string
+              enum: [admin, employee]
+              example: employee
+            user_id:
+              type: integer
+              example: 2
+            employee_id:
+              type: integer
+              nullable: true
+              example: 1
+      400:
+        description: Password is required
+      401:
+        description: Invalid credentials
     """
     data = request.get_json(silent=True) or {}
     
@@ -98,11 +159,39 @@ def api_login():
 def api_refresh():
     """
     Refresh an expired access token using a refresh token.
-    
-    Header: Authorization: Bearer <refresh_token>
-    
-    Returns:
-        {"access_token": "...", "expires_in": 900}
+    ---
+    tags:
+      - Authentication
+    summary: Refresh Access Token
+    description: |
+      Exchange a valid refresh token for a new access token.
+      Send the refresh token in the Authorization header as "Bearer <refresh_token>".
+    security:
+      - Bearer: []
+    produces:
+      - application/json
+    responses:
+      200:
+        description: New access token issued
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+              example: true
+            access_token:
+              type: string
+              example: eyJhbGciOiJIUzI1NiIs...
+            token_type:
+              type: string
+              example: Bearer
+            expires_in:
+              type: integer
+              example: 900
+      401:
+        description: Invalid or expired refresh token
+      404:
+        description: User not found
     """
     user_id = get_jwt_identity()
     user = User.query.get(int(user_id))
@@ -134,11 +223,31 @@ def api_refresh():
 def api_logout():
     """
     Revoke the current access token (logout).
-    
-    Header: Authorization: Bearer <access_token>
-    
-    Returns:
-        {"success": True, "message": "Successfully logged out."}
+    ---
+    tags:
+      - Authentication
+    summary: Logout
+    description: |
+      Revoke the current access token so it can no longer be used.
+      The token is added to an in-memory blacklist (use Redis in production).
+    security:
+      - Bearer: []
+    produces:
+      - application/json
+    responses:
+      200:
+        description: Successfully logged out
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+              example: true
+            message:
+              type: string
+              example: Successfully logged out.
+      401:
+        description: Missing or invalid token
     """
     jti = get_jwt()['jti']
     _token_blacklist.add(jti)
@@ -150,11 +259,59 @@ def api_logout():
 def api_me():
     """
     Get current authenticated user info.
-    
-    Header: Authorization: Bearer <access_token>
-    
-    Returns:
-        {"user_id": 1, "user_type": "admin", "employee_id": null, ...}
+    ---
+    tags:
+      - Authentication
+    summary: Get Current User
+    description: Returns information about the currently authenticated user.
+    security:
+      - Bearer: []
+    produces:
+      - application/json
+    responses:
+      200:
+        description: User info retrieved successfully
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+              example: true
+            user_id:
+              type: integer
+              example: 2
+            username:
+              type: string
+              example: emp_EMP001
+            is_admin:
+              type: boolean
+              example: false
+            user_type:
+              type: string
+              example: employee
+            employee_id:
+              type: integer
+              nullable: true
+              example: 1
+            employee:
+              type: object
+              properties:
+                id:
+                  type: integer
+                emp_id:
+                  type: string
+                name:
+                  type: string
+                phone:
+                  type: string
+                designation:
+                  type: string
+                department:
+                  type: string
+      401:
+        description: Missing or invalid token
+      404:
+        description: User not found
     """
     user_id = int(get_jwt_identity())
     claims = get_jwt()

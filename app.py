@@ -1,12 +1,43 @@
 from flask import Flask, redirect, url_for, flash, request
 from flask_login import current_user, logout_user
 from sqlalchemy import text
+from flasgger import Swagger
 from config import Config
 from extensions import db, login_manager, csrf, limiter, jwt
 from models import User, Employee, Department, AppConfig
 
 app = Flask(__name__)
 app.config.from_object(Config)
+
+# Swagger configuration
+app.config['SWAGGER'] = {
+    'title': 'Robo Pirate Payroll API',
+    'uiversion': 3,
+    'specs_route': '/api/docs/',
+    'openapi': '3.0.0',
+    'info': {
+        'title': 'Robo Pirate Payroll API',
+        'version': '1.0.0',
+        'description': 'JWT-authenticated REST API for employee attendance, leaves, payroll, and holidays.',
+        'contact': {
+            'name': 'Robo Pirate Support',
+            'email': 'support@robopirate.in'
+        }
+    },
+    'securityDefinitions': {
+        'Bearer': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header',
+            'description': 'JWT Authorization header using the Bearer scheme. Example: "Bearer {token}"'
+        }
+    },
+    'security': [
+        {
+            'Bearer': []
+        }
+    ]
+}
 
 db.init_app(app)
 login_manager.init_app(app)
@@ -69,6 +100,9 @@ def register_blueprints():
 
 
 register_blueprints()
+
+# Initialize Swagger UI for API documentation
+swagger = Swagger(app)
 
 
 # ─── DB Init ─────────────────────────────────────────────────────────────────

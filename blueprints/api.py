@@ -35,8 +35,6 @@ def require_employee():
     return emp, None
 
 
-# ─── JWT Auth Endpoints (also available at /api/v1/auth via jwt_auth blueprint) ─
-
 # ─── GPS Punch ───────────────────────────────────────────────────────────────
 
 @bp.route('/api/punch', methods=['POST'])
@@ -45,9 +43,64 @@ def require_employee():
 def api_punch():
     """
     Mobile GPS punch-in/punch-out.
-    
-    Supports BOTH session-based auth (existing web portal) AND JWT auth.
-    For JWT: Header: Authorization: Bearer <token>
+    ---
+    tags:
+      - Attendance
+    summary: GPS Punch In/Out
+    description: |
+      Record attendance via GPS punch. Supports BOTH session-based auth (web portal)
+      AND JWT auth (mobile app). For JWT, include `Authorization: Bearer <token>` header.
+      Geofence validation checks if the punch is within the assigned school's radius.
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    security:
+      - Bearer: []
+    parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          properties:
+            lat:
+              type: number
+              description: GPS latitude
+              example: 18.5
+            lng:
+              type: number
+              description: GPS longitude
+              example: 73.8
+            action:
+              type: string
+              enum: [in, out]
+              default: in
+              description: Punch action - 'in' or 'out'
+              example: in
+          required:
+            - lat
+            - lng
+    responses:
+      200:
+        description: Punch recorded successfully
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+              example: true
+            message:
+              type: string
+              example: Punched IN at 09:30
+            location_type:
+              type: string
+              enum: [school, field]
+              example: school
+      400:
+        description: Missing GPS coordinates or already punched
+      401:
+        description: Unauthorized - no valid session or JWT
     """
     from flask_login import current_user
     
@@ -118,7 +171,7 @@ def api_punch():
             )
             db.session.add(att)
         db.session.commit()
-        msg = f'Punched IN at {now_time} ✓'
+        msg = f'Punched IN at {now_time}'
         if location_type == 'field':
             msg += ' (Field)'
         return jsonify({'success': True, 'message': msg, 'location_type': location_type})
@@ -129,7 +182,7 @@ def api_punch():
             return jsonify({'success': False, 'message': f'Already punched OUT at {att.check_out}.'})
         att.check_out = now_time
         db.session.commit()
-        msg = f'Punched OUT at {now_time} ✓'
+        msg = f'Punched OUT at {now_time}'
         if att.location_type == 'field':
             msg += ' (Field)'
         return jsonify({'success': True, 'message': msg, 'location_type': att.location_type or 'school'})
@@ -140,7 +193,72 @@ def api_punch():
 @bp.route('/api/v1/employee/profile', methods=['GET'])
 @jwt_required()
 def api_employee_profile():
-    """Get current employee's profile."""
+    """
+    Get current employee's profile.
+    ---
+    tags:
+      - Employee
+    summary: Employee Profile
+    description: Returns detailed profile information for the authenticated employee.
+    security:
+      - Bearer: []
+    produces:
+      - application/json
+    responses:
+      200:
+        description: Profile retrieved successfully
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+              example: true
+            employee:
+              type: object
+              properties:
+                id:
+                  type: integer
+                emp_id:
+                  type: string
+                name:
+                  type: string
+                phone:
+                  type: string
+                email:
+                  type: string
+                designation:
+                  type: string
+                department:
+                  type: string
+                basic_salary:
+                  type: number
+                joining_date:
+                  type: string
+                  format: date
+                bank_name:
+                  type: string
+                account_number:
+                  type: string
+                ifsc_code:
+                  type: string
+                pan_number:
+                  type: string
+                aadhar_number:
+                  type: string
+                schools:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+      401:
+        description: Missing or invalid JWT token
+      403:
+        description: Employee not found or not authorized
+    """
     emp, error = require_employee()
     if error:
         return error
@@ -172,7 +290,51 @@ def api_employee_profile():
 @bp.route('/api/v1/attendance/today', methods=['GET'])
 @jwt_required()
 def api_attendance_today():
-    """Get today's attendance record for current employee."""
+    """
+    Get today's attendance record for current employee.
+    ---
+    tags:
+      - Attendance
+    summary: Today's Attendance
+    description: Returns the attendance record for the current day.
+    security:
+      - Bearer: []
+    produces:
+      - application/json
+    responses:
+      200:
+        description: Attendance record retrieved
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+            date:
+              type: string
+              format: date
+            status:
+              type: string
+              enum: [present, absent, half_day, holiday, leave, not_marked]
+            check_in:
+              type: string
+              example: "09:30"
+            check_out:
+              type: string
+              example: "18:00"
+            overtime_hours:
+              type: number
+            gps_verified:
+              type: boolean
+            location_type:
+              type: string
+              enum: [school, field]
+            notes:
+              type: string
+      401:
+        description: Unauthorized
+      403:
+        description: Employee not found
+    """
     emp, error = require_employee()
     if error:
         return error
@@ -205,7 +367,72 @@ def api_attendance_today():
 @bp.route('/api/v1/attendance/monthly', methods=['GET'])
 @jwt_required()
 def api_attendance_monthly():
-    """Get monthly attendance summary."""
+    """
+    Get monthly attendance summary.
+    ---
+    tags:
+      - Attendance
+    summary: Monthly Attendance
+    description: Returns attendance records and summary for a given month/year.
+    security:
+      - Bearer: []
+    produces:
+      - application/json
+    parameters:
+      - in: query
+        name: month
+        type: integer
+        default: 6
+        description: Month (1-12)
+      - in: query
+        name: year
+        type: integer
+        default: 2026
+        description: Year
+    responses:
+      200:
+        description: Monthly attendance data
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+            month:
+              type: integer
+            year:
+              type: integer
+            summary:
+              type: object
+              properties:
+                present:
+                  type: number
+                absent:
+                  type: integer
+                overtime_hours:
+                  type: number
+                total_days:
+                  type: integer
+            records:
+              type: array
+              items:
+                type: object
+                properties:
+                  date:
+                    type: string
+                    format: date
+                  status:
+                    type: string
+                  check_in:
+                    type: string
+                  check_out:
+                    type: string
+                  overtime_hours:
+                    type: number
+      401:
+        description: Unauthorized
+      403:
+        description: Employee not found
+    """
     emp, error = require_employee()
     if error:
         return error
@@ -251,7 +478,68 @@ def api_attendance_monthly():
 @bp.route('/api/v1/leaves', methods=['GET'])
 @jwt_required()
 def api_leaves():
-    """Get current employee's leave history and balances."""
+    """
+    Get current employee's leave history and balances.
+    ---
+    tags:
+      - Leaves
+    summary: Leave History & Balances
+    description: Returns all leave applications and current year leave balances.
+    security:
+      - Bearer: []
+    produces:
+      - application/json
+    responses:
+      200:
+        description: Leave data retrieved
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+            balances:
+              type: array
+              items:
+                type: object
+                properties:
+                  leave_type:
+                    type: string
+                  total_days:
+                    type: number
+                  used_days:
+                    type: number
+                  remaining_days:
+                    type: number
+            leaves:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  leave_type:
+                    type: string
+                  start_date:
+                    type: string
+                    format: date
+                  end_date:
+                    type: string
+                    format: date
+                  days:
+                    type: number
+                  reason:
+                    type: string
+                  status:
+                    type: string
+                    enum: [pending, approved, rejected]
+                  applied_on:
+                    type: string
+                    format: date-time
+      401:
+        description: Unauthorized
+      403:
+        description: Employee not found
+    """
     emp, error = require_employee()
     if error:
         return error
@@ -290,7 +578,75 @@ def api_leaves():
 @bp.route('/api/v1/leaves/apply', methods=['POST'])
 @jwt_required()
 def api_apply_leave():
-    """Apply for leave via API."""
+    """
+    Apply for leave via API.
+    ---
+    tags:
+      - Leaves
+    summary: Apply for Leave
+    description: |
+      Submit a leave application. Requires sufficient leave balance.
+      Admin approval is required before the leave is finalized.
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    security:
+      - Bearer: []
+    parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          properties:
+            leave_type:
+              type: string
+              enum: [casual, sick, earned, unpaid]
+              example: casual
+            start_date:
+              type: string
+              format: date
+              description: YYYY-MM-DD
+              example: "2026-06-15"
+            end_date:
+              type: string
+              format: date
+              description: YYYY-MM-DD
+              example: "2026-06-17"
+            reason:
+              type: string
+              example: Family function
+            half_day:
+              type: boolean
+              default: false
+              description: If true, only 0.5 day is deducted
+          required:
+            - leave_type
+            - start_date
+            - end_date
+    responses:
+      201:
+        description: Leave application submitted
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+              example: true
+            message:
+              type: string
+              example: Leave application submitted. Pending admin approval.
+            leave_id:
+              type: integer
+              example: 5
+      400:
+        description: Invalid input or insufficient balance
+      401:
+        description: Unauthorized
+      403:
+        description: Employee not found
+    """
     emp, error = require_employee()
     if error:
         return error
@@ -351,7 +707,69 @@ def api_apply_leave():
 @bp.route('/api/v1/payroll', methods=['GET'])
 @jwt_required()
 def api_payroll():
-    """Get current employee's payroll history."""
+    """
+    Get current employee's payroll history.
+    ---
+    tags:
+      - Payroll
+    summary: Payroll History
+    description: Returns all payroll records for the authenticated employee.
+    security:
+      - Bearer: []
+    produces:
+      - application/json
+    responses:
+      200:
+        description: Payroll records retrieved
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+            payrolls:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  month:
+                    type: integer
+                  year:
+                    type: integer
+                  working_days:
+                    type: number
+                  present_days:
+                    type: number
+                  basic_salary:
+                    type: number
+                  hra:
+                    type: number
+                  overtime_pay:
+                    type: number
+                  gross_salary:
+                    type: number
+                  pf_deduction:
+                    type: number
+                  esi_deduction:
+                    type: number
+                  advance_deduction:
+                    type: number
+                  total_deductions:
+                    type: number
+                  net_salary:
+                    type: number
+                  status:
+                    type: string
+                    enum: [draft, finalized, paid]
+                  paid_on:
+                    type: string
+                    format: date
+      401:
+        description: Unauthorized
+      403:
+        description: Employee not found
+    """
     emp, error = require_employee()
     if error:
         return error
@@ -391,7 +809,43 @@ def api_payroll():
 @bp.route('/api/v1/holidays', methods=['GET'])
 @jwt_required()
 def api_holidays():
-    """Get upcoming holidays."""
+    """
+    Get upcoming holidays.
+    ---
+    tags:
+      - Holidays
+    summary: Upcoming Holidays
+    description: Returns all upcoming holidays from today onwards.
+    security:
+      - Bearer: []
+    produces:
+      - application/json
+    responses:
+      200:
+        description: Holiday list retrieved
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+              example: true
+            holidays:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  date:
+                    type: string
+                    format: date
+                  name:
+                    type: string
+                  description:
+                    type: string
+      401:
+        description: Unauthorized
+    """
     today = date.today()
     upcoming = Holiday.query.filter(
         Holiday.date >= today,

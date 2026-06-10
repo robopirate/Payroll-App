@@ -1,6 +1,6 @@
 # Phase 2 Deployment Guide — PythonAnywhere
 
-**Commit:** `c99e40d` — Phase 2: JWT Authentication API + Schema Fixes  
+**Commit:** `540da75` — Phase 2: JWT Authentication API + Schema Fixes + Swagger Docs  
 **Date:** 10 June 2026
 
 ---
@@ -8,7 +8,7 @@
 ## ⚡ Quick Deploy (Copy-Paste into PythonAnywhere Bash Console)
 
 ```bash
-cd ~/Payroll-App && git pull origin main && source venv_new/bin/activate && pip install -r requirements.txt && echo "--- Deploy ready ---"
+cd ~/Payroll-App && git pull origin main && source venv/bin/activate && pip install -r requirements.txt && echo "--- Deploy ready ---"
 ```
 
 Then **reload your web app** from the PythonAnywhere Web tab.
@@ -38,15 +38,17 @@ git pull origin main
 git stash pop
 ```
 
-### Step 3: Install New Dependency
+### Step 3: Install New Dependencies
 
 ```bash
 cd ~/Payroll-App
-source venv_new/bin/activate
+source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-**New package:** `Flask-JWT-Extended==4.6.0`
+**New packages:**
+- `Flask-JWT-Extended==4.6.0` — JWT authentication
+- `flasgger==0.9.7.1` — Swagger/OpenAPI documentation
 
 ### Step 4: Reload Web App
 
@@ -168,6 +170,25 @@ curl -X POST https://itsrobopirate.pythonanywhere.com/api/v1/auth/logout \
 
 After logout, the same token should return `401 Token has been revoked`.
 
+### Action 8: Test Swagger API Documentation
+
+Open in your browser:
+```
+https://itsrobopirate.pythonanywhere.com/api/docs/
+```
+
+You should see an interactive Swagger UI with:
+- All JWT Authentication endpoints (login, refresh, logout, me)
+- All v1 API endpoints (profile, attendance, leaves, payroll, holidays)
+- Request/response schemas with examples
+- "Authorize" button to test with your JWT token
+
+To test an endpoint in Swagger UI:
+1. Click **Authorize** (top right)
+2. Enter: `Bearer <your_access_token>`
+3. Click **Authorize** → **Close**
+4. Expand any endpoint → Click **Try it out** → **Execute**
+
 ---
 
 ## 🔍 Rollback Plan (If Something Breaks)
@@ -188,12 +209,12 @@ Then reload the web app again.
 
 | File | Change |
 |------|--------|
-| `requirements.txt` | Added `Flask-JWT-Extended==4.6.0` |
+| `requirements.txt` | Added `Flask-JWT-Extended==4.6.0`, `flasgger==0.9.7.1` |
 | `config.py` | JWT config (15-min access, 7-day refresh, Bearer tokens) |
 | `extensions.py` | Added `JWTManager` instance |
-| `app.py` | Registered `jwt_auth` blueprint; added `location_type` migrations |
-| `blueprints/jwt_auth.py` | **NEW** — JWT auth endpoints: login, refresh, logout, me |
-| `blueprints/api.py` | CSRF-exempt punch; JWT-protected v1 endpoints; geofence logic |
+| `app.py` | Registered `jwt_auth` blueprint; added `location_type` migrations; Swagger init |
+| `blueprints/jwt_auth.py` | **NEW** — JWT auth endpoints with Swagger docs |
+| `blueprints/api.py` | CSRF-exempt punch; JWT-protected v1 endpoints with Swagger docs |
 
 ---
 
@@ -212,6 +233,8 @@ After deploying, verify each feature:
 - [ ] v1 endpoints return 200 with valid JWT
 - [ ] v1 endpoints return 401 without JWT
 - [ ] Existing web portal (session-based) still works
+- [ ] **Swagger UI loads at `/api/docs/`**
+- [ ] **Can authorize and test endpoints in Swagger UI**
 
 ---
 
