@@ -24,8 +24,8 @@ def calculate_payroll(employee, month, year):
             present_days += 0.5
         elif att.status == 'overtime':
             present_days += 1.0
-        elif att.status == 'leave':
-            present_days += 1.0
+        # NOTE: 'leave' status in attendance table is just a marker;
+        # approved leave days are counted separately from Leave model
         overtime_hours += (att.overtime_hours or 0.0)
 
     # Also count approved leave days that may not have attendance records

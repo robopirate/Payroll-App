@@ -43,12 +43,18 @@ def dashboard():
 @login_required
 def employees():
     dept_filter = request.args.get('dept', '')
+    status_filter = request.args.get('status', 'approved')
     q = Employee.query.filter_by(is_active=True)
+    if status_filter == 'pending':
+        q = q.filter_by(is_approved=False)
+    elif status_filter == 'approved':
+        q = q.filter_by(is_approved=True)
     if dept_filter:
         q = q.join(Department).filter(Department.name == dept_filter)
     emps = q.order_by(Employee.name).all()
     departments = Department.query.order_by(Department.name).all()
-    return render_template('employees/list.html', employees=emps, departments=departments, dept_filter=dept_filter)
+    pending_count = Employee.query.filter_by(is_active=True, is_approved=False).count()
+    return render_template('employees/list.html', employees=emps, departments=departments, dept_filter=dept_filter, status_filter=status_filter, pending_count=pending_count)
 
 
 @bp.route('/employees/add', methods=['GET', 'POST'])
@@ -80,6 +86,10 @@ def add_employee():
             flash('Employee ID already exists.', 'danger')
             return render_template('employees/form.html', departments=departments, schools=schools, form=f)
 
+        if Employee.query.filter_by(phone=phone).first():
+            flash('Phone number already registered.', 'danger')
+            return render_template('employees/form.html', departments=departments, schools=schools, form=f)
+
         emp = Employee(
             emp_id=emp_id,
             name=f.get('name', '').strip(),
@@ -94,6 +104,7 @@ def add_employee():
             ifsc_code=f.get('ifsc_code', '').strip(),
             pan_number=f.get('pan_number', '').strip(),
             aadhar_number=f.get('aadhar_number', '').strip(),
+            is_approved=True,  # Admin-created employees are auto-approved
         )
         db.session.add(emp)
         db.session.commit()
@@ -125,6 +136,12 @@ def edit_employee(emp_id):
                 return render_template('employees/form.html', departments=departments, schools=schools, form=emp, edit=True)
         except ValueError:
             flash('Basic salary must be a valid number.', 'danger')
+            return render_template('employees/form.html', departments=departments, schools=schools, form=emp, edit=True)
+
+        # Phone uniqueness check (exclude current employee)
+        existing_phone = Employee.query.filter(Employee.phone == phone, Employee.id != emp.id).first()
+        if existing_phone:
+            flash('Phone number already registered by another employee.', 'danger')
             return render_template('employees/form.html', departments=departments, schools=schools, form=emp, edit=True)
 
         emp.name = f.get('name', emp.name).strip()
@@ -159,6 +176,16 @@ def deactivate_employee(emp_id):
     db.session.commit()
     flash(f'{emp.name} deactivated.', 'info')
     return redirect(url_for('.employees'))
+
+
+@bp.route('/employees/<int:emp_id>/approve', methods=['POST'])
+@login_required
+def approve_employee(emp_id):
+    emp = Employee.query.get_or_404(emp_id)
+    emp.is_approved = True
+    db.session.commit()
+    flash(f'{emp.name} approved for portal access.', 'success')
+    return redirect(url_for('.employees', status='pending'))
 
 
 @bp.route('/employees/<int:emp_id>')
@@ -764,7 +791,9 @@ def settings():
                 flash('Password updated.', 'success')
         if api_key:
             current_app.config['FAST2SMS_API_KEY'] = api_key
-            flash('API key updated for this session.', 'info')
+            AppConfig.set('FAST2SMS_API_KEY', api_key)
+            db.session.commit()
+            flash('API key updated and persisted.', 'success')
     return render_template('settings.html')
 
 
@@ -1167,7 +1196,11 @@ def import_employees():
 
         for row in reader:
             emp_id = row.get('Employee ID', '').strip()
+            phone = row.get('Phone', '').strip()
             if not emp_id or Employee.query.filter_by(emp_id=emp_id).first():
+                skipped += 1
+                continue
+            if phone and Employee.query.filter_by(phone=phone).first():
                 skipped += 1
                 continue
 
@@ -1198,6 +1231,7 @@ def import_employees():
                 ifsc_code=row.get('IFSC', '').strip() or None,
                 pan_number=row.get('PAN', '').strip() or None,
                 aadhar_number=row.get('Aadhar', '').strip() or None,
+                is_approved=True,
             )
             db.session.add(emp)
             added += 1

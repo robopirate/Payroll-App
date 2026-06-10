@@ -12,6 +12,11 @@ class Config:
         'sqlite:///' + DB_PATH
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    # Session security
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', 'False').lower() == 'true'
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    PERMANENT_SESSION_LIFETIME = 86400  # 24 hours
     # Fast2SMS API Key
     FAST2SMS_API_KEY = os.environ.get('FAST2SMS_API_KEY', '')
     # Google Maps API Key (for Places Autocomplete on location form)

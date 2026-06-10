@@ -15,5 +15,12 @@ def portal_required(f):
         if not current_user.employee_id:
             logout_user()
             return redirect(url_for('portal.portal_login'))
+        # Verify employee is approved
+        from models import Employee
+        emp = Employee.query.get(current_user.employee_id)
+        if not emp or not emp.is_approved:
+            logout_user()
+            flash('Your account is pending admin approval. Please contact your administrator.', 'warning')
+            return redirect(url_for('portal.portal_login'))
         return f(*args, **kwargs)
     return decorated

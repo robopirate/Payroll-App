@@ -49,13 +49,14 @@ class Employee(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     emp_id = db.Column(db.String(20), unique=True, nullable=False)
     name = db.Column(db.String(100), nullable=False)
-    phone = db.Column(db.String(15), nullable=False)
+    phone = db.Column(db.String(15), unique=True, nullable=False)
     email = db.Column(db.String(120))
     department_id = db.Column(db.Integer, db.ForeignKey('departments.id'))
     designation = db.Column(db.String(100))
     basic_salary = db.Column(db.Float, default=0.0)
     joining_date = db.Column(db.Date, default=date.today)
     is_active = db.Column(db.Boolean, default=True)
+    is_approved = db.Column(db.Boolean, default=False)  # Admin approval required for self-registered
     # Bank details
     bank_name = db.Column(db.String(100))
     account_number = db.Column(db.String(30))

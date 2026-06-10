@@ -83,11 +83,11 @@
                          value="{{ att.check_out if att and att.check_out else '' }}">
                 </td>
                 <td>
-                  <input type="number" name="ot_{{ emp.id }}" class="form-control form-control-sm ot-field" style="width:90px"
+                  <input type="number" name="ot_{{ emp.id }}" class="form-control form-control-sm ot-field"
                          step="0.5" min="0" max="12"
                          value="{{ att.overtime_hours if att else 0 }}"
                          id="ot_{{ emp.id }}"
-                         {% if not att or att.status != 'overtime' %}style="display:none; width:90px"{% endif %}>
+                         style="width:90px;{% if not att or att.status != 'overtime' %}display:none;{% endif %}">
                   <span class="text-muted small ot-na" id="otna_{{ emp.id }}"
                         {% if att and att.status == 'overtime' %}style="display:none"{% endif %}>-</span>
                 </td>

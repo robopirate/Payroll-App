@@ -33,6 +33,14 @@
             {% endfor %}
           </select>
         </div>
+        <div class="col-auto">
+          <label class="form-label small mb-1">Status</label>
+          <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+            <option value="approved" {% if status_filter == 'approved' %}selected{% endif %}>Approved</option>
+            <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending Approval {% if pending_count %}({{ pending_count }}){% endif %}</option>
+            <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All</option>
+          </select>
+        </div>
       </form>
     </div>
   </div>
@@ -51,6 +59,7 @@
               <th>Designation</th>
               <th>Basic Salary</th>
               <th>Joining Date</th>
+              <th>Status</th>
               <th class="text-center">Actions</th>
             </tr>
           </thead>
@@ -64,6 +73,13 @@
               <td>{{ emp.designation or '-' }}</td>
               <td>₹{{ "%.2f"|format(emp.basic_salary) }}</td>
               <td>{{ emp.joining_date.strftime('%d %b %Y') if emp.joining_date else '-' }}</td>
+              <td>
+                {% if emp.is_approved %}
+                  <span class="badge bg-success">Approved</span>
+                {% else %}
+                  <span class="badge bg-warning text-dark">Pending</span>
+                {% endif %}
+              </td>
               <td class="text-center">
                 <a href="{{ url_for('admin.view_employee', emp_id=emp.id) }}" class="btn btn-sm btn-outline-info me-1" title="View">
                   <i class="bi bi-eye"></i>
@@ -71,6 +87,14 @@
                 <a href="{{ url_for('admin.edit_employee', emp_id=emp.id) }}" class="btn btn-sm btn-outline-primary me-1" title="Edit">
                   <i class="bi bi-pencil"></i>
                 </a>
+                {% if not emp.is_approved %}
+                <form method="POST" action="{{ url_for('admin.approve_employee', emp_id=emp.id) }}"
+                      class="d-inline" onsubmit="return confirm('Approve {{ emp.name }} for portal access?')">
+                  <button type="submit" class="btn btn-sm btn-outline-success me-1" title="Approve">
+                    <i class="bi bi-check-circle"></i>
+                  </button>
+                </form>
+                {% endif %}
                 <form method="POST" action="{{ url_for('admin.deactivate_employee', emp_id=emp.id) }}"
                       class="d-inline" onsubmit="return confirm('Deactivate {{ emp.name }}?')">
                   <button type="submit" class="btn btn-sm btn-outline-danger" title="Deactivate">

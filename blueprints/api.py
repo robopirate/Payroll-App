@@ -2,13 +2,14 @@ from flask import Blueprint, request, jsonify
 from flask_login import current_user
 from datetime import date, datetime, timezone, timedelta
 
-from extensions import db, limiter
+from extensions import db, limiter, csrf
 from services.attendance_service import haversine_distance
 from models import Employee, Attendance
 
 bp = Blueprint('api', __name__)
 
 @bp.route('/api/punch', methods=['POST'])
+@csrf.exempt
 def api_punch():
     if not current_user.is_authenticated or current_user.is_admin:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 401

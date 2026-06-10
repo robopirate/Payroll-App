@@ -21,13 +21,13 @@ def portal_login():
     if request.method == 'POST':
         phone = request.form.get('phone', '').strip()
         password = request.form.get('password', '')
-        emp = Employee.query.filter_by(phone=phone, is_active=True).first()
+        emp = Employee.query.filter_by(phone=phone, is_active=True, is_approved=True).first()
         if emp:
             portal_user = User.query.filter_by(employee_id=emp.id).first()
             if portal_user and portal_user.check_password(password):
                 login_user(portal_user, remember=request.form.get('remember'))
                 return redirect(url_for('.portal_dashboard'))
-        flash('Invalid phone number or password.', 'danger')
+        flash('Invalid phone number or password, or account not yet approved.', 'danger')
     return render_template('portal/login.html')
 
 
@@ -108,7 +108,8 @@ def register():
                 bank_name=bank_name,
                 account_number=account_number,
                 ifsc_code=ifsc_code,
-                is_active=True
+                is_active=True,
+                is_approved=False  # Requires admin approval
             )
             db.session.add(employee)
             db.session.flush()  # Get the employee ID before creating user
@@ -124,7 +125,7 @@ def register():
 
             db.session.commit()
 
-            flash('Registration successful! Please login with your phone number and password.', 'success')
+            flash('Registration successful! Awaiting admin approval. You will be notified once approved.', 'success')
             return redirect(url_for('.portal_login'))
 
         except Exception as e:
