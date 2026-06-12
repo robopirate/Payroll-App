@@ -6,8 +6,16 @@ failed login attempts to a JSON file so brute-force protection survives reloads.
 import os
 import time
 import json
-import fcntl
 from pathlib import Path
+
+# fcntl is Unix-only; PythonAnywhere uses Linux so it is available there.
+# On Windows (local dev/tests) we skip file locking because this is low-contention.
+try:
+    import fcntl
+    _HAS_FCNTL = True
+except ImportError:
+    fcntl = None
+    _HAS_FCNTL = False
 
 DEFAULT_FILE = os.path.join(os.path.expanduser('~'), 'login_attempts.json')
 
@@ -17,9 +25,11 @@ def _load_data(filepath):
         return {}
     try:
         with open(filepath, 'r') as f:
-            fcntl.flock(f, fcntl.LOCK_SH)
+            if _HAS_FCNTL:
+                fcntl.flock(f, fcntl.LOCK_SH)
             data = json.load(f)
-            fcntl.flock(f, fcntl.LOCK_UN)
+            if _HAS_FCNTL:
+                fcntl.flock(f, fcntl.LOCK_UN)
             return data
     except Exception:
         return {}
@@ -28,9 +38,11 @@ def _load_data(filepath):
 def _save_data(filepath, data):
     Path(filepath).parent.mkdir(parents=True, exist_ok=True)
     with open(filepath, 'w') as f:
-        fcntl.flock(f, fcntl.LOCK_EX)
+        if _HAS_FCNTL:
+            fcntl.flock(f, fcntl.LOCK_EX)
         json.dump(data, f)
-        fcntl.flock(f, fcntl.LOCK_UN)
+        if _HAS_FCNTL:
+            fcntl.flock(f, fcntl.LOCK_UN)
 
 
 def is_allowed(key, limit=5, window=60, filepath=DEFAULT_FILE):

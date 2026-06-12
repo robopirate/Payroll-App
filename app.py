@@ -2,6 +2,7 @@ from flask import Flask, redirect, url_for, flash, request
 from flask_login import current_user, logout_user
 from sqlalchemy import text
 from flasgger import Swagger
+from datetime import datetime
 from config import Config
 from extensions import db, login_manager, csrf, limiter, jwt
 from models import User, Employee, Department, AppConfig
@@ -45,6 +46,12 @@ jwt.init_app(app)
 login_manager.login_view = 'auth.login'
 login_manager.login_message = 'Please log in to access this page.'
 login_manager.login_message_category = 'warning'
+
+
+@app.context_processor
+def inject_now():
+    """Make datetime.now() available as `now` in all templates."""
+    return {'now': datetime.now}
 
 csrf.init_app(app)
 limiter.init_app(app)
