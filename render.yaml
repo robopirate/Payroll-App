@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: payroll-pro
+    env: python
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn app:app --workers 1"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.0
+      - key: SECRET_KEY
+        generateValue: true
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: payroll-db
+          property: connectionString
+      - key: GOOGLE_MAPS_API_KEY
+        sync: false
+      - key: FAST2SMS_API_KEY
+        sync: false
+      - key: SESSION_COOKIE_SECURE
+        value: true
+
+databases:
+  - name: payroll-db
+    plan: free
+    postgresMajorVersion: 15
