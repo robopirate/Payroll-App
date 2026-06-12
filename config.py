@@ -8,10 +8,14 @@ class Config:
     # Store database outside project folder so code updates don't wipe data
     DB_PATH = os.environ.get('DB_PATH', os.path.join(os.path.expanduser('~'), 'payroll.db'))
     _database_url = os.environ.get('DATABASE_URL')
-    if _database_url and _database_url.startswith('postgres://'):
-        # Render provides postgres:// URLs; SQLAlchemy defaults to psycopg2.
-        # Use psycopg 3 dialect (psycopg[binary]) which works on Python 3.14.
-        _database_url = _database_url.replace('postgres://', 'postgresql+psycopg://', 1)
+    if _database_url:
+        # Render provides postgres:// or postgresql:// URLs.
+        # SQLAlchemy defaults to psycopg2, which does not work on Python 3.14.
+        # Force the psycopg 3 dialect (installed via psycopg[binary]).
+        if _database_url.startswith('postgres://'):
+            _database_url = _database_url.replace('postgres://', 'postgresql+psycopg://', 1)
+        elif _database_url.startswith('postgresql://'):
+            _database_url = _database_url.replace('postgresql://', 'postgresql+psycopg://', 1)
     SQLALCHEMY_DATABASE_URI = _database_url or 'sqlite:///' + DB_PATH
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     # Session security
