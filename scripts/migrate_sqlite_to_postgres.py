@@ -96,7 +96,11 @@ def main():
 
         # Build column mapping
         common_cols = [c for c in source_cols if c in target_cols]
-        missing_defaults = DEFAULTS.get(table, {})
+        # Only add default values for columns missing in the source SQLite file
+        missing_defaults = {
+            col: val for col, val in DEFAULTS.get(table, {}).items()
+            if col not in source_cols
+        }
 
         # Read source data
         data = sqlite_conn.execute(text(f'SELECT {", ".join(common_cols)} FROM {table}')).fetchall()
@@ -104,10 +108,11 @@ def main():
             print(f"Copied 0 rows into {table}")
             continue
 
-        # Build insert statement
+        # Build insert statement (quote identifiers for PostgreSQL reserved words like user)
         insert_cols = common_cols + list(missing_defaults.keys())
+        quoted_cols = ', '.join([f'"{c}"' for c in insert_cols])
         placeholders = ', '.join([f':{c}' for c in insert_cols])
-        insert_sql = f'INSERT INTO {table} ({", ".join(insert_cols)}) VALUES ({placeholders})'
+        insert_sql = f'INSERT INTO {table} ({quoted_cols}) VALUES ({placeholders})'
 
         # Insert rows
         count = 0
