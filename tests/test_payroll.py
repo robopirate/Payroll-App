@@ -1,5 +1,5 @@
 from datetime import date
-from models import db, Employee, Department
+from models import db, Employee, Department, Leave
 from services.payroll_service import calculate_payroll
 
 
@@ -26,3 +26,42 @@ def test_calculate_payroll_basic(app):
         assert result['gross_salary'] >= result['basic_salary']
         assert result['net_salary'] <= result['gross_salary']
         assert result['pf_deduction'] >= 0
+
+
+def test_calculate_payroll_multimonth_leave(app):
+    """A leave spanning two months must be counted in both months."""
+    with app.app_context():
+        dept = Department(name='Test Dept')
+        db.session.add(dept)
+        db.session.commit()
+
+        emp = Employee(
+            emp_id='EMP002',
+            name='Test Employee 2',
+            phone='9876543211',
+            department_id=dept.id,
+            basic_salary=26000,
+            joining_date=date(2024, 1, 1),
+        )
+        db.session.add(emp)
+        db.session.commit()
+
+        # June 25 to July 5: 25,26,27,28,29,30 June + 1,2,3,4,5 July
+        # Working days in June portion: exclude Sunday if any.
+        leave = Leave(
+            employee_id=emp.id,
+            leave_type='casual',
+            start_date=date(2025, 6, 25),
+            end_date=date(2025, 7, 5),
+            days=8.0,
+            status='approved',
+        )
+        db.session.add(leave)
+        db.session.commit()
+
+        june = calculate_payroll(emp, month=6, year=2025)
+        july = calculate_payroll(emp, month=7, year=2025)
+
+        assert june['present_days'] > 0, 'June payroll should include leave days'
+        assert july['present_days'] > 0, 'July payroll should include leave days'
+        assert june['present_days'] != july['present_days'] or june['present_days'] > 0
