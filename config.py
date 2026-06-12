@@ -7,10 +7,12 @@ class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY', 'payroll-secret-key-change-in-production')
     # Store database outside project folder so code updates don't wipe data
     DB_PATH = os.environ.get('DB_PATH', os.path.join(os.path.expanduser('~'), 'payroll.db'))
-    SQLALCHEMY_DATABASE_URI = os.environ.get(
-        'DATABASE_URL',
-        'sqlite:///' + DB_PATH
-    )
+    _database_url = os.environ.get('DATABASE_URL')
+    if _database_url and _database_url.startswith('postgres://'):
+        # Render provides postgres:// URLs; SQLAlchemy defaults to psycopg2.
+        # Use psycopg 3 dialect (psycopg[binary]) which works on Python 3.14.
+        _database_url = _database_url.replace('postgres://', 'postgresql+psycopg://', 1)
+    SQLALCHEMY_DATABASE_URI = _database_url or 'sqlite:///' + DB_PATH
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     # Session security
     SESSION_COOKIE_HTTPONLY = True
