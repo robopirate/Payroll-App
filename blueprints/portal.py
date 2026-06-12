@@ -7,6 +7,8 @@ import io
 from extensions import db, limiter
 from decorators import portal_required
 from services.attendance_service import count_working_days_between
+from services.login_protection import is_allowed
+from flask_limiter.util import get_remote_address
 from sqlalchemy import extract
 from models import Employee, Attendance, Leave, LeaveBalance, Payroll, Holiday, User
 from pdf_service import generate_payslip_pdf
@@ -20,6 +22,10 @@ def portal_login():
     if current_user.is_authenticated:
         return redirect(url_for('auth.index'))
     if request.method == 'POST':
+        client_ip = get_remote_address()
+        if not is_allowed(client_ip, limit=5, window=60):
+            flash('Too many login attempts. Please try again in a minute.', 'danger')
+            return render_template('portal/login.html')
         phone = request.form.get('phone', '').strip()
         password = request.form.get('password', '')
         emp = Employee.query.filter_by(phone=phone, is_active=True, is_approved=True).first()

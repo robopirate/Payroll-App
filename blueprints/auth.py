@@ -6,6 +6,8 @@ import secrets
 from extensions import db, limiter
 from models import User, Employee, AuditLog, PasswordReset
 from sms_service import send_sms
+from flask_limiter.util import get_remote_address
+from services.login_protection import is_allowed
 
 bp = Blueprint('auth', __name__)
 
@@ -26,6 +28,10 @@ def login():
     if current_user.is_authenticated:
         return redirect(url_for('.index'))
     if request.method == 'POST':
+        client_ip = get_remote_address()
+        if not is_allowed(client_ip, limit=5, window=60):
+            flash('Too many login attempts. Please try again in a minute.', 'danger')
+            return render_template('login.html')
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '')
         user = User.query.filter_by(username=username, is_admin=True).first()
