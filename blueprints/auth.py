@@ -21,6 +21,7 @@ def index():
 
 
 @bp.route('/login', methods=['GET', 'POST'])
+@limiter.limit("10 per minute")
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('.index'))
@@ -30,6 +31,10 @@ def login():
         user = User.query.filter_by(username=username, is_admin=True).first()
         if user and user.check_password(password):
             login_user(user, remember=request.form.get('remember'))
+            # Force password change if still using the default weak password
+            if user.check_password('admin123'):
+                flash('You are using the default admin password. Please change it now.', 'warning')
+                return redirect(url_for('admin.settings'))
             return redirect(request.args.get('next') or url_for('admin.dashboard'))
         flash('Invalid username or password.', 'danger')
     return render_template('login.html')

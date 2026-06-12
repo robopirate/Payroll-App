@@ -162,7 +162,6 @@ def init_db():
 
         db.session.commit()
         print("Database initialized.")
-        print("Admin login: admin / admin123")
         print("Employee portal: /portal/login  (phone + password set by admin)")
 
 

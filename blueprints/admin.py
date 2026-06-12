@@ -1190,11 +1190,38 @@ def lock_attendance():
 @login_required
 def download_backup():
     import os
-    db_path = os.path.join(current_app.root_path, 'payroll.db')
+    import zipfile
+    import io
+    from datetime import datetime
+
+    db_path = current_app.config.get('DB_PATH') or os.path.join(current_app.root_path, 'payroll.db')
     if not os.path.exists(db_path):
         flash('Database file not found.', 'danger')
         return redirect(url_for('.settings'))
-    return send_file(db_path, as_attachment=True, download_name='payroll_backup.db')
+
+    # Get backup password from app config or env var; fallback to a generated one
+    backup_password = current_app.config.get('BACKUP_PASSWORD')
+    if not backup_password:
+        # Generate a random 12-character password and show it once
+        import secrets
+        backup_password = secrets.token_urlsafe(12)
+        current_app.config['BACKUP_PASSWORD'] = backup_password
+        flash(f'Backup password (save it): {backup_password}', 'warning')
+
+    # Create a password-protected ZIP in memory
+    mem = io.BytesIO()
+    with zipfile.ZipFile(mem, 'w', zipfile.ZIP_DEFLATED) as zf:
+        zf.setpassword(backup_password.encode('utf-8'))
+        zf.write(db_path, arcname='payroll_backup.db')
+    mem.seek(0)
+
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    return send_file(
+        mem,
+        as_attachment=True,
+        download_name=f'payroll_backup_{timestamp}.zip',
+        mimetype='application/zip'
+    )
 
 
 # ─── Import Employees ────────────────────────────────────────────────────────

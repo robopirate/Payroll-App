@@ -15,6 +15,7 @@ from sms_service import get_month_name
 bp = Blueprint('portal', __name__)
 
 @bp.route('/portal/login', methods=['GET', 'POST'])
+@limiter.limit("10 per minute")
 def portal_login():
     if current_user.is_authenticated:
         return redirect(url_for('auth.index'))

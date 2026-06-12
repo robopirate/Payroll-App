@@ -13,5 +13,5 @@ jwt = JWTManager()
 limiter = Limiter(
     get_remote_address,
     default_limits=["200 per day", "50 per hour", "10 per minute"],
-    storage_uri="memory://",
+    storage_uri="sqlite:///limiter.db",
 )
