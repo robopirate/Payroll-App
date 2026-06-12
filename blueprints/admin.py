@@ -684,12 +684,15 @@ def generate_payroll():
         emps = Employee.query.filter_by(is_active=True).all()
         emp_ids = [str(e.id) for e in emps]
     count = 0
+    clamped = []
     for emp_id in emp_ids:
         emp = Employee.query.get(int(emp_id))
         if not emp:
             continue
         existing = Payroll.query.filter_by(employee_id=emp.id, month=month, year=year).first()
         data = calculate_payroll(emp, month, year)
+        if data.pop('net_negative_clamped', False):
+            clamped.append(emp.name)
         if existing:
             for k, v in data.items():
                 setattr(existing, k, v)
@@ -700,6 +703,9 @@ def generate_payroll():
         count += 1
     db.session.commit()
     flash(f'Payroll generated for {count} employees for {get_month_name(month)} {year}.', 'success')
+    if clamped:
+        flash('Warning: net salary was negative and clamped to ₹0 for: ' + ', '.join(clamped) +
+              '. Please review advances.', 'warning')
     return redirect(url_for('.payroll', month=month, year=year))
 
 
@@ -807,6 +813,7 @@ def settings():
                 flash('Passwords do not match.', 'danger')
             else:
                 current_user.set_password(new_pass)
+                current_user.must_change_password = False
                 db.session.commit()
                 flash('Password updated.', 'success')
         if api_key:
@@ -1084,11 +1091,12 @@ def export_employees():
     writer.writerow(['Employee ID', 'Name', 'Phone', 'Email', 'Department', 'Designation',
                      'Basic Salary', 'Joining Date', 'Bank Name', 'Account Number', 'IFSC',
                      'PAN', 'Aadhar'])
+    mask = current_app.jinja_env.filters.get('mask_pii', lambda x: x)
     for e in emps:
-        writer.writerow([e.emp_id, e.name, e.phone, e.email or '', e.dept.name if e.dept else '',
+        writer.writerow([e.emp_id, e.name, mask(e.phone), e.email or '', e.dept.name if e.dept else '',
                          e.designation or '', e.basic_salary, e.joining_date.isoformat() if e.joining_date else '',
-                         e.bank_name or '', e.account_number or '', e.ifsc_code or '',
-                         e.pan_number or '', e.aadhar_number or ''])
+                         e.bank_name or '', mask(e.account_number), e.ifsc_code or '',
+                         mask(e.pan_number), mask(e.aadhar_number)])
     output.seek(0)
     return send_file(io.BytesIO(output.getvalue().encode()), mimetype='text/csv',
                      as_attachment=True, download_name='employees.csv')
@@ -1185,44 +1193,6 @@ def lock_attendance():
 
 
 # ─── DB Backup ───────────────────────────────────────────────────────────────
-
-@bp.route('/backup')
-@login_required
-def download_backup():
-    import os
-    import zipfile
-    import io
-    from datetime import datetime
-
-    db_path = current_app.config.get('DB_PATH') or os.path.join(current_app.root_path, 'payroll.db')
-    if not os.path.exists(db_path):
-        flash('Database file not found.', 'danger')
-        return redirect(url_for('.settings'))
-
-    # Get backup password from app config or env var; fallback to a generated one
-    backup_password = current_app.config.get('BACKUP_PASSWORD')
-    if not backup_password:
-        # Generate a random 12-character password and show it once
-        import secrets
-        backup_password = secrets.token_urlsafe(12)
-        current_app.config['BACKUP_PASSWORD'] = backup_password
-        flash(f'Backup password (save it): {backup_password}', 'warning')
-
-    # Create a password-protected ZIP in memory
-    mem = io.BytesIO()
-    with zipfile.ZipFile(mem, 'w', zipfile.ZIP_DEFLATED) as zf:
-        zf.setpassword(backup_password.encode('utf-8'))
-        zf.write(db_path, arcname='payroll_backup.db')
-    mem.seek(0)
-
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    return send_file(
-        mem,
-        as_attachment=True,
-        download_name=f'payroll_backup_{timestamp}.zip',
-        mimetype='application/zip'
-    )
-
 
 # ─── Import Employees ────────────────────────────────────────────────────────
 

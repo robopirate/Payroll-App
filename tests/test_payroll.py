@@ -1,5 +1,5 @@
 from datetime import date
-from models import db, Employee, Department, Leave
+from models import db, Employee, Department, Leave, Advance
 from services.payroll_service import calculate_payroll
 
 
@@ -65,3 +65,37 @@ def test_calculate_payroll_multimonth_leave(app):
         assert june['present_days'] > 0, 'June payroll should include leave days'
         assert july['present_days'] > 0, 'July payroll should include leave days'
         assert june['present_days'] != july['present_days'] or june['present_days'] > 0
+
+
+def test_calculate_payroll_negative_net_is_clamped(app):
+    """Net salary should never be negative; large advances are clamped to zero."""
+    with app.app_context():
+        dept = Department(name='Test Dept')
+        db.session.add(dept)
+        db.session.commit()
+
+        emp = Employee(
+            emp_id='EMP003',
+            name='Test Employee 3',
+            phone='9876543212',
+            department_id=dept.id,
+            basic_salary=10000,
+            joining_date=date(2024, 1, 1),
+        )
+        db.session.add(emp)
+        db.session.commit()
+
+        # Large advance that would make net negative
+        advance = Advance(
+            employee_id=emp.id,
+            amount=50000,
+            status='approved',
+            month_deducted=1,
+            year_deducted=2025,
+        )
+        db.session.add(advance)
+        db.session.commit()
+
+        result = calculate_payroll(emp, month=1, year=2025)
+        assert result['net_salary'] == 0
+        assert result['net_negative_clamped'] is True

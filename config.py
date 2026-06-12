@@ -4,6 +4,7 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 
 class Config:
+    TESTING = os.environ.get('TESTING', 'False').lower() in ('true', '1')
     SECRET_KEY = os.environ.get('SECRET_KEY', 'payroll-secret-key-change-in-production')
     # Store database outside project folder so code updates don't wipe data
     DB_PATH = os.environ.get('DB_PATH', os.path.join(os.path.expanduser('~'), 'payroll.db'))

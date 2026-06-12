@@ -1,8 +1,10 @@
 from flask import Flask, redirect, url_for, flash, request
 from flask_login import current_user, logout_user
-from sqlalchemy import text
+from sqlalchemy import text, inspect
 from flasgger import Swagger
 from datetime import datetime
+import secrets
+import string
 from config import Config
 from extensions import db, login_manager, csrf, limiter, jwt
 from models import User, Employee, Department, AppConfig
@@ -52,6 +54,28 @@ login_manager.login_message_category = 'warning'
 def inject_now():
     """Make datetime.now() available as `now` in all templates."""
     return {'now': datetime.now}
+
+
+@app.template_filter('mask_pii')
+def mask_pii(value):
+    """Mask sensitive personal identifiers in templates and exports."""
+    if not value:
+        return ''
+    s = str(value).strip().replace(' ', '')
+    n = len(s)
+    if n == 10 and s.isdigit():
+        # Mobile number: 98****3210
+        return s[:2] + '****' + s[-4:]
+    if n == 10 and s[:2].isalpha() and s[-1].isalpha():
+        # PAN: ABCDE1234F -> AB****34F
+        return s[:2] + '****' + s[-4:]
+    if n == 12 and s.isdigit():
+        # Aadhar: 123456789012 -> 1234 **** ****
+        return s[:4] + ' **** ****'
+    if n > 4:
+        # Bank account / generic long number
+        return s[:2] + '*' * (n - 4) + s[-2:]
+    return '*' * n
 
 csrf.init_app(app)
 limiter.init_app(app)
@@ -116,12 +140,15 @@ swagger = Swagger(app)
 
 def safe_migrate():
     """Add new columns to existing tables without destroying data."""
-    if db.engine.dialect.name != 'sqlite':
-        return  # PostgreSQL handles schema via create_all/migrations
     with db.engine.connect() as conn:
+        inspector = inspect(db.engine)
+
         # Attendance table: GPS proof columns + location_type
-        result = conn.execute(text("PRAGMA table_info(attendance)"))
-        att_cols = {row[1] for row in result}
+        if db.engine.dialect.name == 'sqlite':
+            result = conn.execute(text("PRAGMA table_info(attendance)"))
+            att_cols = {row[1] for row in result}
+        else:
+            att_cols = {c['name'] for c in inspector.get_columns('attendance')}
         for col, col_def in [
             ('gps_lat', 'REAL'),
             ('gps_lng', 'REAL'),
@@ -132,21 +159,35 @@ def safe_migrate():
             if col not in att_cols:
                 conn.execute(text(f"ALTER TABLE attendance ADD COLUMN {col} {col_def}"))
 
-        # Users table: employee_id for portal access
-        result = conn.execute(text("PRAGMA table_info(users)"))
-        user_cols = {row[1] for row in result}
+        # Users table: employee_id for portal access + password-change enforcement
+        if db.engine.dialect.name == 'sqlite':
+            result = conn.execute(text("PRAGMA table_info(users)"))
+            user_cols = {row[1] for row in result}
+        else:
+            user_cols = {c['name'] for c in inspector.get_columns('users')}
         if 'employee_id' not in user_cols:
             conn.execute(text("ALTER TABLE users ADD COLUMN employee_id INTEGER REFERENCES employees(id)"))
+        if 'must_change_password' not in user_cols:
+            if db.engine.dialect.name == 'sqlite':
+                conn.execute(text("ALTER TABLE users ADD COLUMN must_change_password INTEGER DEFAULT 0"))
+            else:
+                conn.execute(text("ALTER TABLE users ADD COLUMN must_change_password BOOLEAN DEFAULT FALSE"))
 
         # Employees table: admin approval for self-registration
-        result = conn.execute(text("PRAGMA table_info(employees)"))
-        emp_cols = {row[1] for row in result}
+        if db.engine.dialect.name == 'sqlite':
+            result = conn.execute(text("PRAGMA table_info(employees)"))
+            emp_cols = {row[1] for row in result}
+        else:
+            emp_cols = {c['name'] for c in inspector.get_columns('employees')}
         if 'is_approved' not in emp_cols:
             conn.execute(text("ALTER TABLE employees ADD COLUMN is_approved INTEGER DEFAULT 0"))
 
         # Schools table: location_type
-        result = conn.execute(text("PRAGMA table_info(schools)"))
-        school_cols = {row[1] for row in result}
+        if db.engine.dialect.name == 'sqlite':
+            result = conn.execute(text("PRAGMA table_info(schools)"))
+            school_cols = {row[1] for row in result}
+        else:
+            school_cols = {c['name'] for c in inspector.get_columns('schools')}
         if 'location_type' not in school_cols:
             conn.execute(text("ALTER TABLE schools ADD COLUMN location_type VARCHAR(30) DEFAULT 'School'"))
 
@@ -158,10 +199,16 @@ def init_db():
         db.create_all()
         safe_migrate()
 
-        if not User.query.filter_by(username='admin').first():
-            admin = User(username='admin', is_admin=True)
-            admin.set_password('admin123')
+        if not app.config.get('TESTING') and not User.query.filter_by(username='admin').first():
+            admin = User(username='admin', is_admin=True, must_change_password=True)
+            initial_password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
+            admin.set_password(initial_password)
             db.session.add(admin)
+            print(f"\n{'='*60}")
+            print("INITIAL ADMIN PASSWORD (save this — shown only once):")
+            print(f"  Username: admin")
+            print(f"  Password: {initial_password}")
+            print(f"{'='*60}\n")
 
         for dept_name in ['HR', 'Finance', 'Operations', 'Sales', 'IT']:
             if not Department.query.filter_by(name=dept_name).first():

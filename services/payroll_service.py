@@ -78,7 +78,9 @@ def calculate_payroll(employee, month, year):
     ).all()
     advance_total = sum(a.amount for a in advances)
     total_deductions = _round_money(pf + esi + advance_total)
-    net = _round_money(gross - total_deductions)
+    net_raw = gross - total_deductions
+    net_negative_clamped = net_raw < 0
+    net = _round_money(max(net_raw, 0))
 
     return {
         'working_days': working_days, 'present_days': present_days,
@@ -88,4 +90,5 @@ def calculate_payroll(employee, month, year):
         'pf_deduction': pf, 'esi_deduction': esi,
         'advance_deduction': round(advance_total, 2), 'other_deductions': 0,
         'total_deductions': total_deductions, 'net_salary': net,
+        'net_negative_clamped': net_negative_clamped,
     }

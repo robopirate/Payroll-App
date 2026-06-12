@@ -25,7 +25,7 @@
         </div>
         <div class="card-body border-top">
           <div class="info-row"><i class="bi bi-hash text-muted"></i> <strong>Emp ID:</strong> {{ emp.emp_id }}</div>
-          <div class="info-row"><i class="bi bi-phone text-muted"></i> <strong>Phone:</strong> {{ emp.phone }}</div>
+          <div class="info-row"><i class="bi bi-phone text-muted"></i> <strong>Phone:</strong> {{ emp.phone|mask_pii }}</div>
           <div class="info-row"><i class="bi bi-envelope text-muted"></i> <strong>Email:</strong> {{ emp.email or 'N/A' }}</div>
           <div class="info-row"><i class="bi bi-calendar text-muted"></i> <strong>Joined:</strong> {{ emp.joining_date.strftime('%d %b %Y') if emp.joining_date else 'N/A' }}</div>
           <div class="info-row"><i class="bi bi-currency-rupee text-muted"></i> <strong>Basic Salary:</strong> Rs. {{ "%.2f"|format(emp.basic_salary) }}</div>
@@ -33,9 +33,9 @@
         <div class="card-body border-top">
           <h6 class="fw-bold"><i class="bi bi-bank"></i> Bank Details</h6>
           <div class="info-row"><strong>Bank:</strong> {{ emp.bank_name or 'N/A' }}</div>
-          <div class="info-row"><strong>Account:</strong> {{ emp.account_number or 'N/A' }}</div>
+          <div class="info-row"><strong>Account:</strong> {{ emp.account_number|mask_pii or 'N/A' }}</div>
           <div class="info-row"><strong>IFSC:</strong> {{ emp.ifsc_code or 'N/A' }}</div>
-          <div class="info-row"><strong>PAN:</strong> {{ emp.pan_number or 'N/A' }}</div>
+          <div class="info-row"><strong>PAN:</strong> {{ emp.pan_number|mask_pii or 'N/A' }}</div>
         </div>
       </div>
 

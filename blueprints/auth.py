@@ -28,21 +28,23 @@ def login():
     if current_user.is_authenticated:
         return redirect(url_for('.index'))
     if request.method == 'POST':
-        client_ip = get_remote_address()
-        if not is_allowed(client_ip, limit=5, window=60):
-            flash('Too many login attempts. Please try again in a minute.', 'danger')
-            return render_template('login.html')
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '')
         user = User.query.filter_by(username=username, is_admin=True).first()
         if user and user.check_password(password):
             login_user(user, remember=request.form.get('remember'))
-            # Force password change if still using the default weak password
-            if user.check_password('admin123'):
-                flash('You are using the default admin password. Please change it now.', 'warning')
+            # Force password change on first login or when admin requests it
+            if user.must_change_password:
+                flash('You must change your password before continuing.', 'warning')
                 return redirect(url_for('admin.settings'))
             return redirect(request.args.get('next') or url_for('admin.dashboard'))
-        flash('Invalid username or password.', 'danger')
+
+        # Record failed attempt and enforce brute-force protection
+        client_ip = get_remote_address()
+        if not is_allowed(client_ip, limit=5, window=60):
+            flash('Too many login attempts. Please try again in a minute.', 'danger')
+        else:
+            flash('Invalid username or password.', 'danger')
     return render_template('login.html')
 
 

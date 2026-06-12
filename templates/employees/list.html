@@ -68,7 +68,7 @@
             <tr>
               <td><span class="badge bg-secondary">{{ emp.emp_id }}</span></td>
               <td class="fw-semibold">{{ emp.name }}</td>
-              <td>{{ emp.phone }}</td>
+              <td>{{ emp.phone|mask_pii }}</td>
               <td>{{ emp.dept.name if emp.dept else '-' }}</td>
               <td>{{ emp.designation or '-' }}</td>
               <td>₹{{ "%.2f"|format(emp.basic_salary) }}</td>
