@@ -4,7 +4,6 @@ const urlsToCache = [
   '/portal/login',
   '/portal/dashboard',
   '/portal/punch',
-  '/portal/quick-attendance',
   '/portal/attendance',
   '/portal/leaves',
   '/portal/payslips'
