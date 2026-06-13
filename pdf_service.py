@@ -93,8 +93,9 @@ def generate_payslip_pdf(employee, payroll):
         ['Earnings', 'Amount (Rs.)', 'Deductions', 'Amount (Rs.)'],
         ['Basic Salary', f"{payroll.basic_salary:.2f}", 'Provident Fund (PF)', f"{payroll.pf_deduction:.2f}"],
         ['HRA', f"{payroll.hra:.2f}", 'ESI', f"{payroll.esi_deduction:.2f}"],
-        ['Overtime Pay', f"{payroll.overtime_pay:.2f}", 'Advance Deduction', f"{payroll.advance_deduction:.2f}"],
-        ['Other Allowances', f"{payroll.other_allowances:.2f}", 'Other Deductions', f"{payroll.other_deductions:.2f}"],
+        ['Overtime Pay', f"{payroll.overtime_pay:.2f}", 'Professional Tax (PT)', f"{payroll.pt_deduction:.2f}"],
+        ['Other Allowances', f"{payroll.other_allowances:.2f}", 'Advance Deduction', f"{payroll.advance_deduction:.2f}"],
+        ['', '', 'Other Deductions', f"{payroll.other_deductions:.2f}"],
         ['', '', '', ''],
         ['Gross Salary', f"{payroll.gross_salary:.2f}", 'Total Deductions', f"{payroll.total_deductions:.2f}"],
     ]

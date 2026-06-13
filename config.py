@@ -38,8 +38,11 @@ class Config:
     # Payroll settings
     OVERTIME_RATE_MULTIPLIER = 2.0   # overtime hourly rate = (basic/26/8) * multiplier
     PF_RATE = 0.12                   # 12% of basic
-    ESI_RATE = 0.0175                # 1.75% of gross (if gross <= 21000)
+    ESI_RATE = 0.0075                # employee contribution 0.75% of gross (if gross <= 21000)
+    ESI_EMPLOYER_RATE = 0.0325       # employer contribution 3.25% of gross
     ESI_THRESHOLD = 21000
+    PT_THRESHOLD = 7501              # Professional Tax deduction threshold
+    PT_AMOUNT = 200                  # Professional Tax amount when gross >= threshold
     HRA_RATE = 0.40                  # 40% of basic
     WORKING_DAYS_PER_MONTH = 26
     WORKING_HOURS_PER_DAY = 8

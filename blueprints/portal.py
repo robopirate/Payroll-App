@@ -233,7 +233,40 @@ def portal_leaves():
     year = date.today().year
     leave_balances = LeaveBalance.query.filter_by(employee_id=emp.id, year=year).all()
     leaves_list = Leave.query.filter_by(employee_id=emp.id).order_by(Leave.applied_on.desc()).all()
-    return render_template('portal/leaves.html', emp=emp, leave_balances=leave_balances, leaves=leaves_list)
+    return render_template('portal/leaves.html', emp=emp, leave_balances=leave_balances, leaves=leaves_list, today=date.today())
+
+
+@bp.route('/portal/leaves/<int:leave_id>/cancel', methods=['POST'])
+@portal_required
+def portal_cancel_leave(leave_id):
+    """Employee can cancel their own pending or future approved leave."""
+    emp = Employee.query.get(current_user.employee_id)
+    leave = Leave.query.get_or_404(leave_id)
+    if leave.employee_id != emp.id:
+        flash('You can only cancel your own leave.', 'danger')
+        return redirect(url_for('.portal_leaves'))
+
+    today = date.today()
+    # Allow cancelling pending leaves, or approved leaves that haven't started yet
+    if leave.status not in ('pending', 'approved'):
+        flash('This leave cannot be cancelled.', 'warning')
+        return redirect(url_for('.portal_leaves'))
+    if leave.status == 'approved' and leave.start_date < today:
+        flash('Past approved leave cannot be cancelled.', 'warning')
+        return redirect(url_for('.portal_leaves'))
+
+    # Restore balance if it was already approved
+    if leave.status == 'approved':
+        balance = LeaveBalance.query.filter_by(
+            employee_id=emp.id, leave_type=leave.leave_type, year=leave.start_date.year
+        ).first()
+        if balance:
+            balance.used_days = max(0, balance.used_days - leave.days)
+
+    db.session.delete(leave)
+    db.session.commit()
+    flash('Leave cancelled.', 'success')
+    return redirect(url_for('.portal_leaves'))
 
 
 @bp.route('/portal/quick-attendance', methods=['GET', 'POST'])

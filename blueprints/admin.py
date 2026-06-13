@@ -657,6 +657,38 @@ def reject_leave(leave_id):
     return redirect(url_for('.leaves'))
 
 
+@bp.route('/leaves/<int:leave_id>/delete', methods=['POST'])
+@login_required
+def delete_leave(leave_id):
+    """Admin can delete any leave record and restore its balance if it was approved."""
+    leave = Leave.query.get_or_404(leave_id)
+    emp = leave.employee
+
+    if leave.status == 'approved':
+        balance = LeaveBalance.query.filter_by(
+            employee_id=leave.employee_id,
+            leave_type=leave.leave_type,
+            year=leave.start_date.year
+        ).first()
+        if balance:
+            balance.used_days = max(0, balance.used_days - leave.days)
+
+    db.session.delete(leave)
+    db.session.commit()
+
+    audit = AuditLog(
+        action='delete_leave',
+        user=current_user.username,
+        affected_entity=f'Leave:{leave_id}',
+        details=f'Deleted {leave.leave_type} leave for {emp.name} ({leave.days} days)'
+    )
+    db.session.add(audit)
+    db.session.commit()
+
+    flash('Leave deleted.', 'success')
+    return redirect(url_for('.leaves'))
+
+
 @bp.route('/leaves/balances')
 @login_required
 def leave_balances():

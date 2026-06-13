@@ -4,6 +4,7 @@ import calendar
 
 from flask import current_app
 from sqlalchemy import extract, and_
+from config import Config
 from models import db, Attendance, Leave, Advance, School
 from services.attendance_service import get_working_days_in_month, count_working_days_between
 
@@ -79,13 +80,14 @@ def calculate_payroll(employee, month, year):
     gross = _round_money(earned_basic + hra + overtime_pay)
     pf = _round_money(earned_basic * current_app.config['PF_RATE'])
     esi = _round_money(gross * current_app.config['ESI_RATE']) if gross <= current_app.config['ESI_THRESHOLD'] else 0
+    pt_deduction = Config.PT_AMOUNT if gross >= Config.PT_THRESHOLD else 0
 
     advances = Advance.query.filter_by(
         employee_id=employee.id, status='approved',
         month_deducted=month, year_deducted=year
     ).all()
     advance_total = sum(a.amount for a in advances)
-    total_deductions = _round_money(pf + esi + advance_total)
+    total_deductions = _round_money(pf + esi + pt_deduction + advance_total)
     net_raw = gross - total_deductions
     net_negative_clamped = net_raw < 0
     net = _round_money(max(net_raw, 0))
@@ -96,6 +98,7 @@ def calculate_payroll(employee, month, year):
         'overtime_pay': overtime_pay, 'hra': hra,
         'other_allowances': 0, 'gross_salary': gross,
         'pf_deduction': pf, 'esi_deduction': esi,
+        'pt_deduction': pt_deduction,
         'advance_deduction': round(advance_total, 2), 'other_deductions': 0,
         'total_deductions': total_deductions, 'net_salary': net,
         'net_negative_clamped': net_negative_clamped,
