@@ -1,3 +1,4 @@
+# Render deploy trigger: sync latest code
 services:
   - type: web
     name: payroll-pro
