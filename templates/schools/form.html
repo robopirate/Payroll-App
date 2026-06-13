@@ -53,6 +53,50 @@
                      min="10" max="2000" step="10">
             </div>
 
+            <div class="mb-3">
+              <label class="form-label fw-semibold">
+                Working Hours per Day
+                <span class="text-muted small fw-normal">— used for overtime calculation (e.g., 8 for office staff)</span>
+              </label>
+              <input type="number" name="working_hours_per_day" class="form-control"
+                     value="{{ school.working_hours_per_day if school else 8 }}"
+                     min="1" max="24" step="0.5">
+            </div>
+
+            <div class="row g-3 mb-3">
+              <div class="col-6">
+                <label class="form-label fw-semibold">Shift Start</label>
+                <input type="time" name="shift_start" class="form-control"
+                       value="{{ school.shift_start if school else '09:00' }}">
+              </div>
+              <div class="col-6">
+                <label class="form-label fw-semibold">Shift End</label>
+                <input type="time" name="shift_end" class="form-control"
+                       value="{{ school.shift_end if school else '18:00' }}">
+              </div>
+            </div>
+
+            <div class="row g-3 mb-3">
+              <div class="col-6">
+                <label class="form-label fw-semibold">
+                  Grace Period
+                  <span class="text-muted small fw-normal">— minutes allowed after shift start</span>
+                </label>
+                <input type="number" name="grace_minutes" class="form-control"
+                       value="{{ school.grace_minutes if school else 15 }}"
+                       min="0" max="120" step="1">
+              </div>
+              <div class="col-6">
+                <label class="form-label fw-semibold">
+                  Lunch Break
+                  <span class="text-muted small fw-normal">— unpaid break in minutes</span>
+                </label>
+                <input type="number" name="lunch_minutes" class="form-control"
+                       value="{{ school.lunch_minutes if school else 60 }}"
+                       min="0" max="180" step="5">
+              </div>
+            </div>
+
             <hr>
             <h6 class="fw-bold mb-3"><i class="bi bi-geo-alt text-success"></i> GPS Coordinates</h6>
 

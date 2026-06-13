@@ -1,5 +1,5 @@
 from datetime import date
-from models import db, Employee, Department, Leave, Advance
+from models import db, Employee, Department, Leave, Advance, Attendance, School
 from services.payroll_service import calculate_payroll
 
 
@@ -99,3 +99,67 @@ def test_calculate_payroll_negative_net_is_clamped(app):
         result = calculate_payroll(emp, month=1, year=2025)
         assert result['net_salary'] == 0
         assert result['net_negative_clamped'] is True
+
+
+def test_calculate_payroll_uses_location_working_hours(app):
+    """Overtime pay must use the employee's location working hours per day."""
+    with app.app_context():
+        dept = Department(name='Test Dept')
+        db.session.add(dept)
+        db.session.commit()
+
+        school = School(
+            name='Baner Office',
+            working_hours_per_day=7.0,
+            is_active=True,
+        )
+        db.session.add(school)
+        db.session.commit()
+
+        emp = Employee(
+            emp_id='EMP004',
+            name='Test Employee 4',
+            phone='9876543213',
+            department_id=dept.id,
+            basic_salary=26000,
+            joining_date=date(2024, 1, 1),
+        )
+        emp.schools.append(school)
+        db.session.add(emp)
+        db.session.commit()
+
+        # Default 8-hour location employee for comparison
+        emp_default = Employee(
+            emp_id='EMP005',
+            name='Test Employee 5',
+            phone='9876543214',
+            department_id=dept.id,
+            basic_salary=26000,
+            joining_date=date(2024, 1, 1),
+        )
+        db.session.add(emp_default)
+        db.session.commit()
+
+        # Record one present day with 1 overtime hour for both employees
+        db.session.add(Attendance(
+            employee_id=emp.id,
+            date=date(2025, 1, 6),
+            status='present',
+            overtime_hours=1.0,
+        ))
+        db.session.add(Attendance(
+            employee_id=emp_default.id,
+            date=date(2025, 1, 6),
+            status='present',
+            overtime_hours=1.0,
+        ))
+        db.session.commit()
+
+        result = calculate_payroll(emp, month=1, year=2025)
+        result_default = calculate_payroll(emp_default, month=1, year=2025)
+
+        # 26000 / 26 / 7 * 2 ≈ 285.71 -> rounded 286
+        # 26000 / 26 / 8 * 2 = 250
+        assert result['overtime_pay'] > result_default['overtime_pay']
+        assert result['overtime_pay'] == 286
+        assert result_default['overtime_pay'] == 250

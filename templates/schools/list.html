@@ -61,6 +61,30 @@
                 <div class="text-muted" style="font-size:0.7rem;">Geofence</div>
               </div>
             </div>
+            <div class="col-4">
+              <div class="border rounded p-2">
+                <div class="fw-bold text-warning">{{ school.working_hours_per_day }}h</div>
+                <div class="text-muted" style="font-size:0.7rem;">Working Hours</div>
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="border rounded p-2 text-start">
+                <div class="text-muted mb-1" style="font-size:0.7rem;">Shift Timing</div>
+                <div class="fw-bold text-dark">
+                  {% if school.shift_start and school.shift_end %}
+                    {{ school.shift_start }} – {{ school.shift_end }}
+                  {% else %}
+                    Not set
+                  {% endif %}
+                </div>
+                {% if school.grace_minutes %}
+                <div class="text-muted" style="font-size:0.7rem;">
+                  Grace: {{ school.grace_minutes }} min
+                  {% if school.lunch_minutes %}| Lunch: {{ school.lunch_minutes }} min{% endif %}
+                </div>
+                {% endif %}
+              </div>
+            </div>
           </div>
 
           {% if school.latitude and school.longitude %}

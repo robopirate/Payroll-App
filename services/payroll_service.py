@@ -4,13 +4,21 @@ import calendar
 
 from flask import current_app
 from sqlalchemy import extract, and_
-from models import db, Attendance, Leave, Advance
+from models import db, Attendance, Leave, Advance, School
 from services.attendance_service import get_working_days_in_month, count_working_days_between
 
 
 def _round_money(value):
     """Round a monetary value to the nearest rupee (Indian payroll norm)."""
     return round(value)
+
+
+def _get_working_hours_per_day(employee):
+    """Return working hours configured for the employee's active location."""
+    for school in employee.schools:
+        if school.is_active:
+            return school.working_hours_per_day or current_app.config['WORKING_HOURS_PER_DAY']
+    return current_app.config['WORKING_HOURS_PER_DAY']
 
 
 def calculate_payroll(employee, month, year):
@@ -62,7 +70,7 @@ def calculate_payroll(employee, month, year):
     hourly_rate = (
         employee.basic_salary
         / current_app.config['WORKING_DAYS_PER_MONTH']
-        / current_app.config['WORKING_HOURS_PER_DAY']
+        / _get_working_hours_per_day(employee)
     )
     overtime_pay = _round_money(
         hourly_rate * current_app.config['OVERTIME_RATE_MULTIPLIER'] * overtime_hours

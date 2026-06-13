@@ -182,7 +182,7 @@ def safe_migrate():
         if 'is_approved' not in emp_cols:
             conn.execute(text("ALTER TABLE employees ADD COLUMN is_approved INTEGER DEFAULT 0"))
 
-        # Schools table: location_type
+        # Schools table: location_type, working hours, and shift timings
         if db.engine.dialect.name == 'sqlite':
             result = conn.execute(text("PRAGMA table_info(schools)"))
             school_cols = {row[1] for row in result}
@@ -190,6 +190,38 @@ def safe_migrate():
             school_cols = {c['name'] for c in inspector.get_columns('schools')}
         if 'location_type' not in school_cols:
             conn.execute(text("ALTER TABLE schools ADD COLUMN location_type VARCHAR(30) DEFAULT 'School'"))
+        if 'working_hours_per_day' not in school_cols:
+            if db.engine.dialect.name == 'sqlite':
+                conn.execute(text("ALTER TABLE schools ADD COLUMN working_hours_per_day REAL DEFAULT 8.0"))
+            else:
+                conn.execute(text("ALTER TABLE schools ADD COLUMN working_hours_per_day FLOAT DEFAULT 8.0"))
+        if 'shift_start' not in school_cols:
+            conn.execute(text("ALTER TABLE schools ADD COLUMN shift_start VARCHAR(5)"))
+        if 'shift_end' not in school_cols:
+            conn.execute(text("ALTER TABLE schools ADD COLUMN shift_end VARCHAR(5)"))
+        if 'grace_minutes' not in school_cols:
+            if db.engine.dialect.name == 'sqlite':
+                conn.execute(text("ALTER TABLE schools ADD COLUMN grace_minutes INTEGER DEFAULT 15"))
+            else:
+                conn.execute(text("ALTER TABLE schools ADD COLUMN grace_minutes INTEGER DEFAULT 15"))
+        if 'lunch_minutes' not in school_cols:
+            if db.engine.dialect.name == 'sqlite':
+                conn.execute(text("ALTER TABLE schools ADD COLUMN lunch_minutes INTEGER DEFAULT 60"))
+            else:
+                conn.execute(text("ALTER TABLE schools ADD COLUMN lunch_minutes INTEGER DEFAULT 60"))
+
+        # Attendance table: late / early-exit minute tracking
+        if db.engine.dialect.name == 'sqlite':
+            result = conn.execute(text("PRAGMA table_info(attendance)"))
+            att_cols = {row[1] for row in result}
+        else:
+            att_cols = {c['name'] for c in inspector.get_columns('attendance')}
+        for col, col_def in [
+            ('late_minutes', 'INTEGER DEFAULT 0'),
+            ('early_minutes', 'INTEGER DEFAULT 0'),
+        ]:
+            if col not in att_cols:
+                conn.execute(text(f"ALTER TABLE attendance ADD COLUMN {col} {col_def}"))
 
         conn.commit()
 

@@ -5,7 +5,7 @@ from datetime import date, datetime, timezone, timedelta
 from sqlalchemy import extract
 
 from extensions import db, limiter, csrf
-from services.attendance_service import haversine_distance
+from services.attendance_service import haversine_distance, update_attendance_timing_flags
 from models import Employee, Attendance, Leave, LeaveBalance, Payroll, Holiday
 
 bp = Blueprint('api', __name__)
@@ -170,6 +170,7 @@ def api_punch():
                 notes=field_note or None
             )
             db.session.add(att)
+        update_attendance_timing_flags(att, employee=emp)
         db.session.commit()
         msg = f'Punched IN at {now_time}'
         if location_type == 'field':
@@ -181,6 +182,7 @@ def api_punch():
         if att.check_out:
             return jsonify({'success': False, 'message': f'Already punched OUT at {att.check_out}.'})
         att.check_out = now_time
+        update_attendance_timing_flags(att, employee=emp)
         db.session.commit()
         msg = f'Punched OUT at {now_time}'
         if att.location_type == 'field':
@@ -358,6 +360,8 @@ def api_attendance_today():
         'check_in': att.check_in,
         'check_out': att.check_out,
         'overtime_hours': att.overtime_hours,
+        'late_minutes': att.late_minutes,
+        'early_minutes': att.early_minutes,
         'gps_verified': att.gps_verified,
         'location_type': att.location_type,
         'notes': att.notes,
@@ -467,6 +471,8 @@ def api_attendance_monthly():
                 'check_in': a.check_in,
                 'check_out': a.check_out,
                 'overtime_hours': a.overtime_hours,
+                'late_minutes': a.late_minutes,
+                'early_minutes': a.early_minutes,
             }
             for a in atts
         ],

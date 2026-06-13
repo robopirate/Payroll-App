@@ -52,6 +52,8 @@
                 <th>Status</th>
                 <th>Check In</th>
                 <th>Check Out</th>
+                <th>Late</th>
+                <th>Early</th>
                 <th>Overtime (hrs)</th>
               </tr>
             </thead>
@@ -81,6 +83,20 @@
                 <td>
                   <input type="time" name="checkout_{{ emp.id }}" class="form-control form-control-sm" style="width:110px"
                          value="{{ att.check_out if att and att.check_out else '' }}">
+                </td>
+                <td>
+                  {% if att and att.late_minutes %}
+                    <span class="badge bg-danger">{{ att.late_minutes }} min</span>
+                  {% else %}
+                    <span class="text-muted small">-</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if att and att.early_minutes %}
+                    <span class="badge bg-warning text-dark">{{ att.early_minutes }} min</span>
+                  {% else %}
+                    <span class="text-muted small">-</span>
+                  {% endif %}
                 </td>
                 <td>
                   <input type="number" name="ot_{{ emp.id }}" class="form-control form-control-sm ot-field"

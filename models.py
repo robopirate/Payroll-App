@@ -41,6 +41,12 @@ class School(db.Model):
     latitude = db.Column(db.Float)
     longitude = db.Column(db.Float)
     geofence_radius = db.Column(db.Float, default=150.0)
+    working_hours_per_day = db.Column(db.Float, default=8.0)
+    # Shift timings (HH:MM). Grace period applies to check-in; lunch is unpaid break.
+    shift_start = db.Column(db.String(5))
+    shift_end = db.Column(db.String(5))
+    grace_minutes = db.Column(db.Integer, default=15)
+    lunch_minutes = db.Column(db.Integer, default=60)
     is_active = db.Column(db.Boolean, default=True)
     location_type = db.Column(db.String(30), default='School')
 
@@ -92,6 +98,9 @@ class Attendance(db.Model):
     gps_lng = db.Column(db.Float)
     gps_verified = db.Column(db.Boolean, default=False)
     admin_override = db.Column(db.Boolean, default=False)
+    # Late / early-exit tracking based on the employee's location shift timings
+    late_minutes = db.Column(db.Integer, default=0)
+    early_minutes = db.Column(db.Integer, default=0)
     # Location type: 'school' = within geofence, 'field' = outside all geofences
     location_type = db.Column(db.String(20), default='school')
     __table_args__ = (db.UniqueConstraint('employee_id', 'date', name='uq_emp_date'),)

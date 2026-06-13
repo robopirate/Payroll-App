@@ -22,10 +22,6 @@ def portal_login():
     if current_user.is_authenticated:
         return redirect(url_for('auth.index'))
     if request.method == 'POST':
-        client_ip = get_remote_address()
-        if not is_allowed(client_ip, limit=5, window=60):
-            flash('Too many login attempts. Please try again in a minute.', 'danger')
-            return render_template('portal/login.html')
         phone = request.form.get('phone', '').strip()
         password = request.form.get('password', '')
         emp = Employee.query.filter_by(phone=phone, is_active=True, is_approved=True).first()
@@ -34,7 +30,13 @@ def portal_login():
             if portal_user and portal_user.check_password(password):
                 login_user(portal_user, remember=request.form.get('remember'))
                 return redirect(url_for('.portal_dashboard'))
-        flash('Invalid phone number or password, or account not yet approved.', 'danger')
+
+        # Record failed attempt and enforce brute-force protection
+        client_ip = get_remote_address()
+        if not is_allowed(client_ip, limit=5, window=60):
+            flash('Too many login attempts. Please try again in a minute.', 'danger')
+        else:
+            flash('Invalid phone number or password, or account not yet approved.', 'danger')
     return render_template('portal/login.html')
 
 
@@ -175,8 +177,8 @@ def portal_punch():
     emp = Employee.query.get(current_user.employee_id)
     today = date.today()
     today_att = Attendance.query.filter_by(employee_id=emp.id, date=today).first()
-    school = emp.schools[0] if emp.schools else None
-    return render_template('portal/punch.html', emp=emp, school=school, today_attendance=today_att)
+    location = emp.schools[0] if emp.schools else None
+    return render_template('portal/punch.html', emp=emp, location=location, today_attendance=today_att)
 
 
 @bp.route('/portal/attendance')

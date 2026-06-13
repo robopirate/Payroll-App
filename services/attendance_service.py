@@ -47,3 +47,77 @@ def haversine_distance(lat1, lng1, lat2, lng2):
     dlam = math.radians(lng2 - lng1)
     a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlam / 2) ** 2
     return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+
+# ─── Shift timing helpers ─────────────────────────────────────────────────────
+
+def _time_to_minutes(value):
+    """Convert 'HH:MM' string to minutes since midnight."""
+    if not value or ':' not in str(value):
+        return None
+    try:
+        parts = str(value).strip().split(':')
+        hours = int(parts[0])
+        minutes = int(parts[1])
+        if not (0 <= hours <= 23 and 0 <= minutes <= 59):
+            return None
+        return hours * 60 + minutes
+    except (ValueError, IndexError):
+        return None
+
+
+def _minutes_to_time(minutes):
+    """Convert minutes since midnight to 'HH:MM' string."""
+    if minutes is None:
+        return None
+    minutes = max(0, int(minutes)) % (24 * 60)
+    return f"{minutes // 60:02d}:{minutes % 60:02d}"
+
+
+def get_employee_active_school(employee):
+    """Return the employee's first active assigned school, or None."""
+    if not employee:
+        return None
+    for school in employee.schools:
+        if school.is_active:
+            return school
+    return None
+
+
+def compute_late_minutes(check_in, shift_start, grace_minutes=0):
+    """Return minutes late after shift_start + grace."""
+    check_mins = _time_to_minutes(check_in)
+    start_mins = _time_to_minutes(shift_start)
+    if check_mins is None or start_mins is None:
+        return 0
+    threshold = start_mins + (grace_minutes or 0)
+    return max(0, check_mins - threshold)
+
+
+def compute_early_minutes(check_out, shift_end):
+    """Return minutes left before shift_end."""
+    out_mins = _time_to_minutes(check_out)
+    end_mins = _time_to_minutes(shift_end)
+    if out_mins is None or end_mins is None:
+        return 0
+    return max(0, end_mins - out_mins)
+
+
+def update_attendance_timing_flags(attendance, employee=None):
+    """Set late_minutes / early_minutes based on active location shift timings."""
+    if not attendance:
+        return
+    attendance.late_minutes = 0
+    attendance.early_minutes = 0
+    emp = employee if employee is not None else attendance.employee
+    school = get_employee_active_school(emp)
+    if not school:
+        return
+    if attendance.check_in and school.shift_start:
+        attendance.late_minutes = compute_late_minutes(
+            attendance.check_in, school.shift_start, school.grace_minutes
+        )
+    if attendance.check_out and school.shift_end:
+        attendance.early_minutes = compute_early_minutes(
+            attendance.check_out, school.shift_end
+        )

@@ -6,7 +6,7 @@ import calendar
 import io
 
 from extensions import db, limiter
-from services.attendance_service import get_working_days_in_month, count_working_days_between
+from services.attendance_service import get_working_days_in_month, count_working_days_between, update_attendance_timing_flags
 from services.payroll_service import calculate_payroll
 from models import (
     User, Employee, Department, Attendance, Leave, LeaveBalance, Advance,
@@ -18,6 +18,24 @@ from pdf_service import generate_payslip_pdf
 from sqlalchemy import func, distinct
 
 bp = Blueprint('admin', __name__)
+
+
+def _parse_time(value):
+    """Validate and normalize a HH:MM time string; return None if empty/invalid."""
+    if not value:
+        return None
+    value = str(value).strip()
+    if not value:
+        return None
+    try:
+        hour, minute = value.split(':')
+        hour, minute = int(hour), int(minute)
+        if 0 <= hour <= 23 and 0 <= minute <= 59:
+            return f"{hour:02d}:{minute:02d}"
+    except (ValueError, AttributeError):
+        pass
+    return None
+
 
 # ─── Dashboard ───────────────────────────────────────────────────────────────
 
@@ -341,6 +359,11 @@ def add_school():
             latitude=float(f.get('latitude')) if f.get('latitude') else None,
             longitude=float(f.get('longitude')) if f.get('longitude') else None,
             geofence_radius=float(f.get('geofence_radius') or 150),
+            working_hours_per_day=float(f.get('working_hours_per_day') or 8),
+            shift_start=_parse_time(f.get('shift_start')),
+            shift_end=_parse_time(f.get('shift_end')),
+            grace_minutes=int(f.get('grace_minutes') or 15),
+            lunch_minutes=int(f.get('lunch_minutes') or 60),
             location_type=f.get('location_type', 'School').strip(),
         )
         db.session.add(school)
@@ -362,6 +385,11 @@ def edit_school(school_id):
         school.latitude = float(f.get('latitude')) if f.get('latitude') else None
         school.longitude = float(f.get('longitude')) if f.get('longitude') else None
         school.geofence_radius = float(f.get('geofence_radius') or school.geofence_radius)
+        school.working_hours_per_day = float(f.get('working_hours_per_day') or school.working_hours_per_day)
+        school.shift_start = _parse_time(f.get('shift_start'))
+        school.shift_end = _parse_time(f.get('shift_end'))
+        school.grace_minutes = int(f.get('grace_minutes') or school.grace_minutes or 15)
+        school.lunch_minutes = int(f.get('lunch_minutes') or school.lunch_minutes or 60)
         school.location_type = f.get('location_type', school.location_type or 'School').strip()
         db.session.commit()
         flash('Location updated.', 'success')
@@ -459,6 +487,7 @@ def attendance():
                     notes=notes, admin_override=True
                 )
                 db.session.add(att)
+            update_attendance_timing_flags(att, employee=emp)
         db.session.commit()
         flash(f'Attendance saved for {sel_date.strftime("%d %b %Y")}.', 'success')
         return redirect(url_for('.attendance', date=selected_date))
@@ -484,7 +513,13 @@ def attendance_report():
         half = sum(0.5 for a in atts.values() if a.status == 'half_day')
         absent = sum(1 for a in atts.values() if a.status == 'absent')
         ot = sum(a.overtime_hours or 0 for a in atts.values())
-        report.append({'employee': emp, 'atts': atts, 'present': present + half, 'absent': absent, 'overtime': ot})
+        late_days = sum(1 for a in atts.values() if a.late_minutes)
+        early_days = sum(1 for a in atts.values() if a.early_minutes)
+        report.append({
+            'employee': emp, 'atts': atts,
+            'present': present + half, 'absent': absent, 'overtime': ot,
+            'late_days': late_days, 'early_days': early_days,
+        })
 
     return render_template('attendance/report.html', report=report, month=month, year=year,
         days_in_month=days_in_month, get_month_name=get_month_name,
@@ -1113,7 +1148,7 @@ def export_attendance():
 
     output = io.StringIO()
     writer = csv.writer(output)
-    header = ['Employee ID', 'Name', 'Department'] + [str(d) for d in range(1, days_in_month + 1)] + ['Present', 'Absent', 'Half Day', 'Overtime Hrs']
+    header = ['Employee ID', 'Name', 'Department'] + [str(d) for d in range(1, days_in_month + 1)] + ['Present', 'Absent', 'Half Day', 'Late Days', 'Early Days', 'Overtime Hrs']
     writer.writerow(header)
 
     for emp in emps:
@@ -1122,7 +1157,7 @@ def export_attendance():
             extract('month', Attendance.date) == month
         ).all()}
         row = [emp.emp_id, emp.name, emp.dept.name if emp.dept else '']
-        present = absent = half = ot = 0
+        present = absent = half = ot = late = early = 0
         for d in range(1, days_in_month + 1):
             a = atts.get(d)
             if a:
@@ -1131,9 +1166,11 @@ def export_attendance():
                 elif a.status == 'absent': absent += 1
                 elif a.status == 'half_day': half += 1
                 if a.overtime_hours: ot += a.overtime_hours
+                if a.late_minutes: late += 1
+                if a.early_minutes: early += 1
             else:
                 row.append('')
-        row += [present, absent, half, ot]
+        row += [present, absent, half, late, early, ot]
         writer.writerow(row)
 
     output.seek(0)

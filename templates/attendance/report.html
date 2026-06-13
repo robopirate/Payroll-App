@@ -54,6 +54,8 @@
               {% endfor %}
               <th class="text-center">Present</th>
               <th class="text-center">Absent</th>
+              <th class="text-center">Late</th>
+              <th class="text-center">Early</th>
               <th class="text-center">OT hrs</th>
             </tr>
           </thead>
@@ -89,6 +91,8 @@
               {% endfor %}
               <td class="text-center fw-semibold text-success">{{ row.present }}</td>
               <td class="text-center fw-semibold text-danger">{{ row.absent }}</td>
+              <td class="text-center fw-semibold text-warning">{{ row.late_days }}</td>
+              <td class="text-center fw-semibold text-warning">{{ row.early_days }}</td>
               <td class="text-center fw-semibold text-info">{{ row.overtime }}</td>
             </tr>
             {% endfor %}
