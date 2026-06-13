@@ -13,6 +13,7 @@
         <div class="card-body p-4">
           <h6 class="fw-bold mb-3">Upload CSV File</h6>
           <form method="POST" enctype="multipart/form-data">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="mb-3">
               <input type="file" name="csv_file" accept=".csv" class="form-control" required>
             </div>

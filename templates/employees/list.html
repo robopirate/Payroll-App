@@ -90,6 +90,7 @@
                 {% if not emp.is_approved %}
                 <form method="POST" action="{{ url_for('admin.approve_employee', emp_id=emp.id) }}"
                       class="d-inline" onsubmit="return confirm('Approve {{ emp.name }} for portal access?')">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <button type="submit" class="btn btn-sm btn-outline-success me-1" title="Approve">
                     <i class="bi bi-check-circle"></i>
                   </button>
@@ -97,6 +98,7 @@
                 {% endif %}
                 <form method="POST" action="{{ url_for('admin.deactivate_employee', emp_id=emp.id) }}"
                       class="d-inline" onsubmit="return confirm('Deactivate {{ emp.name }}?')">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <button type="submit" class="btn btn-sm btn-outline-danger" title="Deactivate">
                     <i class="bi bi-person-x"></i>
                   </button>

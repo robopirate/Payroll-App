@@ -58,6 +58,7 @@
           {% endif %}
 
           <form method="post" action="{{ url_for('admin.set_employee_password', emp_id=emp.id) }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="input-group">
               <input type="text" name="new_password" class="form-control form-control-sm"
                      placeholder="{{ 'New password (4+ chars)' }}" minlength="4" required autocomplete="off">
@@ -88,6 +89,7 @@
           {% endif %}
 
           <form method="post" action="{{ url_for('admin.assign_employee_schools', emp_id=emp.id) }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="mb-2" style="max-height:140px;overflow-y:auto;">
               {% for school in all_schools %}
               <div class="form-check form-check-sm">

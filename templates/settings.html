@@ -12,6 +12,7 @@
         </div>
         <div class="card-body">
           <form method="POST">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="mb-3">
               <label class="form-label">New Password</label>
               <input type="password" name="new_password" class="form-control" placeholder="Enter new password">
@@ -31,6 +32,7 @@
         </div>
         <div class="card-body">
           <form method="POST">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="mb-3">
               <label class="form-label">API Key</label>
               <input type="text" name="api_key" class="form-control" placeholder="Your Fast2SMS API key">

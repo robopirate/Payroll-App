@@ -19,6 +19,7 @@ textarea.form-control { height: 90px !important; }
 <h5 class="fw-bold mb-3">Apply for Leave</h5>
 <div class="form-card-glass"><div class="card-body px-4 py-4" style="background:transparent;">
   <form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="mb-4"><label class="form-label">Leave Type</label><select name="leave_type" class="form-select" required id="leaveTypeSelect" onchange="updateBalance()"><option value="">Select type…</option><option value="casual">Casual Leave</option><option value="sick">Sick Leave</option><option value="earned">Earned Leave</option></select><div id="balanceHint"></div></div>
     <div class="row g-3 mb-4"><div class="col-6"><label class="form-label">From Date</label><input type="date" name="start_date" id="startDate" class="form-control" required onchange="calcDays()"></div><div class="col-6"><label class="form-label">To Date</label><input type="date" name="end_date" id="endDate" class="form-control" required onchange="calcDays()"></div></div>
     <div class="mb-4"><div class="form-check"><input class="form-check-input" type="checkbox" name="half_day" id="halfDay" onchange="calcDays()"><label class="form-check-label" for="halfDay" style="font-size:0.95rem;">Half Day</label></div><div id="daysCalc" class="mt-2" style="font-size:0.85rem;color:#1565C0;font-weight:600;"></div></div>

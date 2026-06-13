@@ -16,6 +16,7 @@
         </div>
         <div class="card-body">
           <form method="POST" action="{{ url_for('admin.setup_leave_quick') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <p class="text-muted small mb-3">Assign same leave balance to all employees for {{ today.year }}</p>
 
             <div class="mb-3">
@@ -108,6 +109,7 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <form method="POST" action="{{ url_for('admin.setup_employee_leaves') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="modal-body">
           <input type="hidden" name="employee_id" id="empId">
 

@@ -16,6 +16,7 @@
         </div>
         <div class="card-body">
           <form method="POST">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="mb-3">
               <label class="form-label">Date <span class="text-danger">*</span></label>
               <input type="date" name="date" class="form-control" required>
@@ -45,6 +46,7 @@
 
           <div class="d-grid gap-2">
             <form method="POST" action="{{ url_for('admin.populate_national_holidays') }}" style="display:inline;">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <input type="hidden" name="year" value="{{ today.year }}">
               <button type="submit" class="btn btn-outline-info w-100" onclick="return confirm('Add national holidays for {{ today.year }}?')">
                 <i class="bi bi-calendar-event me-1"></i> Add National Holidays
@@ -83,6 +85,7 @@
                   <td><small class="text-muted">{{ h.description or '-' }}</small></td>
                   <td>
                     <form method="POST" action="{{ url_for('admin.delete_holiday', holiday_id=h.id) }}" style="display:inline;">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                       <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this holiday?')">
                         <i class="bi bi-trash"></i>
                       </button>

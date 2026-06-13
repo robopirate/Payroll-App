@@ -35,6 +35,7 @@
               </a>
               <form method="post" action="{{ url_for('admin.delete_school', school_id=school.id) }}" style="display:inline;"
                     onsubmit="return confirm('Remove {{ school.name }}?')">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
                   <i class="bi bi-trash"></i>
                 </button>

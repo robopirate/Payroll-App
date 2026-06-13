@@ -13,6 +13,7 @@
         </div>
         <div class="card-body">
           <form method="POST">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="mb-3">
               <label class="form-label">Employee <span class="text-danger">*</span></label>
               <select name="employee_id" class="form-select" required>
@@ -104,6 +105,7 @@
                   <td>
                     {% if adv.status == 'pending' %}
                     <form method="POST" action="{{ url_for('admin.approve_advance', adv_id=adv.id) }}" class="d-inline">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                       <button class="btn btn-sm btn-success"><i class="bi bi-check-lg"></i> Approve</button>
                     </form>
                     {% endif %}

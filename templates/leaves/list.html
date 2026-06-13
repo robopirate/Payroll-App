@@ -62,11 +62,13 @@
               <td class="text-center">
                 {% if leave.status == 'pending' %}
                 <form method="POST" action="{{ url_for('admin.approve_leave', leave_id=leave.id) }}" class="d-inline">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <button class="btn btn-sm btn-success" title="Approve">
                     <i class="bi bi-check-lg"></i>
                   </button>
                 </form>
                 <form method="POST" action="{{ url_for('admin.reject_leave', leave_id=leave.id) }}" class="d-inline">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <button class="btn btn-sm btn-danger" title="Reject">
                     <i class="bi bi-x-lg"></i>
                   </button>

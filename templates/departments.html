@@ -15,6 +15,7 @@
         </div>
         <div class="card-body">
           <form method="POST">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="input-group">
               <input type="text" name="name" class="form-control" placeholder="Department name" required>
               <button type="submit" class="btn btn-primary">Add</button>
