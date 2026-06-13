@@ -257,3 +257,23 @@ class AppConfig(db.Model):
             row = cls(key=key, value=value)
             db.session.add(row)
 
+
+class TaxDeclaration(db.Model):
+    __tablename__ = 'tax_declarations'
+    id = db.Column(db.Integer, primary_key=True)
+    employee_id = db.Column(db.Integer, db.ForeignKey('employees.id'), nullable=False)
+    year = db.Column(db.Integer, nullable=False)  # Financial year (e.g., 2025 for FY 2025-26)
+    tax_regime = db.Column(db.String(10), default='new')  # 'old' or 'new'
+    # Standard deduction (fixed for new regime, optional for old)
+    standard_deduction = db.Column(db.Float, default=50000)
+    # Old regime investments
+    investment_80c = db.Column(db.Float, default=0)  # PPF, ELSS, LIC, etc. (max 1.5L)
+    investment_80d = db.Column(db.Float, default=0)  # Medical insurance (max 25K/50K)
+    investment_80eea = db.Column(db.Float, default=0)  # Home loan interest (max 1.5L)
+    hra_exemption = db.Column(db.Float, default=0)  # HRA exemption amount
+    other_investments = db.Column(db.Float, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    employee = db.relationship('Employee', backref='tax_declarations')
+    __table_args__ = (db.UniqueConstraint('employee_id', 'year', name='uq_emp_tax_year'),)
+
