@@ -166,6 +166,8 @@ class Payroll(db.Model):
     pf_deduction = db.Column(db.Float, default=0.0)
     esi_deduction = db.Column(db.Float, default=0.0)
     pt_deduction = db.Column(db.Float, default=0.0)
+    lwf_deduction = db.Column(db.Float, default=0.0)
+    tds_deduction = db.Column(db.Float, default=0.0)
     advance_deduction = db.Column(db.Float, default=0.0)
     other_deductions = db.Column(db.Float, default=0.0)
     total_deductions = db.Column(db.Float, default=0.0)
