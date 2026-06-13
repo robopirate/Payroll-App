@@ -82,6 +82,13 @@
                        value="{{ form.aadhar_number if edit else form.get('aadhar_number','') }}"
                        placeholder="1234 5678 9012">
               </div>
+              <div class="col-sm-6">
+                <label class="form-label">Portal Password</label>
+                <input type="text" name="password" class="form-control"
+                       value=""
+                       placeholder="Leave blank to keep unchanged" autocomplete="off">
+                <div class="form-text">Visible only to admin. If filled, the employee’s portal password will be set to this value.</div>
+              </div>
             </div>
           </div>
         </div>

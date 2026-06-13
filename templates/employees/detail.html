@@ -59,8 +59,8 @@
 
           <form method="post" action="{{ url_for('admin.set_employee_password', emp_id=emp.id) }}">
             <div class="input-group">
-              <input type="password" name="new_password" class="form-control form-control-sm"
-                     placeholder="{{ 'New password (4+ chars)' }}" minlength="4" required>
+              <input type="text" name="new_password" class="form-control form-control-sm"
+                     placeholder="{{ 'New password (4+ chars)' }}" minlength="4" required autocomplete="off">
               <button type="submit" class="btn btn-sm btn-success">
                 <i class="bi bi-key"></i> {{ 'Reset' if portal_user else 'Set' }} Password
               </button>

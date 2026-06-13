@@ -60,6 +60,7 @@ def logout():
 
 
 @bp.route('/forgot-password', methods=['GET', 'POST'])
+@limiter.limit("5 per hour")
 def forgot_password():
     """Request password reset via phone number."""
     if request.method == 'POST':
@@ -74,21 +75,28 @@ def forgot_password():
             flash('No login account found for this employee.', 'warning')
             return redirect(url_for('.forgot_password'))
 
-        # Generate reset token
+        # Invalidate any previous unused tokens for this user
+        PasswordReset.query.filter_by(user_id=user.id, is_used=False).update(
+            {'is_used': True}, synchronize_session=False
+        )
+
+        # Generate reset token and attempt SMS delivery first
         token = secrets.token_urlsafe(32)
+        message = f"Your password reset token: {token}. Valid for 1 hour. Do not share this token."
+        sms_success, sms_message = send_sms(emp.phone, message)
+
+        if not sms_success:
+            db.session.rollback()
+            flash(f'Could not send reset SMS: {sms_message}', 'danger')
+            return render_template('forgot_password.html')
+
+        # SMS delivered — store the token and audit log
         reset = PasswordReset(
             user_id=user.id,
             token=token,
             expires_at=datetime.utcnow() + timedelta(hours=1)
         )
         db.session.add(reset)
-        db.session.commit()
-
-        # Send SMS with reset token
-        message = f"Your password reset token: {token}. Valid for 1 hour. Do not share this token."
-        send_sms(emp.phone, message)
-
-        # Log audit trail
         audit = AuditLog(
             action='password_reset_request',
             user=emp.name,
@@ -99,7 +107,7 @@ def forgot_password():
         db.session.commit()
 
         flash('Reset token sent via SMS. Check your phone.', 'success')
-        return redirect(url_for('.reset_password'))
+        return redirect(url_for('.reset_password', token=token))
 
     return render_template('forgot_password.html')
 
@@ -143,6 +151,7 @@ def reset_password():
         flash('Password reset successfully. Please login with your new password.', 'success')
         return redirect(url_for('.login'))
 
-    return render_template('reset_password.html')
+    token = request.args.get('token', '')
+    return render_template('reset_password.html', token=token)
 
 

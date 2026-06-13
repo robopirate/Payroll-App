@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, send_file, current_app
+from markupsafe import Markup
 from flask_login import login_required, current_user
 from datetime import date, datetime, timedelta
 from sqlalchemy import extract
@@ -146,7 +147,18 @@ def add_employee():
         )
         db.session.add(emp)
         db.session.commit()
-        flash(f'Employee {emp.name} added. Configure leave balances from Leave Setup.', 'success')
+
+        password = f.get('password', '').strip()
+        if password:
+            portal_user = User.query.filter_by(employee_id=emp.id).first()
+            if not portal_user:
+                portal_user = User(username=phone, is_admin=False, employee_id=emp.id)
+                db.session.add(portal_user)
+            portal_user.set_password(password)
+            db.session.commit()
+            flash(Markup(f'Employee {emp.name} added. Portal password: <strong>{password}</strong>. Share it securely.'), 'success')
+        else:
+            flash(f'Employee {emp.name} added. Configure leave balances from Leave Setup.', 'success')
         return redirect(url_for('.employees'))
     return render_template('employees/form.html', departments=departments, schools=schools, form={}, edit=False)
 
@@ -184,7 +196,7 @@ def edit_employee(emp_id):
 
         emp.name = f.get('name', emp.name).strip()
         emp.phone = phone
-        emp.email = f.get('email', emp.email).strip()
+        emp.email = (f.get('email') or emp.email or '').strip()
         emp.department_id = int(f.get('department_id')) if f.get('department_id') else None
         emp.designation = f.get('designation', '').strip()
         emp.basic_salary = basic_salary
@@ -200,8 +212,20 @@ def edit_employee(emp_id):
                 emp.joining_date = datetime.strptime(joining_date_str, '%Y-%m-%d').date()
             except ValueError:
                 pass  # Keep existing date if invalid
-        db.session.commit()
-        flash('Employee updated successfully.', 'success')
+
+        password = f.get('password', '').strip()
+        if password:
+            portal_user = User.query.filter_by(employee_id=emp.id).first()
+            if not portal_user:
+                portal_user = User(username=phone, is_admin=False, employee_id=emp.id)
+                db.session.add(portal_user)
+            portal_user.username = phone
+            portal_user.set_password(password)
+            db.session.commit()
+            flash(Markup(f'Employee updated. Portal password: <strong>{password}</strong>. Share it securely.'), 'success')
+        else:
+            db.session.commit()
+            flash('Employee updated successfully.', 'success')
         return redirect(url_for('.employees'))
     return render_template('employees/form.html', departments=departments, schools=schools, form=emp, edit=True)
 
@@ -286,11 +310,12 @@ def set_employee_password(emp_id):
         return redirect(url_for('.view_employee', emp_id=emp_id))
     portal_user = User.query.filter_by(employee_id=emp.id).first()
     if not portal_user:
-        portal_user = User(username=f'emp_{emp.emp_id}', is_admin=False, employee_id=emp.id)
+        portal_user = User(username=emp.phone, is_admin=False, employee_id=emp.id)
         db.session.add(portal_user)
+    portal_user.username = emp.phone
     portal_user.set_password(new_pass)
     db.session.commit()
-    flash(f'Portal password set for {emp.name}. Login: phone {emp.phone} + new password.', 'success')
+    flash(Markup(f'Portal password set for {emp.name}: <strong>{new_pass}</strong>. Login with phone {emp.phone}.'), 'success')
     return redirect(url_for('.view_employee', emp_id=emp_id))
 
 
