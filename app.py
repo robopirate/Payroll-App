@@ -234,6 +234,16 @@ def safe_migrate():
                 conn.execute(text("ALTER TABLE payrolls ADD COLUMN pt_deduction REAL DEFAULT 0.0"))
             else:
                 conn.execute(text("ALTER TABLE payrolls ADD COLUMN pt_deduction FLOAT DEFAULT 0.0"))
+        if 'lwf_deduction' not in payroll_cols:
+            if db.engine.dialect.name == 'sqlite':
+                conn.execute(text("ALTER TABLE payrolls ADD COLUMN lwf_deduction REAL DEFAULT 0.0"))
+            else:
+                conn.execute(text("ALTER TABLE payrolls ADD COLUMN lwf_deduction FLOAT DEFAULT 0.0"))
+        if 'tds_deduction' not in payroll_cols:
+            if db.engine.dialect.name == 'sqlite':
+                conn.execute(text("ALTER TABLE payrolls ADD COLUMN tds_deduction REAL DEFAULT 0.0"))
+            else:
+                conn.execute(text("ALTER TABLE payrolls ADD COLUMN tds_deduction FLOAT DEFAULT 0.0"))
 
         conn.commit()
 

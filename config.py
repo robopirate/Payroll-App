@@ -43,6 +43,24 @@ class Config:
     ESI_THRESHOLD = 21000
     PT_THRESHOLD = 7501              # Professional Tax deduction threshold
     PT_AMOUNT = 200                  # Professional Tax amount when gross >= threshold
+    # LWF (Labour Welfare Fund) - Maharashtra rates (configurable per state)
+    LWF_EMPLOYEE_AMOUNT = 25         # Employee contribution per month
+    LWF_EMPLOYER_AMOUNT = 50         # Employer contribution per month
+    LWF_THRESHOLD = 25000            # Only applicable if gross <= this amount
+
+    # TDS (Income Tax) - FY 2024-25 New Regime Slabs
+    TDS_STANDARD_DEDUCTION = 50000
+    TDS_REBATE_87A_LIMIT = 700000    # Rebate under 87A - full tax waiver if taxable income <= 7L
+    TDS_REBATE_87A_AMOUNT = 25000
+    # Tax slabs: (min, max, rate)
+    TDS_SLABS = [
+        (0, 300000, 0.0),
+        (300000, 600000, 0.05),
+        (600000, 900000, 0.10),
+        (900000, 1200000, 0.15),
+        (1200000, 1500000, 0.20),
+        (1500000, float('inf'), 0.30),
+    ]
     HRA_RATE = 0.40                  # 40% of basic
     WORKING_DAYS_PER_MONTH = 26
     WORKING_HOURS_PER_DAY = 8
