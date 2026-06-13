@@ -226,10 +226,33 @@ def safe_migrate():
         conn.commit()
 
 
+def sync_postgres_sequences():
+    """Reset PostgreSQL SERIAL sequences to the current max(id) to avoid duplicate PK errors."""
+    if db.engine.dialect.name != 'postgresql':
+        return
+    tables = [
+        'users', 'employees', 'departments', 'schools', 'attendance', 'leaves',
+        'leave_balances', 'advances', 'payrolls', 'holidays', 'password_resets',
+        'attendance_locks', 'app_config', 'audit_logs', 'school_schedules',
+    ]
+    with db.engine.connect() as conn:
+        for table in tables:
+            seq = f'{table}_id_seq'
+            try:
+                conn.execute(text(
+                    f"SELECT setval('{seq}', COALESCE((SELECT MAX(id) FROM {table}), 1), "
+                    f"(SELECT COUNT(*) > 0 FROM {table}))"
+                ))
+            except Exception:
+                pass
+        conn.commit()
+
+
 def init_db():
     with app.app_context():
         db.create_all()
         safe_migrate()
+        sync_postgres_sequences()
 
         if not app.config.get('TESTING') and not User.query.filter_by(username='admin').first():
             admin = User(username='admin', is_admin=True, must_change_password=True)
