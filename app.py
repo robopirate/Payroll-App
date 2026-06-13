@@ -223,6 +223,18 @@ def safe_migrate():
             if col not in att_cols:
                 conn.execute(text(f"ALTER TABLE attendance ADD COLUMN {col} {col_def}"))
 
+        # Payroll table: professional tax deduction
+        if db.engine.dialect.name == 'sqlite':
+            result = conn.execute(text("PRAGMA table_info(payrolls)"))
+            payroll_cols = {row[1] for row in result}
+        else:
+            payroll_cols = {c['name'] for c in inspector.get_columns('payrolls')}
+        if 'pt_deduction' not in payroll_cols:
+            if db.engine.dialect.name == 'sqlite':
+                conn.execute(text("ALTER TABLE payrolls ADD COLUMN pt_deduction REAL DEFAULT 0.0"))
+            else:
+                conn.execute(text("ALTER TABLE payrolls ADD COLUMN pt_deduction FLOAT DEFAULT 0.0"))
+
         conn.commit()
 
 
