@@ -7,6 +7,9 @@
     <a href="{{ url_for('admin.export_payroll', month=month, year=year) }}" class="btn btn-sm btn-outline-primary">
       <i class="bi bi-download"></i> Export Excel
     </a>
+    <a href="{{ url_for('admin.export_payroll_bank_csv', month=month, year=year) }}" class="btn btn-sm btn-outline-success">
+      <i class="bi bi-bank"></i> Export Bank CSV
+    </a>
   </div>
 
   <!-- Month/Year Selector + Generate -->

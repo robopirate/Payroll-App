@@ -1265,6 +1265,35 @@ def export_payroll():
                      as_attachment=True, download_name=f'payroll_{get_month_name(month)}_{year}.xlsx')
 
 
+@bp.route('/payroll/export/<int:month>/<int:year>')
+@login_required
+def export_payroll_bank_csv(month, year):
+    """Export bank payout CSV for finalized/paid payrolls."""
+    import csv
+    payrolls = Payroll.query.filter_by(month=month, year=year).filter(
+        Payroll.status.in_(['finalized', 'paid'])
+    ).all()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['Employee Name', 'Bank Account Number', 'IFSC Code', 'Bank Name', 'Net Salary'])
+    for p in payrolls:
+        emp = p.employee
+        if not emp:
+            continue
+        writer.writerow([
+            emp.name,
+            emp.account_number or '',
+            emp.ifsc_code or '',
+            emp.bank_name or '',
+            p.net_salary,
+        ])
+
+    output.seek(0)
+    return send_file(io.BytesIO(output.getvalue().encode()), mimetype='text/csv',
+                     as_attachment=True, download_name=f'salary_payout_{year}_{month:02d}.csv')
+
+
 # ─── Attendance Lock ─────────────────────────────────────────────────────────
 
 @bp.route('/attendance/lock', methods=['POST'])
