@@ -13,15 +13,23 @@
     <div class="col-12">
       <div class="card glass-card"><div class="card-body text-center py-3"><p class="text-muted small mb-2">Assigned Location</p><h5 class="mb-0">{{ location.name if location else 'Not Assigned' }}</h5>{% if location and location.location_type %}<span class="badge bg-light text-dark" style="font-size:0.7rem;">{{ location.location_type }}</span>{% endif %}<small class="text-muted d-block">{{ location.address if location else '-' }}</small></div></div>
     </div>
-    {% if location and (location.shift_start or location.shift_end) %}
+    {% set effective_start = emp.shift_start or (location.shift_start if location else None) %}
+    {% set effective_end = emp.shift_end or (location.shift_end if location else None) %}
+    {% set has_custom_shift = emp.shift_start or emp.shift_end %}
+    {% if effective_start or effective_end %}
     <div class="col-12 mt-3">
       <div class="card glass-card">
         <div class="card-body text-center py-3">
-          <p class="text-muted small mb-2">Shift Timing</p>
-          <h5 class="mb-1">{{ location.shift_start or '--:--' }} – {{ location.shift_end or '--:--' }}</h5>
+          <p class="text-muted small mb-2">
+            {% if has_custom_shift %}Your Shift{% else %}School Shift{% endif %}
+          </p>
+          <h5 class="mb-1">
+            {{ effective_start or '--:--' }} – {{ effective_end or '--:--' }}
+            {% if has_custom_shift %}<span class="badge bg-info" style="font-size:0.65rem;vertical-align:middle;">Custom</span>{% endif %}
+          </h5>
           <small class="text-muted d-block">
-            {% if location.grace_minutes %}Grace: {{ location.grace_minutes }} min{% endif %}
-            {% if location.lunch_minutes %}| Lunch: {{ location.lunch_minutes }} min{% endif %}
+            {% if location and location.grace_minutes %}Grace: {{ location.grace_minutes }} min{% endif %}
+            {% if location and location.lunch_minutes %}| Lunch: {{ location.lunch_minutes }} min{% endif %}
           </small>
         </div>
       </div>

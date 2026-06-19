@@ -37,6 +37,9 @@ EXPECTED_COLUMNS = {
     'employees': {
         'is_approved': ("INTEGER DEFAULT 0", "BOOLEAN DEFAULT FALSE"),
         'employee_type': ("VARCHAR(20) DEFAULT 'full_time'", "VARCHAR(20) DEFAULT 'full_time'"),
+        'shift_start': ("VARCHAR(5)", "VARCHAR(5)"),
+        'shift_end': ("VARCHAR(5)", "VARCHAR(5)"),
+        'working_hours_per_day': ("REAL", "FLOAT"),
     },
     'users': {
         'employee_id': ("INTEGER", "INTEGER"),

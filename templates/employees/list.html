@@ -74,6 +74,9 @@
                 {% set type_badges = {'full_time': ('FT', 'bg-primary'), 'contract': ('C', 'bg-warning text-dark'), 'part_time': ('PT', 'bg-info')} %}
                 {% set badge = type_badges.get(emp.employee_type, ('FT', 'bg-primary')) %}
                 <span class="badge {{ badge[1] }}" title="{{ {'full_time':'Full-time','contract':'Contract','part_time':'Part-time'}.get(emp.employee_type, emp.employee_type) }}">{{ badge[0] }}</span>
+                {% if emp.shift_start or emp.shift_end or emp.working_hours_per_day %}
+                <i class="bi bi-clock text-warning ms-1" title="Custom shift set"></i>
+                {% endif %}
               </td>
               <td>{{ emp.phone|mask_pii }}</td>
               <td>{{ emp.dept.name if emp.dept else '-' }}</td>

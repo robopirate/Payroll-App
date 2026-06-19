@@ -163,3 +163,68 @@ def test_calculate_payroll_uses_location_working_hours(app):
         assert result['overtime_pay'] > result_default['overtime_pay']
         assert result['overtime_pay'] == 286
         assert result_default['overtime_pay'] == 250
+
+
+def test_calculate_payroll_uses_employee_working_hours_override(app):
+    """Employee-level working_hours_per_day must override the school's value."""
+    with app.app_context():
+        dept = Department(name='Override Dept')
+        db.session.add(dept)
+        db.session.commit()
+
+        school = School(
+            name='Eight Hour Office',
+            working_hours_per_day=8.0,
+            is_active=True,
+        )
+        db.session.add(school)
+        db.session.commit()
+
+        emp = Employee(
+            emp_id='EMP006',
+            name='Part Timer',
+            phone='9876543215',
+            department_id=dept.id,
+            basic_salary=26000,
+            joining_date=date(2024, 1, 1),
+            working_hours_per_day=6.0,
+        )
+        emp.schools.append(school)
+        db.session.add(emp)
+        db.session.commit()
+
+        # Default employee at same school, no override
+        emp_default = Employee(
+            emp_id='EMP007',
+            name='Full Timer',
+            phone='9876543216',
+            department_id=dept.id,
+            basic_salary=26000,
+            joining_date=date(2024, 1, 1),
+        )
+        emp_default.schools.append(school)
+        db.session.add(emp_default)
+        db.session.commit()
+
+        db.session.add(Attendance(
+            employee_id=emp.id,
+            date=date(2025, 1, 6),
+            status='present',
+            overtime_hours=1.0,
+        ))
+        db.session.add(Attendance(
+            employee_id=emp_default.id,
+            date=date(2025, 1, 6),
+            status='present',
+            overtime_hours=1.0,
+        ))
+        db.session.commit()
+
+        result = calculate_payroll(emp, month=1, year=2025)
+        result_default = calculate_payroll(emp_default, month=1, year=2025)
+
+        # 26000 / 26 / 6 * 2 ≈ 333.33 -> rounded 333
+        # 26000 / 26 / 8 * 2 = 250
+        assert result['overtime_pay'] > result_default['overtime_pay']
+        assert result['overtime_pay'] == 333
+        assert result_default['overtime_pay'] == 250

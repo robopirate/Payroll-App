@@ -62,6 +62,10 @@ class Employee(db.Model):
     department_id = db.Column(db.Integer, db.ForeignKey('departments.id'))
     designation = db.Column(db.String(100))
     employee_type = db.Column(db.String(20), default='full_time')  # full_time, contract, part_time
+    # Optional shift override; if NULL, the employee uses their school's shift.
+    shift_start = db.Column(db.String(5), nullable=True)
+    shift_end = db.Column(db.String(5), nullable=True)
+    working_hours_per_day = db.Column(db.Float, nullable=True)
     basic_salary = db.Column(db.Float, default=0.0)
     joining_date = db.Column(db.Date, default=date.today)
     is_active = db.Column(db.Boolean, default=True)

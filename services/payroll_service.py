@@ -15,7 +15,9 @@ def _round_money(value):
 
 
 def _get_working_hours_per_day(employee):
-    """Return working hours configured for the employee's active location."""
+    """Return working hours for the employee (override first, then school, then config)."""
+    if employee and employee.working_hours_per_day is not None:
+        return employee.working_hours_per_day
     for school in employee.schools:
         if school.is_active:
             return school.working_hours_per_day or current_app.config['WORKING_HOURS_PER_DAY']

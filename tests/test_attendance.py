@@ -67,6 +67,53 @@ def test_update_attendance_timing_flags(app):
         assert att.early_minutes == 60
 
 
+def test_update_attendance_timing_flags_uses_employee_shift_override(app):
+    with app.app_context():
+        dept = Department(name='Override Dept')
+        db.session.add(dept)
+        db.session.commit()
+
+        school = School(
+            name='Default Shift Office',
+            shift_start='09:00',
+            shift_end='18:00',
+            grace_minutes=15,
+            is_active=True,
+        )
+        db.session.add(school)
+        db.session.commit()
+
+        emp = Employee(
+            emp_id='EMP009',
+            name='Prasad',
+            phone='9876543217',
+            department_id=dept.id,
+            basic_salary=30000,
+            joining_date=date(2024, 1, 1),
+            shift_start='14:00',
+            shift_end='20:00',
+        )
+        emp.schools.append(school)
+        db.session.add(emp)
+        db.session.commit()
+
+        att = Attendance(
+            employee_id=emp.id,
+            date=date(2025, 1, 6),
+            status='present',
+            check_in='14:05',
+            check_out='19:55',
+        )
+        db.session.add(att)
+        db.session.commit()
+
+        update_attendance_timing_flags(att)
+
+        # Within 14:15 grace window, and left 5 min before 20:00
+        assert att.late_minutes == 0
+        assert att.early_minutes == 5
+
+
 def test_admin_attendance_save_computes_late_and_early(client, app):
     with app.app_context():
         admin = User(username='admin', is_admin=True, role='admin')

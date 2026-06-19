@@ -137,6 +137,34 @@
           </div>
         </div>
 
+        <!-- Shift Override -->
+        <div class="card border-0 shadow-sm mt-4">
+          <div class="card-header bg-white border-bottom">
+            <h6 class="mb-0 fw-bold"><i class="bi bi-clock text-warning"></i> Shift Override</h6>
+          </div>
+          <div class="card-body">
+            <p class="text-muted small">Leave blank to use the school's default shift timings.</p>
+            <div class="row g-3">
+              <div class="col-sm-6">
+                <label class="form-label">Custom Shift Start (optional)</label>
+                <input type="time" name="shift_start" class="form-control"
+                       value="{{ form.shift_start if edit else form.get('shift_start','') }}">
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">Custom Shift End (optional)</label>
+                <input type="time" name="shift_end" class="form-control"
+                       value="{{ form.shift_end if edit else form.get('shift_end','') }}">
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">Custom Working Hours (optional)</label>
+                <input type="number" name="working_hours_per_day" class="form-control" step="0.5" min="1" max="24"
+                       value="{{ form.working_hours_per_day if edit else form.get('working_hours_per_day','') }}"
+                       placeholder="e.g. 6">
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="mt-4 d-flex gap-2 justify-content-end">
           <a href="{{ url_for('admin.employees') }}" class="btn btn-outline-secondary">Cancel</a>
           <button type="submit" class="btn btn-primary">
@@ -147,4 +175,28 @@
     </div>
   </form>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+  const form = document.querySelector('form[method="POST"]');
+  if (!form) return;
+  form.addEventListener('submit', function(e) {
+    const start = (form.querySelector('[name="shift_start"]').value || '').trim();
+    const end = (form.querySelector('[name="shift_end"]').value || '').trim();
+    const wh = (form.querySelector('[name="working_hours_per_day"]').value || '').trim();
+    if ((start && !end) || (!start && end)) {
+      alert('Please provide both Custom Shift Start and Custom Shift End, or leave both blank.');
+      e.preventDefault();
+      return false;
+    }
+    if (wh && parseFloat(wh) <= 0) {
+      alert('Custom Working Hours must be greater than 0.');
+      e.preventDefault();
+      return false;
+    }
+  });
+})();
+</script>
 {% endblock %}

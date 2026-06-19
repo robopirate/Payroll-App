@@ -84,6 +84,31 @@ def get_employee_active_school(employee):
     return None
 
 
+def get_employee_effective_shift(employee):
+    """Return the effective (shift_start, shift_end, working_hours_per_day) for an employee.
+
+    Employee-level values override the school's default values. Falls back to
+    the application config working hours when no value is available anywhere.
+    """
+    from flask import current_app
+    school = get_employee_active_school(employee)
+    shift_start = (
+        employee.shift_start if employee and employee.shift_start is not None
+        else (school.shift_start if school else None)
+    )
+    shift_end = (
+        employee.shift_end if employee and employee.shift_end is not None
+        else (school.shift_end if school else None)
+    )
+    working_hours = (
+        employee.working_hours_per_day if employee and employee.working_hours_per_day is not None
+        else (school.working_hours_per_day if school else None)
+    )
+    if working_hours is None:
+        working_hours = current_app.config.get('WORKING_HOURS_PER_DAY', 8.0)
+    return shift_start, shift_end, working_hours
+
+
 def compute_late_minutes(check_in, shift_start, grace_minutes=0):
     """Return minutes late after shift_start + grace."""
     check_mins = _time_to_minutes(check_in)
@@ -104,20 +129,20 @@ def compute_early_minutes(check_out, shift_end):
 
 
 def update_attendance_timing_flags(attendance, employee=None):
-    """Set late_minutes / early_minutes based on active location shift timings."""
+    """Set late_minutes / early_minutes based on effective shift timings."""
     if not attendance:
         return
     attendance.late_minutes = 0
     attendance.early_minutes = 0
     emp = employee if employee is not None else attendance.employee
+    shift_start, shift_end, _ = get_employee_effective_shift(emp)
     school = get_employee_active_school(emp)
-    if not school:
-        return
-    if attendance.check_in and school.shift_start:
+    grace_minutes = school.grace_minutes if school else 0
+    if attendance.check_in and shift_start:
         attendance.late_minutes = compute_late_minutes(
-            attendance.check_in, school.shift_start, school.grace_minutes
+            attendance.check_in, shift_start, grace_minutes
         )
-    if attendance.check_out and school.shift_end:
+    if attendance.check_out and shift_end:
         attendance.early_minutes = compute_early_minutes(
-            attendance.check_out, school.shift_end
+            attendance.check_out, shift_end
         )

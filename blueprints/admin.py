@@ -39,6 +39,17 @@ def _parse_time(value):
     return None
 
 
+def _get_optional_float(value):
+    """Return a positive float from a form value, or None if empty/invalid."""
+    if not value:
+        return None
+    try:
+        v = float(str(value).strip())
+        return v if v > 0 else None
+    except (ValueError, TypeError):
+        return None
+
+
 # ─── Dashboard ───────────────────────────────────────────────────────────────
 
 @bp.route('/dashboard')
@@ -146,6 +157,9 @@ def add_employee():
             ifsc_code=f.get('ifsc_code', '').strip(),
             pan_number=f.get('pan_number', '').strip(),
             aadhar_number=f.get('aadhar_number', '').strip(),
+            shift_start=_parse_time(f.get('shift_start')),
+            shift_end=_parse_time(f.get('shift_end')),
+            working_hours_per_day=_get_optional_float(f.get('working_hours_per_day')),
             is_approved=True,  # Admin-created employees are auto-approved
         )
         db.session.add(emp)
@@ -210,6 +224,9 @@ def edit_employee(emp_id):
         emp.ifsc_code = f.get('ifsc_code', '').strip()
         emp.pan_number = f.get('pan_number', '').strip()
         emp.aadhar_number = f.get('aadhar_number', '').strip()
+        emp.shift_start = _parse_time(f.get('shift_start'))
+        emp.shift_end = _parse_time(f.get('shift_end'))
+        emp.working_hours_per_day = _get_optional_float(f.get('working_hours_per_day'))
         # Update joining date if provided
         joining_date_str = f.get('joining_date', '').strip()
         if joining_date_str:

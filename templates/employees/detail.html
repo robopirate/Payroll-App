@@ -112,6 +112,28 @@
           </form>
         </div>
       </div>
+
+      <!-- Shift Information -->
+      <div class="card border-0 shadow-sm mt-3">
+        <div class="card-header bg-white border-bottom">
+          <h6 class="mb-0 fw-bold"><i class="bi bi-clock text-info"></i> Shift Information</h6>
+        </div>
+        <div class="card-body">
+          {% set active_school = (emp.schools | selectattr('is_active') | list) | first %}
+          {% if emp.shift_start or emp.shift_end %}
+            <p class="mb-1"><span class="badge bg-warning text-dark">Custom Shift</span></p>
+            <h5 class="mb-1">{{ emp.shift_start or '--:--' }} – {{ emp.shift_end or '--:--' }}</h5>
+            <small class="text-muted">{{ emp.working_hours_per_day or (active_school.working_hours_per_day if active_school else '--') }} hrs/day</small>
+          {% elif active_school %}
+            <p class="mb-1 text-muted">Uses school's default shift</p>
+            <h5 class="mb-1">{{ active_school.shift_start or '--:--' }} – {{ active_school.shift_end or '--:--' }}</h5>
+            <small class="text-muted">{{ active_school.working_hours_per_day or '--' }} hrs/day</small>
+          {% else %}
+            <p class="mb-1 text-muted">No shift configured</p>
+            <small class="text-danger d-block">No active school assigned and no custom shift set.</small>
+          {% endif %}
+        </div>
+      </div>
     </div>
 
     <!-- Right column -->

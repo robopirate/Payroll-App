@@ -190,6 +190,15 @@ def safe_migrate():
             conn.execute(text("ALTER TABLE employees ADD COLUMN is_approved INTEGER DEFAULT 0"))
         if 'employee_type' not in emp_cols:
             conn.execute(text("ALTER TABLE employees ADD COLUMN employee_type VARCHAR(20) DEFAULT 'full_time'"))
+        if 'shift_start' not in emp_cols:
+            conn.execute(text("ALTER TABLE employees ADD COLUMN shift_start VARCHAR(5)"))
+        if 'shift_end' not in emp_cols:
+            conn.execute(text("ALTER TABLE employees ADD COLUMN shift_end VARCHAR(5)"))
+        if 'working_hours_per_day' not in emp_cols:
+            if db.engine.dialect.name == 'sqlite':
+                conn.execute(text("ALTER TABLE employees ADD COLUMN working_hours_per_day REAL"))
+            else:
+                conn.execute(text("ALTER TABLE employees ADD COLUMN working_hours_per_day FLOAT"))
 
         # Schools table: location_type, working hours, and shift timings
         if db.engine.dialect.name == 'sqlite':
