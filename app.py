@@ -253,6 +253,8 @@ def safe_migrate():
                 conn.execute(text("ALTER TABLE payrolls ADD COLUMN tds_deduction REAL DEFAULT 0.0"))
             else:
                 conn.execute(text("ALTER TABLE payrolls ADD COLUMN tds_deduction FLOAT DEFAULT 0.0"))
+        if 'tax_regime' not in payroll_cols:
+            conn.execute(text("ALTER TABLE payrolls ADD COLUMN tax_regime VARCHAR(10) DEFAULT 'new'"))
 
         conn.commit()
 

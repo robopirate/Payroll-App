@@ -170,6 +170,7 @@ class Payroll(db.Model):
     pt_deduction = db.Column(db.Float, default=0.0)
     lwf_deduction = db.Column(db.Float, default=0.0)
     tds_deduction = db.Column(db.Float, default=0.0)
+    tax_regime = db.Column(db.String(10), default='new')  # 'old' or 'new'
     advance_deduction = db.Column(db.Float, default=0.0)
     other_deductions = db.Column(db.Float, default=0.0)
     total_deductions = db.Column(db.Float, default=0.0)

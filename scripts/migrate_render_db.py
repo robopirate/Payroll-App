@@ -41,6 +41,7 @@ EXPECTED_COLUMNS = {
     'users': {
         'employee_id': ("INTEGER", "INTEGER"),
         'must_change_password': ("INTEGER DEFAULT 0", "BOOLEAN DEFAULT FALSE"),
+        'role': ("VARCHAR(20) DEFAULT 'viewer'", "VARCHAR(20) DEFAULT 'viewer'"),
     },
     'schools': {
         'location_type': ("VARCHAR(30) DEFAULT 'School'", "VARCHAR(30) DEFAULT 'School'"),
@@ -63,6 +64,7 @@ EXPECTED_COLUMNS = {
         'pt_deduction': ("REAL DEFAULT 0.0", "FLOAT DEFAULT 0.0"),
         'lwf_deduction': ("REAL DEFAULT 0.0", "FLOAT DEFAULT 0.0"),
         'tds_deduction': ("REAL DEFAULT 0.0", "FLOAT DEFAULT 0.0"),
+        'tax_regime': ("VARCHAR(10) DEFAULT 'new'", "VARCHAR(10) DEFAULT 'new'"),
     },
 }
 
