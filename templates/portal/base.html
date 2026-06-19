@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <meta name="theme-color" content="#0A1628">
-  <meta property="og:title" content="Robo Pirate HR — Payroll & Attendance">
+  <meta property="og:title" content="Robo Pirate — Payroll & Attendance">
   <meta property="og:description" content="Mark attendance, view payslips, and manage leaves.">
   <meta property="og:type" content="website">
   <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
-  <title>{% block title %}My Portal{% endblock %} — Robo Pirate HR</title>
+  <title>{% block title %}My Portal{% endblock %} — Robo Pirate</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -227,7 +227,7 @@
 
 <header class="portal-header">
   <div>
-    <div class="app-name">🤖 Robo Pirate HR</div>
+    <div class="app-name"><img src="{{ url_for('static', filename='images/logo.png') }}" alt="Robo Pirate" style="height:28px;width:auto;vertical-align:middle;margin-right:6px;">Robo Pirate</div>
     {% if current_user.is_authenticated and current_user.employee_id %}
       <div class="emp-name" id="hdr-emp-name">Employee Portal</div>
     {% endif %}
