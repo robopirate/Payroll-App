@@ -2,8 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="csrf-token" content="{{ csrf_token() }}">
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#0A1628">
   <meta property="og:title" content="Robo Pirate's Payroll">
   <meta property="og:description" content="Mark attendance, view payslips, and manage leaves.">
@@ -49,6 +50,7 @@
       -webkit-backdrop-filter: blur(20px);
       color: white;
       padding: 12px 18px;
+      padding-top: env(safe-area-inset-top, 12px);
       position: sticky;
       top: 0;
       z-index: 300;
@@ -65,12 +67,19 @@
       color: white;
       text-shadow: 0 1px 4px rgba(0,0,0,0.3);
     }
+    @media (max-width: 400px) {
+      .portal-header .app-name { font-size: 0.9rem; }
+    }
     .portal-header .emp-name {
       font-size: 0.68rem;
       color: var(--accent-orange);
       margin-top: 2px;
       font-weight: 500;
       opacity: 0.85;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 150px;
     }
     .portal-logout-btn {
       color: rgba(255,255,255,0.65);
@@ -101,14 +110,16 @@
       z-index: 300;
       display: flex;
       box-shadow: 0 -4px 24px rgba(0,0,0,0.08);
+      padding-bottom: env(safe-area-inset-bottom, 0);
     }
     .bottom-nav a {
       flex: 1;
       text-align: center;
       padding: 9px 4px 6px;
+      padding-bottom: 6px;
       text-decoration: none;
       color: #9aa5b4;
-      font-size: 0.57rem;
+      font-size: 0.6rem;
       font-weight: 700;
       display: flex;
       flex-direction: column;
@@ -119,7 +130,11 @@
       transition: color 0.15s;
       position: relative;
     }
-    .bottom-nav a i { font-size: 1.4rem; transition: transform 0.2s; }
+    .bottom-nav a i { font-size: 1.25rem; transition: transform 0.2s; }
+    @media (max-width: 360px) {
+      .bottom-nav a { font-size: 0; padding: 10px 2px 6px; gap: 0; }
+      .bottom-nav a i { font-size: 1.4rem; }
+    }
     .bottom-nav a.active { color: var(--accent-orange); }
     .bottom-nav a.active::before {
       content: '';
@@ -220,6 +235,10 @@
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: rgba(10, 22, 40, 0.15); border-radius: 3px; }
     ::-webkit-scrollbar-thumb:hover { background: rgba(10, 22, 40, 0.25); }
+    @media (max-width: 400px) {
+      .portal-body { padding: 10px 10px 0; }
+      .card-body { padding: 1rem !important; }
+    }
   </style>
   {% block head %}{% endblock %}
 </head>

@@ -2,13 +2,18 @@
 {% block title %}My Payslips{% endblock %}
 {% block head %}
 <style>
-.payslip-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid rgba(0,0,0,0.04); transition: background 0.15s; }
+.payslip-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 14px 0; border-bottom: 1px solid rgba(0,0,0,0.04); transition: background 0.15s; }
 .payslip-row:last-child { border-bottom: none; }
 .payslip-row:hover { background: rgba(255,107,53,0.02); }
 .month-badge { width: 48px; height: 48px; border-radius: 14px; background: linear-gradient(135deg, rgba(21,101,192,0.12), rgba(0,188,212,0.08)); backdrop-filter: blur(4px); color: #1565C0; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 800; font-size: 0.8rem; line-height: 1.2; border: 1px solid rgba(21,101,192,0.1); }
 .payslip-info .net { font-size: 1.1rem; font-weight: 800; color: #28a745; }
 .payslip-info .meta { font-size: 0.75rem; color: #888; margin-top: 1px; }
 .btn-dl { background: linear-gradient(135deg, rgba(21,101,192,0.9), rgba(13,71,161,0.9)); color: white; border: none; padding: 8px 16px; border-radius: 12px; font-size: 0.85rem; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; backdrop-filter: blur(4px); box-shadow: 0 2px 8px rgba(21,101,192,0.15); transition: all 0.2s; }
+@media (max-width: 400px) {
+  .month-badge { width: 42px; height: 42px; }
+  .payslip-info .net { font-size: 1rem; }
+  .card-body { padding: 1rem !important; }
+}
 .btn-dl:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(21,101,192,0.25); color: white; }
 .empty-state { text-align: center; padding: 40px 20px; color: #8894a8; }
 .empty-state i { font-size: 3rem; display: block; margin-bottom: 12px; color: #dde3ed; }

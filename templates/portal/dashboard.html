@@ -47,7 +47,7 @@
   .quick-att-card:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.7); }
   .quick-att-card:active { transform: translateY(0) scale(0.98); }
 
-  .leave-stats { display: flex; gap: 12px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 8px; }
+  .leave-stats { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-bottom: 20px; padding-bottom: 8px; }
   .leave-stat-card { flex: 0 0 calc(50% - 6px); background: rgba(255, 255, 255, 0.72); backdrop-filter: blur(16px); border-radius: 20px; text-align: center; padding: 16px 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.5); transition: all 0.25s ease; animation: cardSlideUp 0.5s ease-out both; }
   .leave-stat-card:nth-child(2) { animation-delay: 0.2s; }
   .leave-stat-card:nth-child(3) { animation-delay: 0.3s; }
@@ -56,6 +56,12 @@
   .leave-stat-card .lbl { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #a0aab8; margin-top: 6px; }
 
   .section-title { font-family: 'Poppins', sans-serif; font-size: 1rem; font-weight: 700; color: #0A1628; margin-bottom: 14px; margin-top: 20px; letter-spacing: -0.2px; }
+  @media (max-width: 400px) {
+    .section-title { margin-top: 16px; }
+    .btn-punch { width: 120px; height: 120px; font-size: 0.8rem; }
+    .btn-punch i { font-size: 2rem; }
+    .punch-card-hero { border-radius: 20px; }
+  }
 
   .att-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid rgba(0,0,0,0.04); transition: background 0.2s; }
   .att-row:hover { background: rgba(255, 107, 53, 0.02); }
@@ -84,12 +90,12 @@
       {% if today_att.check_in and today_att.check_out %}
         <span class="status-pill" style="background:rgba(0,200,83,0.2);color:#69f0ae;border:1px solid rgba(0,200,83,0.4);">✓ Completed &nbsp;{{ today_att.check_in }} → {{ today_att.check_out }}</span>
       {% elif today_att.check_in %}
-        <span class="status-pill" style="background:rgba(255,193,7,0.2);color:#ffe066;border:1px solid rgba(255,193,7,0.4);">⏱ In since {{ today_att.check_in }}</span>
+        <span class="status-pill" style="background:rgba(255,193,7,0.2);color:#ffd54f;border:1px solid rgba(255,193,7,0.4);text-shadow:0 1px 2px rgba(0,0,0,0.3);">⏱ In since {{ today_att.check_in }}</span>
       {% else %}
-        <span class="status-pill" style="background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.15);">Not yet marked</span>
+        <span class="status-pill" style="background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.75);border:1px solid rgba(255,255,255,0.15);">Not yet marked</span>
       {% endif %}
     {% else %}
-      <span class="status-pill" style="background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.15);">Not yet punched in</span>
+      <span class="status-pill" style="background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.75);border:1px solid rgba(255,255,255,0.15);">Not yet punched in</span>
     {% endif %}
   </div>
   <div class="punch-area">
@@ -178,7 +184,15 @@ function doPunch(action) {
     { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
   );
 }
-function resetBtn(action, btn) { btn.disabled = false; btn.style.opacity = '1'; btn.innerHTML = action === 'in' ? '<i class="bi bi-fingerprint" style="font-size:2.5rem;margin-bottom:4px;display:block;"></i>Punch In<small style="font-size:0.6rem;opacity:0.8;font-weight:500;display:block;margin-top:2px;text-transform:uppercase;letter-spacing:0.5px;">Tap to mark</small>' : '<i class="bi bi-box-arrow-right" style="font-size:2.5rem;margin-bottom:4px;display:block;"></i>Punch Out<small style="font-size:0.6rem;opacity:0.8;font-weight:500;display:block;margin-top:2px;text-transform:uppercase;letter-spacing:0.5px;">Tap to punch out</small>'; }
+function resetBtn(action, btn) {
+  btn.disabled = false;
+  btn.style.opacity = '1';
+  btn.style.color = 'white';
+  const iconClass = action === 'in' ? 'bi-fingerprint' : 'bi-box-arrow-right';
+  const label = action === 'in' ? 'Punch In' : 'Punch Out';
+  const sub = action === 'in' ? 'Tap to mark' : 'Tap to punch out';
+  btn.innerHTML = `<i class="bi ${iconClass}" style="font-size:2.5rem;margin-bottom:4px;display:block;"></i>${label}<small style="font-size:0.6rem;opacity:0.8;font-weight:500;display:block;margin-top:2px;text-transform:uppercase;letter-spacing:0.5px;">${sub}</small>`;
+}
 function showFeedback(type, msg) { const fb = document.getElementById('punch-feedback'), styles = { success:'background:rgba(232,255,242,0.9);color:#1a6640;border:1px solid #a3dfc0;backdrop-filter:blur(8px);', danger:'background:rgba(255,240,240,0.9);color:#9b2335;border:1px solid #f5c0c0;backdrop-filter:blur(8px);', warning:'background:rgba(255,251,235,0.9);color:#8a6800;border:1px solid #f5e0a0;backdrop-filter:blur(8px);', info:'background:rgba(239,246,255,0.9);color:#1e40af;border:1px solid #bfdbfe;backdrop-filter:blur(8px);' }; fb.innerHTML = `<div style="${styles[type]||styles.info}padding:10px 14px;border-radius:12px;font-size:0.83rem;font-weight:500;">${msg}</div>`; }
 </script>
 {% endblock %}

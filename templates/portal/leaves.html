@@ -2,8 +2,8 @@
 {% block title %}My Leaves{% endblock %}
 {% block head %}
 <style>
-.balance-grid { display: flex; gap: 10px; margin-bottom: 14px; }
-.balance-card { flex: 1; background: rgba(255,255,255,0.72); backdrop-filter: blur(16px); border-radius: 20px; padding: 14px 10px; text-align: center; box-shadow: 0 4px 16px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.5); transition: all 0.25s ease; }
+.balance-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+.balance-card { flex: 1 1 auto; min-width: calc(50% - 5px); background: rgba(255,255,255,0.72); backdrop-filter: blur(16px); border-radius: 20px; padding: 14px 10px; text-align: center; box-shadow: 0 4px 16px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.5); transition: all 0.25s ease; }
 .balance-card:active { transform: scale(0.98); }
 .balance-card .num { font-size: 1.7rem; font-weight: 800; color: #1565C0; line-height: 1; }
 .balance-card .used { font-size: 0.68rem; color: #aaa; margin-top: 2px; }
@@ -14,6 +14,11 @@
 .leave-item .reason { font-size: 0.75rem; color: #aaa; margin-top: 2px; font-style: italic; }
 .apply-btn-glass { background: linear-gradient(135deg, rgba(10,22,40,0.95), rgba(21,101,192,0.9)); color: white; border: none; border-radius: 16px; backdrop-filter: blur(8px); box-shadow: 0 6px 20px rgba(21,101,192,0.2), inset 0 1px 0 rgba(255,255,255,0.1); transition: all 0.25s; }
 .apply-btn-glass:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(21,101,192,0.3); }
+@media (max-width: 400px) {
+  .leave-item { flex-direction: column; gap: 8px; }
+  .leave-item > div:last-child { margin-left: 0; text-align: left; }
+  .card-body { padding: 1rem !important; }
+}
 </style>
 {% endblock %}
 {% block content %}

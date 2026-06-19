@@ -696,3 +696,12 @@ thead .sticky-col { background: #F5F8FF; }
   .page-header { font-size: 1.1rem; }
   .stat-emoji { font-size: 2rem; }
 }
+
+@media (max-width: 400px) {
+  .page-header { font-size: 1.1rem !important; padding-left: 10px; }
+  .card-body { padding: 0.9rem !important; }
+}
+
+.table-responsive {
+  -webkit-overflow-scrolling: touch;
+}

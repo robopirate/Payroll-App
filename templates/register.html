@@ -1,169 +1,156 @@
-{% extends 'base.html' %}
+{% extends 'portal/base.html' %}
 {% block title %}Employee Registration{% endblock %}
+{% block head %}
+<style>
+  .register-card {
+    background: rgba(255,255,255,0.72);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.5);
+    border-radius: 20px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.6);
+  }
+  .register-card .form-control,
+  .register-card .form-select {
+    height: 52px;
+    font-size: 16px;
+    border-radius: 12px;
+    border: 1.5px solid rgba(0,0,0,0.08);
+    background: rgba(255,255,255,0.8);
+  }
+  .register-card .form-control:focus,
+  .register-card .form-select:focus {
+    border-color: #1565C0;
+    box-shadow: 0 0 0 3px rgba(21,101,192,0.1);
+    background: #fff;
+  }
+  .register-card .btn-primary {
+    height: 52px;
+    border-radius: 12px;
+    font-weight: 700;
+    width: 100%;
+  }
+  .register-title {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 800;
+    color: #0A1628;
+  }
+  @media (max-width: 400px) {
+    .register-card .card-body { padding: 1.2rem !important; }
+  }
+</style>
+{% endblock %}
 {% block content %}
-<div class="container py-5">
-  <div class="row justify-content-center">
-    <div class="col-lg-8">
-      <div class="card border-0 shadow-lg">
-        <div class="card-body p-5">
-          <div class="text-center mb-5">
-            <h2 class="fw-bold text-primary mb-2">Employee Registration</h2>
-            <p class="text-muted">Complete your profile to get started</p>
-          </div>
-
-          <form method="POST" id="registrationForm">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <!-- Personal Information Section -->
-            <div class="mb-5">
-              <h5 class="fw-bold mb-4 pb-2 border-bottom">
-                <i class="bi bi-person-fill text-primary"></i> Personal Information
-              </h5>
-
-              <div class="row g-3">
-                <div class="col-sm-6">
-                  <label class="form-label fw-semibold">Full Name <span class="text-danger">*</span></label>
-                  <input type="text" name="name" class="form-control" placeholder="John Doe" required>
-                </div>
-
-                <div class="col-sm-6">
-                  <label class="form-label fw-semibold">Phone <span class="text-danger">*</span></label>
-                  <input type="tel" name="phone" class="form-control" placeholder="9876543210"
-                         pattern="[0-9]{10}" required>
-                  <small class="text-muted">10-digit mobile number (used for login)</small>
-                </div>
-
-                <div class="col-sm-6">
-                  <label class="form-label fw-semibold">Email</label>
-                  <input type="email" name="email" class="form-control" placeholder="john@example.com">
-                </div>
-
-                <div class="col-sm-6">
-                  <label class="form-label fw-semibold">Designation <span class="text-danger">*</span></label>
-                  <input type="text" name="designation" class="form-control" placeholder="e.g., Teacher, Principal, Coordinator" required>
-                </div>
-
-                <div class="col-sm-6">
-                  <label class="form-label fw-semibold">Department/Subject</label>
-                  <input type="text" name="department" class="form-control" placeholder="e.g., Mathematics, English">
-                </div>
-
-                <div class="col-sm-6">
-                  <label class="form-label fw-semibold">Joining Date <span class="text-danger">*</span></label>
-                  <input type="date" name="joining_date" class="form-control" required>
-                </div>
-
-                <div class="col-sm-6">
-                  <label class="form-label fw-semibold">PAN Number</label>
-                  <input type="text" name="pan_number" class="form-control" placeholder="ABCDE1234F" maxlength="10">
-                </div>
-
-                <div class="col-sm-6">
-                  <label class="form-label fw-semibold">Aadhar Number</label>
-                  <input type="text" name="aadhar_number" class="form-control" placeholder="1234 5678 9012" maxlength="12">
-                </div>
-              </div>
-            </div>
-
-            <!-- Bank Details Section -->
-            <div class="mb-5">
-              <h5 class="fw-bold mb-4 pb-2 border-bottom">
-                <i class="bi bi-bank text-success"></i> Bank Details
-              </h5>
-
-              <div class="row g-3">
-                <div class="col-12">
-                  <label class="form-label fw-semibold">Bank Name <span class="text-danger">*</span></label>
-                  <input type="text" name="bank_name" class="form-control" placeholder="State Bank of India" required>
-                </div>
-
-                <div class="col-sm-6">
-                  <label class="form-label fw-semibold">Account Number <span class="text-danger">*</span></label>
-                  <input type="text" name="account_number" class="form-control" placeholder="00000000000000" required>
-                </div>
-
-                <div class="col-sm-6">
-                  <label class="form-label fw-semibold">IFSC Code <span class="text-danger">*</span></label>
-                  <input type="text" name="ifsc_code" class="form-control" placeholder="SBIN0001234" required>
-                </div>
-              </div>
-
-              <div class="alert alert-info mt-3" role="alert">
-                <i class="bi bi-info-circle"></i> Your bank details are securely stored for salary payments
-              </div>
-            </div>
-
-            <!-- Security Section -->
-            <div class="mb-5">
-              <h5 class="fw-bold mb-4 pb-2 border-bottom">
-                <i class="bi bi-shield-lock text-warning"></i> Security
-              </h5>
-
-              <div class="row g-3">
-                <div class="col-sm-6">
-                  <label class="form-label fw-semibold">Password <span class="text-danger">*</span></label>
-                  <input type="password" name="password" id="password" class="form-control"
-                         placeholder="Enter a strong password" required minlength="6">
-                  <small class="text-muted">Minimum 6 characters</small>
-                </div>
-
-                <div class="col-sm-6">
-                  <label class="form-label fw-semibold">Confirm Password <span class="text-danger">*</span></label>
-                  <input type="password" name="confirm_password" id="confirm_password" class="form-control"
-                         placeholder="Re-enter password" required minlength="6">
-                </div>
-
-                <div class="col-12">
-                  <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="termsCheck" required>
-                    <label class="form-check-label" for="termsCheck">
-                      I agree to the terms and conditions <span class="text-danger">*</span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Buttons -->
-            <div class="d-flex gap-3 justify-content-between">
-              <a href="{{ url_for('portal.portal_login') }}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Back to Login
-              </a>
-              <button type="submit" class="btn btn-primary btn-lg">
-                <i class="bi bi-check-circle"></i> Register
-              </button>
-            </div>
-
-            <p class="text-center text-muted mt-4">
-              Already have an account? <a href="{{ url_for('portal.portal_login') }}" class="text-primary fw-semibold">Login here</a>
-            </p>
-          </form>
-        </div>
+<div class="px-3 pt-3 pb-5">
+  <div class="register-card">
+    <div class="card-body p-4">
+      <div class="text-center mb-4">
+        <h4 class="register-title mb-2">Employee Registration</h4>
+        <p class="text-muted mb-0" style="font-size:0.85rem;">Complete your profile to get started</p>
       </div>
+
+      <form method="POST" id="registrationForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <p class="fw-bold mb-3" style="font-size:0.9rem;color:#0A1628;"><i class="bi bi-person-fill text-primary me-2"></i>Personal Information</p>
+        <div class="row g-3 mb-3">
+          <div class="col-sm-6">
+            <label class="form-label" style="font-size:0.78rem;font-weight:700;color:#888;">Full Name <span class="text-danger">*</span></label>
+            <input type="text" name="name" class="form-control" placeholder="John Doe" required>
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label" style="font-size:0.78rem;font-weight:700;color:#888;">Phone <span class="text-danger">*</span></label>
+            <input type="tel" name="phone" class="form-control" placeholder="9876543210" pattern="[0-9]{10}" required>
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label" style="font-size:0.78rem;font-weight:700;color:#888;">Email</label>
+            <input type="email" name="email" class="form-control" placeholder="john@example.com">
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label" style="font-size:0.78rem;font-weight:700;color:#888;">Designation <span class="text-danger">*</span></label>
+            <input type="text" name="designation" class="form-control" placeholder="e.g., Teacher, Coordinator" required>
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label" style="font-size:0.78rem;font-weight:700;color:#888;">Department/Subject</label>
+            <input type="text" name="department" class="form-control" placeholder="e.g., Mathematics">
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label" style="font-size:0.78rem;font-weight:700;color:#888;">Joining Date <span class="text-danger">*</span></label>
+            <input type="date" name="joining_date" class="form-control" required>
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label" style="font-size:0.78rem;font-weight:700;color:#888;">PAN Number</label>
+            <input type="text" name="pan_number" class="form-control" placeholder="ABCDE1234F" maxlength="10">
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label" style="font-size:0.78rem;font-weight:700;color:#888;">Aadhar Number</label>
+            <input type="text" name="aadhar_number" class="form-control" placeholder="1234 5678 9012" maxlength="12">
+          </div>
+        </div>
+
+        <p class="fw-bold mb-3 mt-4" style="font-size:0.9rem;color:#0A1628;"><i class="bi bi-bank text-success me-2"></i>Bank Details</p>
+        <div class="row g-3 mb-3">
+          <div class="col-12">
+            <label class="form-label" style="font-size:0.78rem;font-weight:700;color:#888;">Bank Name <span class="text-danger">*</span></label>
+            <input type="text" name="bank_name" class="form-control" placeholder="State Bank of India" required>
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label" style="font-size:0.78rem;font-weight:700;color:#888;">Account Number <span class="text-danger">*</span></label>
+            <input type="text" name="account_number" class="form-control" placeholder="00000000000000" required>
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label" style="font-size:0.78rem;font-weight:700;color:#888;">IFSC Code <span class="text-danger">*</span></label>
+            <input type="text" name="ifsc_code" class="form-control" placeholder="SBIN0001234" required>
+          </div>
+        </div>
+
+        <p class="fw-bold mb-3 mt-4" style="font-size:0.9rem;color:#0A1628;"><i class="bi bi-shield-lock text-warning me-2"></i>Security</p>
+        <div class="row g-3 mb-3">
+          <div class="col-sm-6">
+            <label class="form-label" style="font-size:0.78rem;font-weight:700;color:#888;">Password <span class="text-danger">*</span></label>
+            <input type="password" name="password" id="password" class="form-control" placeholder="Enter a strong password" required minlength="6">
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label" style="font-size:0.78rem;font-weight:700;color:#888;">Confirm Password <span class="text-danger">*</span></label>
+            <input type="password" name="confirm_password" id="confirm_password" class="form-control" placeholder="Re-enter password" required minlength="6">
+          </div>
+          <div class="col-12">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="termsCheck" required>
+              <label class="form-check-label" for="termsCheck" style="font-size:0.85rem;">
+                I agree to the terms and conditions <span class="text-danger">*</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-touch w-100 mt-2">
+          <i class="bi bi-check-circle me-2"></i>Register
+        </button>
+      </form>
+
+      <p class="text-center text-muted mt-4 mb-0" style="font-size:0.85rem;">
+        Already have an account? <a href="{{ url_for('portal.portal_login') }}" class="text-primary fw-semibold">Login here</a>
+      </p>
     </div>
   </div>
 </div>
 
 <script>
-  // Form validation
   document.getElementById('registrationForm').addEventListener('submit', function(e) {
     const phone = document.querySelector('input[name="phone"]').value;
     const pwd = document.getElementById('password').value;
     const confirmPwd = document.getElementById('confirm_password').value;
-
-    // Phone validation
     if (!/^\d{10}$/.test(phone)) {
       e.preventDefault();
       alert('Phone number must be exactly 10 digits!');
       return false;
     }
-
-    // Password validation
     if (pwd !== confirmPwd) {
       e.preventDefault();
       alert('Passwords do not match!');
       return false;
     }
-
     if (pwd.length < 6) {
       e.preventDefault();
       alert('Password must be at least 6 characters long!');
