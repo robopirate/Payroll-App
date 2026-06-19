@@ -17,7 +17,7 @@ def test_portal_login_page(client):
 
 def test_admin_login(client, app):
     with app.app_context():
-        admin = User(username='admin', is_admin=True)
+        admin = User(username='admin', is_admin=True, role='admin')
         admin.set_password('admin123')
         db.session.add(admin)
         db.session.commit()
@@ -39,7 +39,7 @@ def test_employees_page_requires_login(client):
 def test_employees_page_loads_after_login(client, app):
     """Smoke test that authenticated admin pages extending base.html render."""
     with app.app_context():
-        admin = User(username='admin', is_admin=True)
+        admin = User(username='admin', is_admin=True, role='admin')
         admin.set_password('admin123')
         db.session.add(admin)
         db.session.commit()
@@ -62,7 +62,7 @@ def test_admin_login_brute_force_throttle(client, app):
         os.remove(DEFAULT_FILE)
 
     with app.app_context():
-        admin = User(username='admin', is_admin=True)
+        admin = User(username='admin', is_admin=True, role='admin')
         admin.set_password('admin123')
         db.session.add(admin)
         db.session.commit()

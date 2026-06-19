@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, send_file, current_app
 from markupsafe import Markup
 from flask_login import login_required, current_user
+from decorators import require_role
 from datetime import date, datetime, timedelta
 from sqlalchemy import extract
 import calendar
@@ -98,6 +99,7 @@ def employees():
 
 @bp.route('/employees/add', methods=['GET', 'POST'])
 @login_required
+@require_role('admin')
 def add_employee():
     departments = Department.query.order_by(Department.name).all()
     schools = School.query.filter_by(is_active=True).order_by(School.name).all()
@@ -166,6 +168,7 @@ def add_employee():
 
 @bp.route('/employees/<int:emp_id>/edit', methods=['GET', 'POST'])
 @login_required
+@require_role('admin')
 def edit_employee(emp_id):
     emp = Employee.query.get_or_404(emp_id)
     departments = Department.query.order_by(Department.name).all()
@@ -234,6 +237,7 @@ def edit_employee(emp_id):
 
 @bp.route('/employees/<int:emp_id>/deactivate', methods=['POST'])
 @login_required
+@require_role('admin')
 def deactivate_employee(emp_id):
     emp = Employee.query.get_or_404(emp_id)
     emp.is_active = False
@@ -244,6 +248,7 @@ def deactivate_employee(emp_id):
 
 @bp.route('/employees/<int:emp_id>/approve', methods=['POST'])
 @login_required
+@require_role('admin')
 def approve_employee(emp_id):
     emp = Employee.query.get_or_404(emp_id)
     emp.is_approved = True
@@ -600,6 +605,7 @@ def apply_leave():
 
 @bp.route('/leaves/<int:leave_id>/approve', methods=['POST'])
 @login_required
+@require_role('admin')
 def approve_leave(leave_id):
     leave = Leave.query.get_or_404(leave_id)
     leave.status = 'approved'
@@ -633,6 +639,7 @@ def approve_leave(leave_id):
 
 @bp.route('/leaves/<int:leave_id>/reject', methods=['POST'])
 @login_required
+@require_role('admin')
 def reject_leave(leave_id):
     leave = Leave.query.get_or_404(leave_id)
     leave.status = 'rejected'
@@ -661,6 +668,7 @@ def reject_leave(leave_id):
 
 @bp.route('/leaves/<int:leave_id>/delete', methods=['POST'])
 @login_required
+@require_role('admin')
 def delete_leave(leave_id):
     """Admin can delete any leave record and restore its balance if it was approved."""
     leave = Leave.query.get_or_404(leave_id)
@@ -704,6 +712,7 @@ def leave_balances():
 
 @bp.route('/advances', methods=['GET', 'POST'])
 @login_required
+@require_role('admin')
 def advances():
     emps = Employee.query.filter_by(is_active=True).order_by(Employee.name).all()
     if request.method == 'POST':
@@ -745,6 +754,7 @@ def advances():
 
 @bp.route('/advances/<int:adv_id>/approve', methods=['POST'])
 @login_required
+@require_role('admin')
 def approve_advance(adv_id):
     adv = Advance.query.get_or_404(adv_id)
     adv.status = 'approved'
@@ -770,6 +780,7 @@ def payroll():
 
 @bp.route('/payroll/generate', methods=['POST'])
 @login_required
+@require_role('admin')
 def generate_payroll():
     month = int(request.form.get('month', date.today().month))
     year = int(request.form.get('year', date.today().year))
@@ -805,6 +816,7 @@ def generate_payroll():
 
 @bp.route('/payroll/<int:payroll_id>/finalize', methods=['POST'])
 @login_required
+@require_role('admin')
 def finalize_payroll(payroll_id):
     p = Payroll.query.get_or_404(payroll_id)
     p.status = 'finalized'
@@ -815,6 +827,7 @@ def finalize_payroll(payroll_id):
 
 @bp.route('/payroll/<int:payroll_id>/mark_paid', methods=['POST'])
 @login_required
+@require_role('admin')
 def mark_paid(payroll_id):
     p = Payroll.query.get_or_404(payroll_id)
     p.status = 'paid'
@@ -897,6 +910,7 @@ def sms_panel():
 
 @bp.route('/settings', methods=['GET', 'POST'])
 @login_required
+@require_role('admin')
 def settings():
     if request.method == 'POST':
         new_pass = request.form.get('new_password', '')
@@ -924,6 +938,7 @@ def settings():
 
 @bp.route('/holidays', methods=['GET', 'POST'])
 @login_required
+@require_role('admin')
 def holidays():
     if request.method == 'POST':
         f = request.form
@@ -958,6 +973,7 @@ def holidays():
 
 @bp.route('/holidays/<int:holiday_id>/delete', methods=['POST'])
 @login_required
+@require_role('admin')
 def delete_holiday(holiday_id):
     holiday = Holiday.query.get_or_404(holiday_id)
     name = holiday.name
@@ -979,6 +995,7 @@ def delete_holiday(holiday_id):
 
 @bp.route('/holidays/populate-national', methods=['POST'])
 @login_required
+@require_role('admin')
 def populate_national_holidays():
     year = int(request.form.get('year', date.today().year))
 
@@ -1051,6 +1068,7 @@ def populate_national_holidays():
 
 @bp.route('/school-schedule', methods=['GET', 'POST'])
 @login_required
+@require_role('admin')
 def school_schedule():
     schedule = SchoolSchedule.query.order_by(SchoolSchedule.year.desc()).first()
 
@@ -1106,6 +1124,7 @@ def school_schedule():
 
 @bp.route('/leave-setup', methods=['GET', 'POST'])
 @login_required
+@require_role('admin')
 def leave_balance_setup():
     employees = Employee.query.filter_by(is_active=True).order_by(Employee.name).all()
     current_year = date.today().year
@@ -1121,6 +1140,7 @@ def leave_balance_setup():
 
 @bp.route('/leave-setup/quick', methods=['POST'])
 @login_required
+@require_role('admin')
 def setup_leave_quick():
     f = request.form
     casual = float(f.get('casual_days', 12))
@@ -1148,6 +1168,7 @@ def setup_leave_quick():
 
 @bp.route('/leave-setup/employee', methods=['POST'])
 @login_required
+@require_role('admin')
 def setup_employee_leaves():
     f = request.form
     emp_id = int(f.get('employee_id'))
@@ -1323,6 +1344,7 @@ def lock_attendance():
 
 @bp.route('/employees/import', methods=['GET', 'POST'])
 @login_required
+@require_role('admin')
 def import_employees():
     import csv
     if request.method == 'POST':

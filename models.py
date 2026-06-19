@@ -16,6 +16,7 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(200), nullable=False)
     is_admin = db.Column(db.Boolean, default=True)
+    role = db.Column(db.String(20), default='viewer')  # admin, viewer
     employee_id = db.Column(db.Integer, db.ForeignKey('employees.id'), nullable=True)
     must_change_password = db.Column(db.Boolean, default=False)
 

@@ -6,7 +6,7 @@ from models import db, User, Employee, Department, Leave, LeaveBalance
 
 def _create_admin(app, password='admin123'):
     with app.app_context():
-        admin = User(username='admin', is_admin=True)
+        admin = User(username='admin', is_admin=True, role='admin')
         admin.set_password(password)
         db.session.add(admin)
         db.session.commit()

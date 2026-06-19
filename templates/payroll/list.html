@@ -36,6 +36,7 @@
             </div>
           </form>
         </div>
+        {% if current_user.role == 'admin' %}
         <div class="col-auto ms-auto">
           <form method="POST" action="{{ url_for('admin.generate_payroll') }}" class="d-flex gap-2">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -47,6 +48,7 @@
             </button>
           </form>
         </div>
+        {% endif %}
         {% if payrolls %}
         <div class="col-auto">
           <form method="POST" action="{{ url_for('admin.send_bulk_sms') }}">

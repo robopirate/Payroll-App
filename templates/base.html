@@ -71,12 +71,15 @@
     <a href="{{ url_for('admin.leave_balances') }}" class="{% if request.endpoint == 'admin.leave_balances' %}active{% endif %}">
       <i class="bi bi-clipboard-data-fill"></i> Leave Balances
     </a>
+    {% if current_user.role == 'admin' %}
     <a href="{{ url_for('admin.leave_balance_setup') }}" class="{% if request.endpoint == 'admin.leave_balance_setup' %}active{% endif %}">
       <i class="bi bi-sliders"></i> Leave Setup
     </a>
+    {% endif %}
 
     <div class="sidebar-divider"></div>
     <div class="sidebar-section-label">Organization</div>
+    {% if current_user.role == 'admin' %}
     <a href="{{ url_for('admin.holidays') }}" class="{% if request.endpoint == 'admin.holidays' %}active{% endif %}">
       <i class="bi bi-calendar-event-fill"></i> Holidays
     </a>
@@ -86,24 +89,31 @@
     <a href="{{ url_for('admin.departments') }}" class="{% if request.endpoint == 'admin.departments' %}active{% endif %}">
       <i class="bi bi-diagram-3-fill"></i> Departments
     </a>
+    {% endif %}
 
     <div class="sidebar-divider"></div>
     <div class="sidebar-section-label">Finance</div>
+    {% if current_user.role == 'admin' %}
     <a href="{{ url_for('admin.advances') }}" class="{% if request.endpoint == 'admin.advances' %}active{% endif %}">
       <i class="bi bi-cash-coin"></i> Advances
     </a>
+    {% endif %}
     <a href="{{ url_for('admin.payroll') }}" class="{% if 'payroll' in (request.endpoint or '') %}active{% endif %}">
       <i class="bi bi-receipt-cutoff"></i> Payroll
     </a>
+    {% if current_user.role == 'admin' %}
     <a href="{{ url_for('admin.sms_panel') }}" class="{% if request.endpoint == 'admin.sms_panel' %}active{% endif %}">
       <i class="bi bi-chat-dots-fill"></i> Send SMS
     </a>
+    {% endif %}
 
     <div class="sidebar-divider"></div>
     <div class="sidebar-section-label">Account</div>
+    {% if current_user.role == 'admin' %}
     <a href="{{ url_for('admin.settings') }}" class="{% if request.endpoint == 'admin.settings' %}active{% endif %}">
       <i class="bi bi-gear-fill"></i> Settings
     </a>
+    {% endif %}
     <a href="{{ url_for('auth.logout') }}" class="logout-link">
       <i class="bi bi-box-arrow-right"></i> Logout ({{ current_user.username }})
     </a>

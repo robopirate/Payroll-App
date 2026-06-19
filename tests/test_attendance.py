@@ -69,7 +69,7 @@ def test_update_attendance_timing_flags(app):
 
 def test_admin_attendance_save_computes_late_and_early(client, app):
     with app.app_context():
-        admin = User(username='admin', is_admin=True)
+        admin = User(username='admin', is_admin=True, role='admin')
         admin.set_password('admin123')
         db.session.add(admin)
 

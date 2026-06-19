@@ -7,7 +7,7 @@ from models import db, User, Employee, Department
 
 def _create_admin(app, password='admin123', must_change=False):
     with app.app_context():
-        admin = User(username='admin', is_admin=True, must_change_password=must_change)
+        admin = User(username='admin', is_admin=True, role='admin', must_change_password=must_change)
         admin.set_password(password)
         db.session.add(admin)
         db.session.commit()

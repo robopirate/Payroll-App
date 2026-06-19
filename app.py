@@ -172,6 +172,13 @@ def safe_migrate():
                 conn.execute(text("ALTER TABLE users ADD COLUMN must_change_password INTEGER DEFAULT 0"))
             else:
                 conn.execute(text("ALTER TABLE users ADD COLUMN must_change_password BOOLEAN DEFAULT FALSE"))
+        if 'role' not in user_cols:
+            if db.engine.dialect.name == 'sqlite':
+                conn.execute(text("ALTER TABLE users ADD COLUMN role VARCHAR(20) DEFAULT 'viewer'"))
+            else:
+                conn.execute(text("ALTER TABLE users ADD COLUMN role VARCHAR(20) DEFAULT 'viewer'"))
+            # Existing admin users should keep admin access after the migration
+            conn.execute(text("UPDATE users SET role = 'admin' WHERE is_admin"))
 
         # Employees table: admin approval for self-registration
         if db.engine.dialect.name == 'sqlite':
@@ -279,7 +286,7 @@ def init_db():
         sync_postgres_sequences()
 
         if not app.config.get('TESTING') and not User.query.filter_by(username='admin').first():
-            admin = User(username='admin', is_admin=True, must_change_password=True)
+            admin = User(username='admin', is_admin=True, role='admin', must_change_password=True)
             initial_password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
             admin.set_password(initial_password)
             db.session.add(admin)

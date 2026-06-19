@@ -1,6 +1,6 @@
 """Shared decorators to avoid circular imports."""
 from functools import wraps
-from flask import redirect, url_for, request
+from flask import redirect, url_for, request, flash
 from flask_login import current_user, logout_user
 
 
@@ -24,3 +24,18 @@ def portal_required(f):
             return redirect(url_for('portal.portal_login'))
         return f(*args, **kwargs)
     return decorated
+
+
+def require_role(*roles):
+    """Restrict route to users with one of the allowed roles."""
+    def decorator(f):
+        @wraps(f)
+        def decorated(*args, **kwargs):
+            if not current_user.is_authenticated:
+                return redirect(url_for('auth.login'))
+            if current_user.role not in roles:
+                flash('Access denied. Admin privileges required.', 'danger')
+                return redirect(url_for('admin.dashboard'))
+            return f(*args, **kwargs)
+        return decorated
+    return decorator
