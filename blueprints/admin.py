@@ -136,6 +136,7 @@ def add_employee():
             email=f.get('email', '').strip(),
             department_id=int(f.get('department_id')) if f.get('department_id') else None,
             designation=f.get('designation', '').strip(),
+            employee_type=f.get('employee_type', 'full_time').strip() or 'full_time',
             basic_salary=basic_salary,
             joining_date=datetime.strptime(f.get('joining_date'), '%Y-%m-%d').date() if f.get('joining_date') else date.today(),
             bank_name=f.get('bank_name', '').strip(),
@@ -199,6 +200,7 @@ def edit_employee(emp_id):
         emp.email = (f.get('email') or emp.email or '').strip()
         emp.department_id = int(f.get('department_id')) if f.get('department_id') else None
         emp.designation = f.get('designation', '').strip()
+        emp.employee_type = f.get('employee_type', emp.employee_type or 'full_time').strip() or 'full_time'
         emp.basic_salary = basic_salary
         emp.bank_name = f.get('bank_name', '').strip()
         emp.account_number = f.get('account_number', '').strip()

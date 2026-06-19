@@ -22,6 +22,8 @@
           <h5 class="fw-bold">{{ emp.name }}</h5>
           <p class="text-muted mb-1">{{ emp.designation or 'N/A' }}</p>
           <span class="badge bg-primary">{{ emp.dept.name if emp.dept else 'No Dept' }}</span>
+          {% set type_labels = {'full_time': 'Full-time', 'contract': 'Contract', 'part_time': 'Part-time'} %}
+          <span class="badge bg-info">{{ type_labels.get(emp.employee_type, emp.employee_type|title) }}</span>
         </div>
         <div class="card-body border-top">
           <div class="info-row"><i class="bi bi-hash text-muted"></i> <strong>Emp ID:</strong> {{ emp.emp_id }}</div>

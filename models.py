@@ -60,6 +60,7 @@ class Employee(db.Model):
     email = db.Column(db.String(120))
     department_id = db.Column(db.Integer, db.ForeignKey('departments.id'))
     designation = db.Column(db.String(100))
+    employee_type = db.Column(db.String(20), default='full_time')  # full_time, contract, part_time
     basic_salary = db.Column(db.Float, default=0.0)
     joining_date = db.Column(db.Date, default=date.today)
     is_active = db.Column(db.Boolean, default=True)

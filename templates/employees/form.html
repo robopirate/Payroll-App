@@ -61,6 +61,18 @@
                        placeholder="Software Engineer">
               </div>
               <div class="col-sm-6">
+                <label class="form-label">Employee Type</label>
+                <select name="employee_type" class="form-select">
+                  {% set types = [('full_time', 'Full-time'), ('contract', 'Contract'), ('part_time', 'Part-time')] %}
+                  {% for value, label in types %}
+                  <option value="{{ value }}"
+                    {% if edit and form.employee_type == value %}selected
+                    {% elif not edit and form.get('employee_type','full_time') == value %}selected
+                    {% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-sm-6">
                 <label class="form-label">Basic Salary (Rs.)</label>
                 <input type="number" step="0.01" name="basic_salary" class="form-control"
                        value="{{ form.basic_salary if edit else form.get('basic_salary','') }}"

@@ -181,6 +181,8 @@ def safe_migrate():
             emp_cols = {c['name'] for c in inspector.get_columns('employees')}
         if 'is_approved' not in emp_cols:
             conn.execute(text("ALTER TABLE employees ADD COLUMN is_approved INTEGER DEFAULT 0"))
+        if 'employee_type' not in emp_cols:
+            conn.execute(text("ALTER TABLE employees ADD COLUMN employee_type VARCHAR(20) DEFAULT 'full_time'"))
 
         # Schools table: location_type, working hours, and shift timings
         if db.engine.dialect.name == 'sqlite':
