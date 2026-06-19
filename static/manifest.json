@@ -1,6 +1,6 @@
 {
-  "name": "Robo Pirate",
-  "short_name": "Robo Pirate",
+  "name": "Robo Pirate's Payroll",
+  "short_name": "Robo Pirate's Payroll",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#F0F4F8",
@@ -8,9 +8,9 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "images/logo.png",
+      "src": "images/logo.svg",
       "sizes": "any",
-      "type": "image/png"
+      "type": "image/svg+xml"
     }
   ]
 }

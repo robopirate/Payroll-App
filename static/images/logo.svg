@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Outer head -->
+  <circle cx="100" cy="105" r="75" fill="#5BC0CE"/>
+  <!-- Left ear -->
+  <circle cx="32" cy="105" r="22" fill="#5BC0CE"/>
+  <!-- Right ear -->
+  <circle cx="168" cy="105" r="22" fill="#5BC0CE"/>
+  <!-- Antennae -->
+  <path d="M78 42 Q78 15 85 8 Q92 15 92 42" fill="#5BC0CE" stroke="#5BC0CE" stroke-width="10" stroke-linecap="round"/>
+  <path d="M108 42 Q108 15 115 8 Q122 15 122 42" fill="#5BC0CE" stroke="#5BC0CE" stroke-width="10" stroke-linecap="round"/>
+  <!-- Inner face -->
+  <rect x="62" y="70" width="76" height="80" rx="32" fill="#0A7A7A"/>
+  <!-- Eyes -->
+  <path d="M78 95 Q88 85 98 95 L98 108 L78 108 Z" fill="white"/>
+  <path d="M102 95 Q112 85 122 95 L122 108 L102 108 Z" fill="white"/>
+</svg>

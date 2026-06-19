@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <meta name="theme-color" content="#0A1628">
-  <meta property="og:title" content="Robo Pirate — Payroll & Attendance">
+  <meta property="og:title" content="Robo Pirate's Payroll">
   <meta property="og:description" content="Manage employees, payroll, attendance, and leaves.">
   <meta property="og:type" content="website">
   <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
-  <title>{% block title %}Robo Pirate{% endblock %} — Payroll & Attendance</title>
+  <title>{% block title %}Robo Pirate's Payroll{% endblock %} — Robo Pirate's Payroll</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -24,7 +24,7 @@
 <nav id="main-nav">
   <div class="container-fluid d-flex align-items-center justify-content-between px-3" style="height:var(--nav-height,64px);">
     <a class="navbar-brand-wrap" href="{{ url_for('admin.dashboard') }}">
-      <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Robo Pirate" class="brand-logo" style="height:32px;">
+      <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="Robo Pirate's Payroll" class="brand-logo" style="height:32px;">
       <span class="brand-tagline">Powering the Humans Behind the Robots</span>
     </a>
     <button class="hamburger-btn" id="sidebarToggle" aria-label="Open navigation menu">
@@ -41,7 +41,7 @@
 <!-- ── Right Slide-In Sidebar ────────────────── -->
 <aside class="right-sidebar" id="rightSidebar" aria-hidden="true">
   <div class="sidebar-header">
-    <div class="sidebar-brand"><img src="{{ url_for('static', filename='images/logo.png') }}" alt="Robo Pirate" style="height:48px;margin-bottom:8px;"><br>Robo Pirate</div>
+    <div class="sidebar-brand"><img src="{{ url_for('static', filename='images/logo.svg') }}" alt="Robo Pirate's Payroll" style="height:48px;margin-bottom:8px;"><br>Robo Pirate's Payroll</div>
     <button class="sidebar-close" id="sidebarClose" aria-label="Close menu">✕</button>
   </div>
 
