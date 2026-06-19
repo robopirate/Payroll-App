@@ -7,3 +7,5 @@ venv_new/
 .env
 .pytest_cache/
 payroll.db
+scripts/backups/
+backups/
