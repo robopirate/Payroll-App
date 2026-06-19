@@ -168,6 +168,45 @@ Go to **Payroll**. Select month/year and click "Generate All Payrolls". The syst
 
 ---
 
+## Database Backup (SQLite only)
+
+The included backup script copies the SQLite database configured in `config.py` (`DB_PATH`) to `scripts/backups/` with a timestamped filename.
+
+### Run manually
+
+```cmd
+cd C:\Users\omkar\payroll_app
+python scripts\backup_db.py
+```
+
+Output:
+
+```
+Backup created: C:\Users\omkar\payroll_app\scripts\backups\payroll_backup_YYYYMMDD_HHMMSS.db
+```
+
+The script keeps only the latest 10 backups and removes older ones automatically.
+
+### Schedule weekly backups with Windows Task Scheduler
+
+1. Open **Task Scheduler** and choose **Create Basic Task**.
+2. Name it `PayrollPro DB Backup` and click **Next**.
+3. Select **Weekly**, pick a day/time, and click **Next**.
+4. Choose **Start a program** and click **Next**.
+5. Configure the action:
+   - **Program/script:** `python` (or the full path to `python.exe`, e.g. `C:\Users\omkar\AppData\Local\Programs\Python\Python313\python.exe`)
+   - **Add arguments:** `scripts\backup_db.py`
+   - **Start in:** `C:\Users\omkar\payroll_app`
+6. Click **Next**, then **Finish**.
+
+If your database path is set via the `DB_PATH` environment variable, add it to the task under **Actions → Edit → Environment variables**:
+
+```
+DB_PATH=C:\Users\omkar\payroll_app\payroll.db
+```
+
+---
+
 ## Troubleshooting
 
 **Port already in use:**
