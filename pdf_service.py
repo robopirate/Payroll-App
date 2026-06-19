@@ -89,13 +89,16 @@ def generate_payslip_pdf(employee, payroll):
 
     # --- Earnings & Deductions ---
     elements.append(Paragraph("Earnings & Deductions", att_style))
+    emp_type = getattr(employee, 'employee_type', 'full_time')
+    is_contract_or_parttime = emp_type in ('contract', 'part_time')
+
     salary_data = [
         ['Earnings', 'Amount (Rs.)', 'Deductions', 'Amount (Rs.)'],
-        ['Basic Salary', f"{payroll.basic_salary:.2f}", 'Provident Fund (PF)', f"{payroll.pf_deduction:.2f}"],
-        ['HRA', f"{payroll.hra:.2f}", 'ESI', f"{payroll.esi_deduction:.2f}"],
-        ['Overtime Pay', f"{payroll.overtime_pay:.2f}", 'Professional Tax (PT)', f"{payroll.pt_deduction:.2f}"],
-        ['Other Allowances', f"{payroll.other_allowances:.2f}", 'LWF', f"{payroll.lwf_deduction:.2f}"],
-        ['', '', 'TDS (Income Tax)', f"{payroll.tds_deduction:.2f}"],
+        ['Basic Salary', f"{payroll.basic_salary:.2f}", 'Provident Fund (PF)', 'N/A' if is_contract_or_parttime else f"{payroll.pf_deduction:.2f}"],
+        ['HRA', f"{payroll.hra:.2f}", 'ESI', 'N/A' if is_contract_or_parttime else f"{payroll.esi_deduction:.2f}"],
+        ['Overtime Pay', f"{payroll.overtime_pay:.2f}", 'Professional Tax (PT)', 'N/A' if is_contract_or_parttime else f"{payroll.pt_deduction:.2f}"],
+        ['Other Allowances', f"{payroll.other_allowances:.2f}", 'LWF', 'N/A' if is_contract_or_parttime else f"{payroll.lwf_deduction:.2f}"],
+        ['', '', 'TDS (Income Tax)', 'N/A' if is_contract_or_parttime else f"{payroll.tds_deduction:.2f}"],
         ['', '', 'Advance Deduction', f"{payroll.advance_deduction:.2f}"],
         ['', '', 'Other Deductions', f"{payroll.other_deductions:.2f}"],
         ['', '', '', ''],

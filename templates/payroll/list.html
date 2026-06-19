@@ -128,7 +128,13 @@
               <td>{{ "%.0f"|format(p.hra) }}</td>
               <td>{{ "%.0f"|format(p.overtime_pay) }}</td>
               <td>{{ "%.0f"|format(p.gross_salary) }}</td>
-              <td class="text-danger">{{ "%.0f"|format(p.total_deductions) }}</td>
+              <td class="text-danger">
+                {% if p.employee.employee_type in ('contract', 'part_time') %}
+                  <span title="Statutory deductions N/A for contract/part-time employees">N/A</span>
+                {% else %}
+                  {{ "%.0f"|format(p.total_deductions) }}
+                {% endif %}
+              </td>
               <td class="fw-bold text-success">Rs. {{ "%.2f"|format(p.net_salary) }}</td>
               <td>
                 {% if p.status == 'paid' %}

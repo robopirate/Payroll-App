@@ -67,7 +67,12 @@
             {% for emp in employees %}
             <tr>
               <td><span class="badge bg-secondary">{{ emp.emp_id }}</span></td>
-              <td class="fw-semibold">{{ emp.name }}</td>
+              <td class="fw-semibold">
+                {{ emp.name }}
+                {% set type_badges = {'full_time': ('FT', 'bg-primary'), 'contract': ('C', 'bg-warning text-dark'), 'part_time': ('PT', 'bg-info')} %}
+                {% set badge = type_badges.get(emp.employee_type, ('FT', 'bg-primary')) %}
+                <span class="badge {{ badge[1] }}" title="{{ {'full_time':'Full-time','contract':'Contract','part_time':'Part-time'}.get(emp.employee_type, emp.employee_type) }}">{{ badge[0] }}</span>
+              </td>
               <td>{{ emp.phone|mask_pii }}</td>
               <td>{{ emp.dept.name if emp.dept else '-' }}</td>
               <td>{{ emp.designation or '-' }}</td>

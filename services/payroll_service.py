@@ -137,17 +137,27 @@ def calculate_payroll(employee, month, year):
     )
     hra = _round_money(earned_basic * current_app.config['HRA_RATE'])
     gross = _round_money(earned_basic + hra + overtime_pay)
-    pf = _round_money(earned_basic * current_app.config['PF_RATE'])
-    esi = _round_money(gross * current_app.config['ESI_RATE']) if gross <= current_app.config['ESI_THRESHOLD'] else 0
-    pt_deduction = Config.PT_AMOUNT if gross >= Config.PT_THRESHOLD else 0
-    
-    # LWF (Labour Welfare Fund) - only if gross <= threshold
-    lwf_deduction = Config.LWF_EMPLOYEE_AMOUNT if gross <= Config.LWF_THRESHOLD else 0
-    
-    # TDS calculation - project annual gross based on current month
-    # Simple approach: gross * 12 (doesn't account for joining mid-year or variable pay)
-    projected_annual = gross * 12
-    tds_deduction, tax_regime = _calculate_tds(employee, projected_annual)
+
+    emp_type = getattr(employee, 'employee_type', 'full_time')
+    is_contract_or_parttime = emp_type in ('contract', 'part_time')
+
+    if is_contract_or_parttime:
+        # Contract / part-time employees do not get statutory deductions
+        pf = 0
+        esi = 0
+        pt_deduction = 0
+        lwf_deduction = 0
+        tds_deduction = 0
+        tax_regime = 'n/a'
+    else:
+        pf = _round_money(earned_basic * current_app.config['PF_RATE'])
+        esi = _round_money(gross * current_app.config['ESI_RATE']) if gross <= current_app.config['ESI_THRESHOLD'] else 0
+        pt_deduction = Config.PT_AMOUNT if gross >= Config.PT_THRESHOLD else 0
+        # LWF (Labour Welfare Fund) - only if gross <= threshold
+        lwf_deduction = Config.LWF_EMPLOYEE_AMOUNT if gross <= Config.LWF_THRESHOLD else 0
+        # TDS calculation - project annual gross based on current month
+        projected_annual = gross * 12
+        tds_deduction, tax_regime = _calculate_tds(employee, projected_annual)
 
     advances = Advance.query.filter_by(
         employee_id=employee.id, status='approved',
