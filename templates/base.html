@@ -24,7 +24,7 @@
 <nav id="main-nav">
   <div class="container-fluid d-flex align-items-center justify-content-between px-3" style="height:var(--nav-height,64px);">
     <a class="navbar-brand-wrap" href="{{ url_for('admin.dashboard') }}">
-      <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="Robo Pirate's Payroll" class="brand-logo" style="height:32px;">
+      <img src="{{ url_for('static', filename='images/logo-wordmark.png') }}" alt="Robo Pirate's Payroll" style="height:30px;vertical-align:middle;">
       <span class="brand-tagline">Powering the Humans Behind the Robots</span>
     </a>
     <button class="hamburger-btn" id="sidebarToggle" aria-label="Open navigation menu">
@@ -41,7 +41,10 @@
 <!-- ── Right Slide-In Sidebar ────────────────── -->
 <aside class="right-sidebar" id="rightSidebar" aria-hidden="true">
   <div class="sidebar-header">
-    <div class="sidebar-brand"><img src="{{ url_for('static', filename='images/logo.svg') }}" alt="Robo Pirate's Payroll" style="height:48px;margin-bottom:8px;"><br>Robo Pirate's Payroll</div>
+    <div class="sidebar-brand">
+      <img src="{{ url_for('static', filename='images/logo-face.png') }}" alt="" style="height:56px;margin-bottom:8px;"><br>
+      <img src="{{ url_for('static', filename='images/logo-wordmark.png') }}" alt="Robo Pirate's Payroll" style="height:24px;">
+    </div>
     <button class="sidebar-close" id="sidebarClose" aria-label="Close menu">✕</button>
   </div>
 

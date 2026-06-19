@@ -8,9 +8,9 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "images/logo.svg",
+      "src": "images/logo-face.png",
       "sizes": "any",
-      "type": "image/svg+xml"
+      "type": "image/png"
     }
   ]
 }

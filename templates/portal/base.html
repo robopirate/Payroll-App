@@ -227,7 +227,7 @@
 
 <header class="portal-header">
   <div>
-    <div class="app-name"><img src="{{ url_for('static', filename='images/logo.svg') }}" alt="Robo Pirate's Payroll" style="height:28px;width:auto;vertical-align:middle;margin-right:6px;">Robo Pirate's Payroll</div>
+    <div class="app-name"><img src="{{ url_for('static', filename='images/logo-wordmark.png') }}" alt="Robo Pirate's Payroll" style="height:22px;width:auto;vertical-align:middle;"></div>
     {% if current_user.is_authenticated and current_user.employee_id %}
       <div class="emp-name" id="hdr-emp-name">Employee Portal</div>
     {% endif %}
