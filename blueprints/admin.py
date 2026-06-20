@@ -165,6 +165,12 @@ def add_employee():
         db.session.add(emp)
         db.session.commit()
 
+        # Assign schools selected on the form
+        school_ids = f.getlist('school_ids')
+        if school_ids:
+            emp.schools = School.query.filter(School.id.in_(school_ids)).all()
+            db.session.commit()
+
         password = f.get('password', '').strip()
         if password:
             portal_user = User.query.filter_by(employee_id=emp.id).first()
@@ -227,6 +233,11 @@ def edit_employee(emp_id):
         emp.shift_start = _parse_time(f.get('shift_start'))
         emp.shift_end = _parse_time(f.get('shift_end'))
         emp.working_hours_per_day = _get_optional_float(f.get('working_hours_per_day'))
+
+        # Update school assignments from the form
+        school_ids = f.getlist('school_ids')
+        emp.schools = School.query.filter(School.id.in_(school_ids)).all()
+
         # Update joining date if provided
         joining_date_str = f.get('joining_date', '').strip()
         if joining_date_str:

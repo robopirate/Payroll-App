@@ -137,6 +137,27 @@
           </div>
         </div>
 
+        <!-- School Assignment -->
+        <div class="card border-0 shadow-sm mt-4">
+          <div class="card-header bg-white border-bottom">
+            <h6 class="mb-0 fw-bold"><i class="bi bi-building text-warning"></i> School Assignment</h6>
+          </div>
+          <div class="card-body">
+            <p class="text-muted small">Select the school(s) this employee works at.</p>
+            <div style="max-height:160px;overflow-y:auto;">
+              {% for s in schools %}
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="school_ids" value="{{ s.id }}" id="school_{{ s.id }}"
+                  {% if edit and s in form.schools %}checked{% endif %}>
+                <label class="form-check-label small" for="school_{{ s.id }}">{{ s.name }}</label>
+              </div>
+              {% else %}
+              <p class="text-muted small mb-0">No schools created yet. <a href="{{ url_for('admin.add_school') }}">Add a school →</a></p>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
         <!-- Shift Override -->
         <div class="card border-0 shadow-sm mt-4">
           <div class="card-header bg-white border-bottom">

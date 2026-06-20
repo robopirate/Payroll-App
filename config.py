@@ -4,6 +4,7 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 
 class Config:
+    ENV = os.environ.get('FLASK_ENV', 'production')
     TESTING = os.environ.get('TESTING', 'False').lower() in ('true', '1')
     SECRET_KEY = os.environ.get('SECRET_KEY', 'payroll-secret-key-change-in-production')
     # Store database outside project folder so code updates don't wipe data
@@ -21,7 +22,9 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     # Session security
     SESSION_COOKIE_HTTPONLY = True
-    SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', 'False').lower() == 'true'
+    # Secure cookies in production by default; allow override via env var
+    _session_cookie_secure_default = 'False' if ENV == 'development' else 'True'
+    SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', _session_cookie_secure_default).lower() == 'true'
     SESSION_COOKIE_SAMESITE = 'Lax'
     PERMANENT_SESSION_LIFETIME = 86400  # 24 hours
     # JWT Configuration
@@ -35,6 +38,8 @@ class Config:
     FAST2SMS_API_KEY = os.environ.get('FAST2SMS_API_KEY', '')
     # Google Maps API Key (for Places Autocomplete on location form)
     GOOGLE_MAPS_API_KEY = os.environ.get('GOOGLE_MAPS_API_KEY', '')
+    # Rate limiter storage (memory:// default; set to Redis URL on Render)
+    RATELIMIT_STORAGE_URI = os.environ.get('RATELIMIT_STORAGE_URI', 'memory://')
     # Payroll settings
     OVERTIME_RATE_MULTIPLIER = 2.0   # overtime hourly rate = (basic/26/8) * multiplier
     PF_RATE = 0.12                   # 12% of basic
