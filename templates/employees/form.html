@@ -1,10 +1,12 @@
 {% extends 'base.html' %}
 {% block title %}{{ 'Edit' if edit else 'Add' }} Employee{% endblock %}
 {% block content %}
-<div class="container-fluid py-4">
-  <div class="d-flex align-items-center gap-2 mb-4">
-    <a href="{{ url_for('admin.employees') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
-    <h4 class="page-header mb-0">{{ 'Edit Employee' if edit else 'Add New Employee' }}</h4>
+<div class="container-fluid admin-page-shell">
+  <div class="admin-page-toolbar">
+    <div class="d-flex align-items-center gap-2">
+      <a href="{{ url_for('admin.employees') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+      <h4 class="page-header mb-0">{{ 'Edit Employee' if edit else 'Add New Employee' }}</h4>
+    </div>
   </div>
 
   <form method="POST">
@@ -144,7 +146,7 @@
           </div>
           <div class="card-body">
             <p class="text-muted small">Select the school(s) this employee works at.</p>
-            <div style="max-height:160px;overflow-y:auto;">
+            <div class="admin-scroll-list">
               {% for s in schools %}
               <div class="form-check">
                 <input class="form-check-input" type="checkbox" name="school_ids" value="{{ s.id }}" id="school_{{ s.id }}"
@@ -186,11 +188,15 @@
           </div>
         </div>
 
-        <div class="mt-4 d-flex gap-2 justify-content-end">
-          <a href="{{ url_for('admin.employees') }}" class="btn btn-outline-secondary">Cancel</a>
-          <button type="submit" class="btn btn-primary">
-            <i class="bi bi-check-lg"></i> {{ 'Update Employee' if edit else 'Add Employee' }}
-          </button>
+        <div class="card border-0 shadow-sm mt-4">
+          <div class="card-footer bg-transparent border-top-0">
+            <div class="d-flex gap-2 justify-content-end">
+              <a href="{{ url_for('admin.employees') }}" class="btn btn-outline-secondary">Cancel</a>
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-lg"></i> {{ 'Update Employee' if edit else 'Add Employee' }}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

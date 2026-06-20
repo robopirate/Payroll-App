@@ -1,16 +1,18 @@
 {% extends 'base.html' %}
 {% block title %}Departments{% endblock %}
 {% block content %}
-<div class="container-fluid py-4">
-  <div class="d-flex align-items-center gap-2 mb-4">
-    <a href="{{ url_for('admin.employees') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
-    <h4 class="page-header mb-0">Departments</h4>
+<div class="container-fluid admin-page-shell">
+  <div class="admin-page-toolbar">
+    <div class="d-flex align-items-center gap-2">
+      <a href="{{ url_for('admin.employees') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+      <h4 class="page-header mb-0">Departments</h4>
+    </div>
   </div>
 
   <div class="row g-4">
     <div class="col-lg-4">
-      <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white border-bottom">
+      <div class="card h-100">
+        <div class="card-header">
           <h6 class="mb-0 fw-bold"><i class="bi bi-plus-circle"></i> Add Department</h6>
         </div>
         <div class="card-body">
@@ -25,23 +27,34 @@
       </div>
     </div>
     <div class="col-lg-8">
-      <div class="card border-0 shadow-sm">
+      <div class="card h-100">
+        <div class="card-header">
+          <h6 class="mb-0 fw-bold"><i class="bi bi-diagram-3"></i> Department List</h6>
+        </div>
         <div class="card-body p-0">
-          <table class="table table-hover mb-0">
-            <thead class="table-light">
-              <tr><th>Department</th><th>Employees</th></tr>
-            </thead>
-            <tbody>
-              {% for dept in departments %}
-              <tr>
-                <td class="fw-semibold">{{ dept.name }}</td>
-                <td>{{ dept.employees|selectattr('is_active')|list|length }}</td>
-              </tr>
-              {% else %}
-              <tr><td colspan="2" class="text-center text-muted py-4">No departments yet.</td></tr>
-              {% endfor %}
-            </tbody>
-          </table>
+          {% if departments %}
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr><th>Department</th><th>Employees</th></tr>
+              </thead>
+              <tbody>
+                {% for dept in departments %}
+                <tr>
+                  <td class="fw-semibold">{{ dept.name }}</td>
+                  <td>{{ dept.employees|selectattr('is_active')|list|length }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-center py-5 text-muted">
+            <i class="bi bi-diagram-3" style="font-size:2rem; display:block; margin-bottom:12px;"></i>
+            <p>No departments yet.</p>
+            <p class="small">Add a department using the form on the left.</p>
+          </div>
+          {% endif %}
         </div>
       </div>
     </div>

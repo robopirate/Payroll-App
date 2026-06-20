@@ -1,46 +1,35 @@
 {% extends 'base.html' %}
 {% block title %}Mark Attendance{% endblock %}
 {% block content %}
-<div class="container-fluid py-4">
-  <div class="d-flex justify-content-between align-items-center mb-4">
+<div class="container-fluid admin-page-shell">
+  <div class="admin-page-toolbar">
     <h4 class="page-header mb-0">Mark Attendance</h4>
-    <a href="{{ url_for('admin.attendance_report') }}" class="btn btn-sm btn-outline-info">
-      <i class="bi bi-bar-chart"></i> View Report
-    </a>
-  </div>
-
-  <!-- Date Picker -->
-  <div class="card border-0 shadow-sm mb-3">
-    <div class="card-body py-2">
-      <form method="GET" class="row g-2 align-items-end">
-        <div class="col-auto">
-          <label class="form-label small mb-1">Select Date</label>
-          <input type="date" name="date" class="form-control form-control-sm"
-                 value="{{ sel_date.isoformat() }}"
-                 onchange="this.form.submit()">
-        </div>
-        <div class="col-auto">
-          <span class="badge bg-primary fs-6 py-2 px-3">
-            {{ sel_date.strftime('%A, %d %B %Y') }}
-          </span>
-        </div>
+    <div class="admin-toolbar-actions">
+      <form method="GET" class="d-flex align-items-center gap-2">
+        <input type="date" name="date" class="form-control form-control-sm"
+               value="{{ sel_date.isoformat() }}"
+               onchange="this.form.submit()">
+        <span class="badge bg-primary fs-6 py-2 px-3">
+          {{ sel_date.strftime('%A, %d %B %Y') }}
+        </span>
       </form>
+      <button type="button" class="btn btn-sm btn-outline-success" onclick="markAll('present')">
+        All Present
+      </button>
+      <button type="button" class="btn btn-sm btn-outline-danger" onclick="markAll('absent')">
+        All Absent
+      </button>
+      <a href="{{ url_for('admin.attendance_report') }}" class="btn btn-sm btn-outline-info">
+        <i class="bi bi-bar-chart"></i> View Report
+      </a>
     </div>
   </div>
 
   <form method="POST">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="card border-0 shadow-sm">
-      <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
-        <h6 class="mb-0 fw-bold">Employee Attendance - {{ sel_date.strftime('%d %b %Y') }}</h6>
-        <div class="d-flex gap-2">
-          <button type="button" class="btn btn-sm btn-outline-success" onclick="markAll('present')">
-            All Present
-          </button>
-          <button type="button" class="btn btn-sm btn-outline-danger" onclick="markAll('absent')">
-            All Absent
-          </button>
-        </div>
+      <div class="card-header bg-white border-bottom">
+        <h6 class="mb-0 fw-bold">Employee Attendance — {{ sel_date.strftime('%d %b %Y') }}</h6>
       </div>
       <div class="card-body p-0">
         {% if employees %}

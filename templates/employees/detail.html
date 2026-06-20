@@ -1,20 +1,24 @@
 {% extends 'base.html' %}
 {% block title %}{{ emp.name }}{% endblock %}
 {% block content %}
-<div class="container-fluid py-4">
-  <div class="d-flex align-items-center gap-2 mb-4">
-    <a href="{{ url_for('admin.employees') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
-    <h4 class="page-header mb-0">{{ emp.name }}</h4>
-    <a href="{{ url_for('admin.edit_employee', emp_id=emp.id) }}" class="btn btn-sm btn-outline-primary ms-auto">
-      <i class="bi bi-pencil"></i> Edit
-    </a>
+<div class="container-fluid admin-page-shell">
+  <div class="admin-page-toolbar">
+    <div class="d-flex align-items-center gap-2">
+      <a href="{{ url_for('admin.employees') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+      <h4 class="page-header mb-0">{{ emp.name }}</h4>
+    </div>
+    <div class="admin-toolbar-actions">
+      <a href="{{ url_for('admin.edit_employee', emp_id=emp.id) }}" class="btn btn-sm btn-outline-primary">
+        <i class="bi bi-pencil"></i> Edit
+      </a>
+    </div>
   </div>
 
   <div class="row g-4">
     <!-- Left column -->
     <div class="col-lg-4">
       <!-- Profile Card -->
-      <div class="card border-0 shadow-sm mb-3">
+      <div class="card border-0 shadow-sm mb-4">
         <div class="card-body text-center py-4">
           <div class="avatar-lg rounded-circle bg-primary d-inline-flex align-items-center justify-content-center mb-3">
             <span class="text-white fs-2 fw-bold">{{ emp.name[0].upper() }}</span>
@@ -42,7 +46,7 @@
       </div>
 
       <!-- Portal Access Card -->
-      <div class="card border-0 shadow-sm mb-3">
+      <div class="card border-0 shadow-sm mb-4">
         <div class="card-header bg-white border-bottom">
           <h6 class="mb-0 fw-bold"><i class="bi bi-shield-lock text-success"></i> Employee Portal Access</h6>
         </div>
@@ -73,7 +77,7 @@
       </div>
 
       <!-- Assigned Schools -->
-      <div class="card border-0 shadow-sm">
+      <div class="card border-0 shadow-sm mb-4">
         <div class="card-header bg-white border-bottom">
           <h6 class="mb-0 fw-bold"><i class="bi bi-building text-warning"></i> Assigned Schools</h6>
         </div>
@@ -114,7 +118,7 @@
       </div>
 
       <!-- Shift Information -->
-      <div class="card border-0 shadow-sm mt-3">
+      <div class="card border-0 shadow-sm mt-4 mb-4">
         <div class="card-header bg-white border-bottom">
           <h6 class="mb-0 fw-bold"><i class="bi bi-clock text-info"></i> Shift Information</h6>
         </div>
@@ -139,7 +143,7 @@
     <!-- Right column -->
     <div class="col-lg-8">
       <!-- Leave Balances -->
-      <div class="card border-0 shadow-sm mb-3">
+      <div class="card border-0 shadow-sm mb-4">
         <div class="card-header bg-white border-bottom">
           <h6 class="mb-0 fw-bold"><i class="bi bi-calendar2-x text-warning"></i> Leave Balances</h6>
         </div>
@@ -159,7 +163,7 @@
       </div>
 
       <!-- Monthly Attendance Breakdown -->
-      <div class="card border-0 shadow-sm mb-3">
+      <div class="card border-0 shadow-sm mb-4">
         <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
           <h6 class="mb-0 fw-bold"><i class="bi bi-calendar-check text-success"></i> Monthly Attendance</h6>
           <form method="GET" class="d-flex gap-1" style="font-size:0.9rem;">
@@ -206,7 +210,7 @@
               {% for d in range(1, days_in_month + 1) %}
                 {% if loop.first or (d - 1) % 7 == 0 %}<tr>{% endif %}
                 {% set att = att_dict.get(d) %}
-                <td class="p-2 text-center" style="border:1px solid #e0e0e0;background:{% if att %}{% if att.status == 'present' %}#d4edda{% elif att.status == 'absent' %}#f8d7da{% elif att.status == 'half_day' %}#fff3cd{% elif att.status == 'leave' %}#d1ecf1{% elif att.status == 'holiday' %}#f0f0f0{% else %}#f9f9f9{% endif %}{% else %}#fafafa{% endif %}">
+                <td class="p-2 text-center {% if att %}{% if att.status == 'present' %}att-present{% elif att.status == 'absent' %}att-absent{% elif att.status == 'half_day' %}att-half{% elif att.status == 'leave' %}att-leave{% elif att.status == 'holiday' %}att-holiday{% else %}att-empty{% endif %}{% else %}att-empty{% endif %}" style="border:1px solid #e0e0e0;">
                   <div class="fw-semibold">{{ d }}</div>
                   {% if att %}
                     <small class="text-muted d-block">
@@ -231,17 +235,17 @@
 
         <div class="card-footer bg-light" style="font-size:0.8rem;">
           <div class="d-flex flex-wrap gap-2">
-            <span><span style="display:inline-block;width:16px;height:16px;background:#d4edda;"></span> Present</span>
-            <span><span style="display:inline-block;width:16px;height:16px;background:#f8d7da;"></span> Absent</span>
-            <span><span style="display:inline-block;width:16px;height:16px;background:#fff3cd;"></span> Half Day</span>
-            <span><span style="display:inline-block;width:16px;height:16px;background:#d1ecf1;"></span> Leave</span>
-            <span><span style="display:inline-block;width:16px;height:16px;background:#f0f0f0;"></span> Holiday</span>
+            <span><span class="att-swatch att-present"></span> Present</span>
+            <span><span class="att-swatch att-absent"></span> Absent</span>
+            <span><span class="att-swatch att-half"></span> Half Day</span>
+            <span><span class="att-swatch att-leave"></span> Leave</span>
+            <span><span class="att-swatch att-holiday"></span> Holiday</span>
           </div>
         </div>
       </div>
 
       <!-- Recent Attendance -->
-      <div class="card border-0 shadow-sm mb-3">
+      <div class="card border-0 shadow-sm mb-4">
         <div class="card-header bg-white border-bottom d-flex justify-content-between">
           <h6 class="mb-0 fw-bold"><i class="bi bi-clock-history text-info"></i> Recent Attendance Details</h6>
           <a href="{{ url_for('admin.attendance_report') }}" class="btn btn-sm btn-outline-info">View All Employees</a>
@@ -289,7 +293,7 @@
       </div>
 
       <!-- Payrolls -->
-      <div class="card border-0 shadow-sm">
+      <div class="card border-0 shadow-sm mb-4">
         <div class="card-header bg-white border-bottom d-flex justify-content-between">
           <h6 class="mb-0 fw-bold"><i class="bi bi-receipt text-info"></i> Payroll History</h6>
           <a href="{{ url_for('admin.payroll') }}" class="btn btn-sm btn-outline-info">Manage</a>
@@ -298,15 +302,15 @@
           <div class="table-responsive">
             <table class="table table-sm mb-0">
               <thead class="table-light">
-                <tr><th>Month</th><th>Gross</th><th>Deductions</th><th>Net</th><th>Status</th><th></th></tr>
+                <tr><th>Month</th><th class="text-end">Gross</th><th class="text-end">Deductions</th><th class="text-end">Net</th><th>Status</th><th></th></tr>
               </thead>
               <tbody>
                 {% for p in payrolls %}
                 <tr>
                   <td>{{ get_month_name(p.month) }} {{ p.year }}</td>
-                  <td>Rs. {{ "%.0f"|format(p.gross_salary) }}</td>
-                  <td>Rs. {{ "%.0f"|format(p.total_deductions) }}</td>
-                  <td class="fw-semibold">Rs. {{ "%.0f"|format(p.net_salary) }}</td>
+                  <td class="text-end">Rs. {{ "%.0f"|format(p.gross_salary) }}</td>
+                  <td class="text-end">Rs. {{ "%.0f"|format(p.total_deductions) }}</td>
+                  <td class="fw-semibold text-end">Rs. {{ "%.0f"|format(p.net_salary) }}</td>
                   <td>
                     {% if p.status == 'paid' %}<span class="badge bg-success">Paid</span>
                     {% elif p.status == 'finalized' %}<span class="badge bg-primary">Finalized</span>
@@ -326,4 +330,21 @@
     </div>
   </div>
 </div>
+
+<style>
+.att-present { background: #d4edda; }
+.att-absent { background: #f8d7da; }
+.att-half { background: #fff3cd; }
+.att-leave { background: #d1ecf1; }
+.att-holiday { background: #f0f0f0; }
+.att-empty { background: #fafafa; }
+.att-swatch {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+</style>
 {% endblock %}

@@ -1,10 +1,12 @@
 {% extends 'base.html' %}
 {% block title %}{{ 'Edit' if edit else 'Add' }} Location{% endblock %}
 {% block content %}
-<div class="container-fluid py-4">
-  <div class="d-flex align-items-center gap-2 mb-4">
-    <a href="{{ url_for('admin.schools') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
-    <h4 class="page-header mb-0">{{ 'Edit Location' if edit else 'Add Location' }}</h4>
+<div class="container-fluid admin-page-shell">
+  <div class="admin-page-toolbar">
+    <div class="d-flex align-items-center gap-2">
+      <a href="{{ url_for('admin.schools') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+      <h4 class="page-header mb-0">{{ 'Edit Location' if edit else 'Add Location' }}</h4>
+    </div>
   </div>
 
   {% if not google_maps_api_key %}
@@ -21,7 +23,7 @@
 
   <div class="row g-4">
     <div class="col-lg-6">
-      <div class="card border-0 shadow-sm">
+      <div class="card">
         <div class="card-body p-4">
           <form method="post" id="schoolForm">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -103,7 +105,7 @@
             </div>
 
             <hr>
-            <h6 class="fw-bold mb-3"><i class="bi bi-geo-alt text-success"></i> GPS Coordinates</h6>
+            <h6 class="fw-bold mb-4"><i class="bi bi-geo-alt text-success"></i> GPS Coordinates</h6>
             <p class="text-muted small mb-3">Enter coordinates manually or use the button below. No Google Maps API key is required for either option.</p>
 
             <div class="row g-3 mb-3">
@@ -137,15 +139,15 @@
     </div>
 
     <div class="col-lg-6">
-      <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white border-bottom">
+      <div class="card overflow-hidden">
+        <div class="card-header">
           <h6 class="mb-0 fw-bold"><i class="bi bi-map text-info"></i> Pick Location on Map</h6>
           <small class="text-muted">Search for a place or click on the map to set GPS coordinates</small>
         </div>
-        <div class="card-body p-2">
+        <div class="card-body">
           {% if google_maps_api_key %}
           <input id="pac-input" class="form-control mb-2" type="text" placeholder="Search place or address (e.g. Robo Pirate Baner)">
-          <div id="map" style="height:420px;border-radius:8px;"></div>
+          <div id="map" style="height:420px; border-radius:12px;"></div>
           {% else %}
           <div class="alert alert-info mb-0">
             Map view requires a Google Maps API key. Without it, enter latitude and longitude manually.

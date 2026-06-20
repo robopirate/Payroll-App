@@ -1,10 +1,10 @@
 {% extends 'base.html' %}
 {% block title %}Employees{% endblock %}
 {% block content %}
-<div class="container-fluid py-4">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="page-header mb-0">Employees</h4>
-    <div class="d-flex gap-2">
+<div class="container-fluid admin-page-shell">
+  <div class="admin-page-toolbar">
+    <h4 class="page-header">Employees</h4>
+    <div class="admin-toolbar-actions flex-wrap">
       <a href="{{ url_for('admin.departments') }}" class="btn btn-sm" style="background:#F0F4F8;color:#37474F;border:1px solid #dde3ed;">
         <i class="bi bi-diagram-3"></i> Departments
       </a>
@@ -24,7 +24,7 @@
 
   <!-- Filter -->
   <div class="card border-0 shadow-sm mb-3">
-    <div class="card-body py-2">
+    <div class="card-body admin-filter-bar">
       <form method="GET" class="row g-2 align-items-end">
         <div class="col-auto">
           <label class="form-label small mb-1">Filter by Department</label>
@@ -90,7 +90,7 @@
                   <span class="badge bg-warning text-dark">Pending</span>
                 {% endif %}
               </td>
-              <td class="text-center">
+              <td class="admin-table-actions">
                 <a href="{{ url_for('admin.view_employee', emp_id=emp.id) }}" class="btn btn-sm btn-outline-info me-1" title="View">
                   <i class="bi bi-eye"></i>
                 </a>

@@ -11,6 +11,11 @@
   --card-bg:       #FFFFFF;
   --text-dark:     #1A1A2E;
   --nav-height:    64px;
+  /* Admin glassmorphism tokens */
+  --admin-glass-bg:       rgba(255, 255, 255, 0.78);
+  --admin-glass-border:   rgba(255, 255, 255, 0.5);
+  --admin-glass-header:   rgba(255, 255, 255, 0.45);
+  --admin-glass-shadow:   0 4px 24px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.6);
 }
 
 /* ── Reset & Body ─────────────────────────────── */
@@ -349,6 +354,39 @@ body {
 .qa-cyan   { background: #0097A7; }
 .qa-dark   { background: #37474F; }
 
+/* Dashboard quick-action tiles */
+.action-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 22px 12px;
+  height: 100%;
+  min-height: 130px;
+  border-radius: 14px;
+  background: var(--admin-glass-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--admin-glass-border);
+  box-shadow: var(--admin-glass-shadow);
+  text-decoration: none !important;
+  color: var(--text-dark) !important;
+  font-weight: 600;
+  font-size: 0.85rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.action-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.1);
+}
+
+.action-card i {
+  font-size: 1.8rem;
+  color: var(--primary-blue);
+}
+
 /* ── Cards ───────────────────────────────────── */
 .card {
   border-radius: 12px !important;
@@ -364,6 +402,86 @@ body {
 }
 
 .card-body { background: var(--card-bg); }
+
+/* ── Admin Glassmorphism ───────────────────────── */
+.admin-body {
+  background:
+    radial-gradient(ellipse 80% 50% at 0% 0%, rgba(21, 101, 192, 0.08), transparent),
+    radial-gradient(ellipse 70% 60% at 100% 100%, rgba(255, 107, 53, 0.06), transparent),
+    var(--bg);
+  background-attachment: fixed;
+}
+
+.admin-body .card:not(.stat-card-modern) {
+  background: var(--admin-glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--admin-glass-border);
+  border-radius: 16px;
+  box-shadow: var(--admin-glass-shadow);
+  overflow: hidden;
+}
+
+.admin-body .card-header {
+  background: var(--admin-glass-header);
+  border-bottom: 1px solid var(--admin-glass-border);
+}
+
+.admin-body .card-body { background: transparent; }
+
+.admin-page-shell {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 28px 24px;
+}
+
+.admin-page-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.admin-page-toolbar .page-header { margin-bottom: 0; }
+
+.admin-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.admin-filter-bar { padding: 12px 16px; }
+
+.admin-table-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+}
+
+.admin-scroll-list {
+  max-height: 160px;
+  overflow-y: auto;
+  border: 1px solid #e0e6f0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: rgba(255,255,255,0.5);
+}
+
+.admin-section-title {
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 
 /* ── Tables ──────────────────────────────────── */
 .table thead th {

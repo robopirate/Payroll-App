@@ -1,14 +1,19 @@
 {% extends 'base.html' %}
 {% block title %}Advances{% endblock %}
 {% block content %}
-<div class="container-fluid py-4">
-  <h4 class="page-header mb-4">Salary Advances</h4>
+<div class="container-fluid admin-page-shell">
+  <div class="admin-page-toolbar">
+    <div class="d-flex align-items-center gap-2">
+      <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+      <h4 class="page-header mb-0">Salary Advances</h4>
+    </div>
+  </div>
 
   <div class="row g-4">
     <!-- Add Advance Form -->
     <div class="col-lg-4">
-      <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white border-bottom">
+      <div class="card h-100">
+        <div class="card-header">
           <h6 class="mb-0 fw-bold"><i class="bi bi-plus-circle text-danger"></i> Record Advance</h6>
         </div>
         <div class="card-body">
@@ -65,8 +70,8 @@
 
     <!-- Advances List -->
     <div class="col-lg-8">
-      <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white border-bottom">
+      <div class="card h-100">
+        <div class="card-header">
           <h6 class="mb-0 fw-bold">All Advances</h6>
         </div>
         <div class="card-body p-0">
@@ -94,7 +99,7 @@
                   <td>
                     {% if adv.month_deducted %}
                       {{ get_month_name(adv.month_deducted) }} {{ adv.year_deducted }}
-                    {% else %}-{% endif %}
+                    {% else %}—{% endif %}
                   </td>
                   <td>
                     {% if adv.status == 'approved' %}<span class="badge bg-success">Approved</span>
@@ -108,6 +113,8 @@
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                       <button class="btn btn-sm btn-success"><i class="bi bi-check-lg"></i> Approve</button>
                     </form>
+                    {% else %}
+                    <span class="text-muted">—</span>
                     {% endif %}
                   </td>
                 </tr>
@@ -117,7 +124,7 @@
           </div>
           {% else %}
           <div class="text-center py-5 text-muted">
-            <i class="bi bi-cash-coin fs-1"></i>
+            <i class="bi bi-cash-coin" style="font-size:2rem; display:block; margin-bottom:12px;"></i>
             <p>No advances recorded yet.</p>
           </div>
           {% endif %}

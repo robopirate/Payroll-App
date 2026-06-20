@@ -1,17 +1,19 @@
 {% extends 'base.html' %}
 {% block title %}School Schedule{% endblock %}
 {% block content %}
-<div class="container-fluid py-4">
-  <div class="d-flex align-items-center gap-2 mb-4">
-    <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
-    <h4 class="page-header mb-0">School Yearly Schedule</h4>
+<div class="container-fluid admin-page-shell">
+  <div class="admin-page-toolbar">
+    <div class="d-flex align-items-center gap-2">
+      <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+      <h4 class="page-header mb-0">School Yearly Schedule</h4>
+    </div>
   </div>
 
-  <div class="row">
+  <div class="row g-4">
     <!-- Form -->
-    <div class="col-lg-5 mb-4">
-      <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white border-bottom">
+    <div class="col-lg-5">
+      <div class="card h-100">
+        <div class="card-header">
           <h6 class="mb-0 fw-bold"><i class="bi bi-calendar2 text-primary"></i> {% if schedule %}Edit{% else %}Create{% endif %} Schedule</h6>
         </div>
         <div class="card-body">
@@ -19,10 +21,12 @@
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="mb-3">
               <label class="form-label">Academic Year <span class="text-danger">*</span></label>
-              <input type="number" name="year" class="form-control" value="{{ schedule.year if schedule else today.year }}" min="2020" max="2030" required readonly>
+              <input type="number" name="year" class="form-control"
+                     value="{{ schedule.year if schedule else today.year }}" min="2020" max="2030" required readonly
+                     style="background-color:#f8fafc; cursor:not-allowed;">
             </div>
 
-            <h6 class="mt-4 mb-3 fw-bold">Academic Session</h6>
+            <h6 class="mb-3 fw-bold">Academic Session</h6>
             <div class="row g-2 mb-3">
               <div class="col-6">
                 <label class="form-label">Session Start <span class="text-danger">*</span></label>
@@ -34,7 +38,7 @@
               </div>
             </div>
 
-            <h6 class="mt-4 mb-3 fw-bold">Semester 1</h6>
+            <h6 class="mb-3 fw-bold">Semester 1</h6>
             <div class="row g-2 mb-3">
               <div class="col-6">
                 <label class="form-label">Start Date</label>
@@ -46,7 +50,7 @@
               </div>
             </div>
 
-            <h6 class="mt-4 mb-3 fw-bold">Semester 2</h6>
+            <h6 class="mb-3 fw-bold">Semester 2</h6>
             <div class="row g-2 mb-3">
               <div class="col-6">
                 <label class="form-label">Start Date</label>
@@ -73,43 +77,45 @@
 
     <!-- Schedule View -->
     <div class="col-lg-7">
-      <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white border-bottom">
+      <div class="card h-100">
+        <div class="card-header">
           <h6 class="mb-0 fw-bold"><i class="bi bi-calendar-check text-success"></i> Current Schedule</h6>
         </div>
         <div class="card-body">
           {% if schedule %}
-          <div class="alert alert-info mb-4">
-            <h5 class="mb-3">📅 Academic Year {{ schedule.year }}</h5>
+          <div class="card bg-light border-0 mb-0">
+            <div class="card-body">
+              <h5 class="mb-3">📅 Academic Year {{ schedule.year }}</h5>
 
-            <div class="mb-3">
-              <strong>Overall Session:</strong><br>
-              <i class="bi bi-arrow-right"></i> {{ schedule.session_start.strftime('%d %b %Y') }} to {{ schedule.session_end.strftime('%d %b %Y') }}
-              <span class="badge bg-primary ms-2">{{ (schedule.session_end - schedule.session_start).days }} days</span>
-            </div>
+              <div class="mb-3">
+                <strong>Overall Session:</strong><br>
+                <i class="bi bi-arrow-right"></i> {{ schedule.session_start.strftime('%d %b %Y') }} to {{ schedule.session_end.strftime('%d %b %Y') }}
+                <span class="badge bg-primary ms-2">{{ (schedule.session_end - schedule.session_start).days }} days</span>
+              </div>
 
-            {% if schedule.semester1_start and schedule.semester1_end %}
-            <div class="mb-3">
-              <strong>Semester 1:</strong><br>
-              <i class="bi bi-arrow-right"></i> {{ schedule.semester1_start.strftime('%d %b %Y') }} to {{ schedule.semester1_end.strftime('%d %b %Y') }}
-              <span class="badge bg-success ms-2">{{ (schedule.semester1_end - schedule.semester1_start).days }} days</span>
-            </div>
-            {% endif %}
+              {% if schedule.semester1_start and schedule.semester1_end %}
+              <div class="mb-3">
+                <strong>Semester 1:</strong><br>
+                <i class="bi bi-arrow-right"></i> {{ schedule.semester1_start.strftime('%d %b %Y') }} to {{ schedule.semester1_end.strftime('%d %b %Y') }}
+                <span class="badge bg-success ms-2">{{ (schedule.semester1_end - schedule.semester1_start).days }} days</span>
+              </div>
+              {% endif %}
 
-            {% if schedule.semester2_start and schedule.semester2_end %}
-            <div class="mb-3">
-              <strong>Semester 2:</strong><br>
-              <i class="bi bi-arrow-right"></i> {{ schedule.semester2_start.strftime('%d %b %Y') }} to {{ schedule.semester2_end.strftime('%d %b %Y') }}
-              <span class="badge bg-warning ms-2">{{ (schedule.semester2_end - schedule.semester2_start).days }} days</span>
-            </div>
-            {% endif %}
+              {% if schedule.semester2_start and schedule.semester2_end %}
+              <div class="mb-3">
+                <strong>Semester 2:</strong><br>
+                <i class="bi bi-arrow-right"></i> {{ schedule.semester2_start.strftime('%d %b %Y') }} to {{ schedule.semester2_end.strftime('%d %b %Y') }}
+                <span class="badge bg-warning ms-2">{{ (schedule.semester2_end - schedule.semester2_start).days }} days</span>
+              </div>
+              {% endif %}
 
-            {% if schedule.notes %}
-            <div class="mt-3 p-3 bg-light rounded">
-              <strong>📝 Notes:</strong><br>
-              {{ schedule.notes }}
+              {% if schedule.notes %}
+              <div class="mt-3 p-3 bg-white rounded">
+                <strong>📝 Notes:</strong><br>
+                {{ schedule.notes }}
+              </div>
+              {% endif %}
             </div>
-            {% endif %}
           </div>
           {% else %}
           <div class="text-center py-5 text-muted">
@@ -123,3 +129,4 @@
   </div>
 </div>
 {% endblock %}
+

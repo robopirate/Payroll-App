@@ -1,13 +1,18 @@
 {% extends 'base.html' %}
 {% block title %}Settings{% endblock %}
 {% block content %}
-<div class="container-fluid py-4">
-  <h4 class="page-header mb-4">Settings</h4>
+<div class="container-fluid admin-page-shell">
+  <div class="admin-page-toolbar">
+    <div class="d-flex align-items-center gap-2">
+      <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+      <h4 class="page-header mb-0">Settings</h4>
+    </div>
+  </div>
 
   <div class="row g-4">
     <div class="col-lg-5">
-      <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header bg-white border-bottom">
+      <div class="card mb-4">
+        <div class="card-header">
           <h6 class="mb-0 fw-bold"><i class="bi bi-lock text-primary"></i> Change Password</h6>
         </div>
         <div class="card-body">
@@ -26,8 +31,8 @@
         </div>
       </div>
 
-      <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white border-bottom">
+      <div class="card">
+        <div class="card-header">
           <h6 class="mb-0 fw-bold"><i class="bi bi-phone text-success"></i> Fast2SMS API Key</h6>
         </div>
         <div class="card-body">
@@ -48,20 +53,55 @@
     </div>
 
     <div class="col-lg-7">
-      <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white border-bottom">
+      <div class="card">
+        <div class="card-header">
           <h6 class="mb-0 fw-bold"><i class="bi bi-info-circle text-info"></i> System Information</h6>
         </div>
         <div class="card-body">
-          <table class="table table-borderless mb-0">
-            <tr><td class="text-muted">Application</td><td><strong>Robo Pirate's Payroll v1.0</strong></td></tr>
-            <tr><td class="text-muted">Database</td><td>SQLite (payroll.db)</td></tr>
-            <tr><td class="text-muted">PF Rate</td><td>12% of Basic</td></tr>
-            <tr><td class="text-muted">ESI Rate</td><td>1.75% of Gross (if Gross ≤ Rs.21,000)</td></tr>
-            <tr><td class="text-muted">HRA</td><td>40% of Basic</td></tr>
-            <tr><td class="text-muted">Overtime Rate</td><td>2x hourly rate</td></tr>
-            <tr><td class="text-muted">Working Days/Month</td><td>26 (Mon-Sat)</td></tr>
-          </table>
+          <div class="row g-3">
+            <div class="col-sm-6">
+              <div class="p-3 rounded bg-white bg-opacity-50">
+                <div class="text-muted small mb-1">Application</div>
+                <div class="fw-semibold">Robo Pirate's Payroll v1.0</div>
+              </div>
+            </div>
+            <div class="col-sm-6">
+              <div class="p-3 rounded bg-white bg-opacity-50">
+                <div class="text-muted small mb-1">Database</div>
+                <div class="fw-semibold">SQLite (payroll.db)</div>
+              </div>
+            </div>
+            <div class="col-sm-6">
+              <div class="p-3 rounded bg-white bg-opacity-50">
+                <div class="text-muted small mb-1">PF Rate</div>
+                <div class="fw-semibold">12% of Basic</div>
+              </div>
+            </div>
+            <div class="col-sm-6">
+              <div class="p-3 rounded bg-white bg-opacity-50">
+                <div class="text-muted small mb-1">ESI Rate</div>
+                <div class="fw-semibold">1.75% of Gross (if Gross ≤ Rs.21,000)</div>
+              </div>
+            </div>
+            <div class="col-sm-6">
+              <div class="p-3 rounded bg-white bg-opacity-50">
+                <div class="text-muted small mb-1">HRA</div>
+                <div class="fw-semibold">40% of Basic</div>
+              </div>
+            </div>
+            <div class="col-sm-6">
+              <div class="p-3 rounded bg-white bg-opacity-50">
+                <div class="text-muted small mb-1">Overtime Rate</div>
+                <div class="fw-semibold">2x hourly rate</div>
+              </div>
+            </div>
+            <div class="col-sm-6">
+              <div class="p-3 rounded bg-white bg-opacity-50">
+                <div class="text-muted small mb-1">Working Days/Month</div>
+                <div class="fw-semibold">26 (Mon-Sat)</div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

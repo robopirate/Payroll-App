@@ -1,17 +1,19 @@
 {% extends 'base.html' %}
 {% block title %}Leave Balance Setup{% endblock %}
 {% block content %}
-<div class="container-fluid py-4">
-  <div class="d-flex align-items-center gap-2 mb-4">
-    <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
-    <h4 class="page-header mb-0">Leave Balance Setup</h4>
+<div class="container-fluid admin-page-shell">
+  <div class="admin-page-toolbar">
+    <div class="d-flex align-items-center gap-2">
+      <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+      <h4 class="page-header mb-0">Leave Balance Setup</h4>
+    </div>
   </div>
 
-  <div class="row">
+  <div class="row g-4">
     <!-- Quick Setup -->
-    <div class="col-lg-5 mb-4">
-      <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white border-bottom">
+    <div class="col-lg-5">
+      <div class="card h-100">
+        <div class="card-header">
           <h6 class="mb-0 fw-bold"><i class="bi bi-lightning-charge-fill text-warning"></i> Quick Setup</h6>
         </div>
         <div class="card-body">
@@ -44,15 +46,15 @@
 
     <!-- Individual Setup -->
     <div class="col-lg-7">
-      <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white border-bottom">
+      <div class="card h-100">
+        <div class="card-header">
           <h6 class="mb-0 fw-bold"><i class="bi bi-person-check text-primary"></i> Set Individual Balances</h6>
         </div>
         <div class="card-body p-0">
           {% if employees %}
           <div class="table-responsive">
             <table class="table table-hover mb-0">
-              <thead style="background: #f8f9fa;">
+              <thead class="table-light">
                 <tr>
                   <th>Employee</th>
                   <th>Casual</th>
