@@ -79,7 +79,13 @@ def dashboard():
     
     pending_leaves = Leave.query.filter_by(status='pending').count()
     pending_advances = Advance.query.filter_by(status='pending').count()
-    recent_payrolls = Payroll.query.order_by(Payroll.generated_on.desc()).limit(5).all()
+    recent_payrolls = (
+        Payroll.query.join(Employee)
+        .filter(Employee.is_active == True)
+        .order_by(Payroll.generated_on.desc())
+        .limit(5)
+        .all()
+    )
     schools_count = School.query.filter_by(is_active=True).count()
     return render_template('dashboard.html',
         total_employees=total_employees, present_today=present_today,
