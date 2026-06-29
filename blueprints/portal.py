@@ -6,7 +6,7 @@ import io
 
 from extensions import db, limiter
 from decorators import portal_required
-from services.attendance_service import count_working_days_between
+from services.attendance_service import count_working_days_between, ensure_sunday_attendance
 from services.login_protection import is_allowed
 from flask_limiter.util import get_remote_address
 from sqlalchemy import extract
@@ -188,6 +188,12 @@ def portal_attendance():
     month = int(request.args.get('month', date.today().month))
     year = int(request.args.get('year', date.today().year))
     _, days_in_month = calendar.monthrange(year, month)
+
+    # Auto-populate Sunday present records for this month so the summary is consistent
+    for d in range(1, days_in_month + 1):
+        d_obj = date(year, month, d)
+        if d_obj.weekday() == 6:
+            ensure_sunday_attendance(d_obj)
 
     atts = {a.date.day: a for a in Attendance.query.filter_by(employee_id=emp.id).filter(
         extract('year', Attendance.date) == year,

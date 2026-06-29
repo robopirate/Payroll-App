@@ -3,7 +3,7 @@ from datetime import date, timedelta
 import calendar
 import math
 
-from models import db, Holiday
+from models import db, Holiday, Employee, Attendance, Leave
 
 
 def get_working_days_in_month(year, month):
@@ -126,6 +126,41 @@ def compute_early_minutes(check_out, shift_end):
     if out_mins is None or end_mins is None:
         return 0
     return max(0, end_mins - out_mins)
+
+
+def ensure_sunday_attendance(date_obj):
+    """For a Sunday, auto-create status='present' attendance rows for all active
+    employees who do not already have a record for that date, unless the date is
+    a declared holiday or the employee has an approved leave.
+    """
+    if date_obj.weekday() != 6:
+        return
+
+    is_holiday = Holiday.query.filter_by(date=date_obj, is_active=True).first() is not None
+    if is_holiday:
+        return
+
+    employees = Employee.query.filter_by(is_active=True).all()
+    existing = {a.employee_id for a in Attendance.query.filter_by(date=date_obj).all()}
+    on_leave = {
+        l.employee_id for l in Leave.query.filter(
+            Leave.status == 'approved',
+            Leave.start_date <= date_obj,
+            Leave.end_date >= date_obj
+        ).all()
+    }
+
+    added = False
+    for emp in employees:
+        if emp.id in existing or emp.id in on_leave:
+            continue
+        if date_obj < emp.joining_date:
+            continue
+        db.session.add(Attendance(employee_id=emp.id, date=date_obj, status='present'))
+        added = True
+
+    if added:
+        db.session.commit()
 
 
 def update_attendance_timing_flags(attendance, employee=None):

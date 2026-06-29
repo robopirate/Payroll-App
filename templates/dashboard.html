@@ -215,4 +215,19 @@
     }, 30);
   });
 </script>
+
+<script>
+  // Auto-refresh the dashboard when the user returns after switching tabs,
+  // so Recent Payroll Activity and stats stay up to date.
+  (function() {
+    let hiddenTime = 0;
+    document.addEventListener('visibilitychange', function() {
+      if (document.hidden) {
+        hiddenTime = Date.now();
+      } else if (hiddenTime && Date.now() - hiddenTime > 5000) {
+        location.reload();
+      }
+    });
+  })();
+</script>
 {% endblock %}

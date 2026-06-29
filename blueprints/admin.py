@@ -8,7 +8,10 @@ import calendar
 import io
 
 from extensions import db, limiter
-from services.attendance_service import get_working_days_in_month, count_working_days_between, update_attendance_timing_flags
+from services.attendance_service import (
+    get_working_days_in_month, count_working_days_between,
+    update_attendance_timing_flags, ensure_sunday_attendance
+)
 from services.payroll_service import calculate_payroll
 from models import (
     User, Employee, Department, Attendance, Leave, LeaveBalance, Advance,
@@ -58,16 +61,6 @@ def dashboard():
     total_employees = Employee.query.filter_by(is_active=True).count()
     today = date.today()
     
-    # Count distinct active employees who are present today
-    # present = present, half_day, or overtime status
-    present_today = db.session.query(func.count(distinct(Attendance.employee_id))).join(
-        Employee, Attendance.employee_id == Employee.id
-    ).filter(
-        Attendance.date == today,
-        Attendance.status.in_(['present', 'half_day', 'overtime']),
-        Employee.is_active == True
-    ).scalar() or 0
-    
     # Count distinct active employees who are absent today
     absent_today = db.session.query(func.count(distinct(Attendance.employee_id))).join(
         Employee, Attendance.employee_id == Employee.id
@@ -76,6 +69,19 @@ def dashboard():
         Attendance.status == 'absent',
         Employee.is_active == True
     ).scalar() or 0
+
+    # Count distinct active employees who are present today
+    # On Sundays, everyone is considered present (weekly off) unless explicitly marked absent.
+    if today.weekday() == 6:
+        present_today = max(0, total_employees - absent_today)
+    else:
+        present_today = db.session.query(func.count(distinct(Attendance.employee_id))).join(
+            Employee, Attendance.employee_id == Employee.id
+        ).filter(
+            Attendance.date == today,
+            Attendance.status.in_(['present', 'half_day', 'overtime']),
+            Employee.is_active == True
+        ).scalar() or 0
     
     pending_leaves = Leave.query.filter_by(status='pending').count()
     pending_advances = Advance.query.filter_by(status='pending').count()
@@ -240,9 +246,17 @@ def edit_employee(emp_id):
         emp.shift_end = _parse_time(f.get('shift_end'))
         emp.working_hours_per_day = _get_optional_float(f.get('working_hours_per_day'))
 
-        # Update school assignments from the form
-        school_ids = f.getlist('school_ids')
-        emp.schools = School.query.filter(School.id.in_(school_ids)).all()
+        # Update school assignments from the form (ignore empty/non-numeric values)
+        valid_school_ids = []
+        for sid in f.getlist('school_ids'):
+            try:
+                valid_school_ids.append(int(sid))
+            except (ValueError, TypeError):
+                continue
+        if valid_school_ids:
+            emp.schools = School.query.filter(School.id.in_(valid_school_ids)).all()
+        else:
+            emp.schools = []
 
         # Update joining date if provided
         joining_date_str = f.get('joining_date', '').strip()
@@ -253,19 +267,25 @@ def edit_employee(emp_id):
                 pass  # Keep existing date if invalid
 
         password = f.get('password', '').strip()
-        if password:
-            portal_user = User.query.filter_by(employee_id=emp.id).first()
-            if not portal_user:
-                portal_user = User(username=phone, is_admin=False, employee_id=emp.id)
-                db.session.add(portal_user)
-            portal_user.username = phone
-            portal_user.set_password(password)
-            db.session.commit()
-            flash(Markup(f'Employee updated. Portal password: <strong>{password}</strong>. Share it securely.'), 'success')
-        else:
-            db.session.commit()
-            flash('Employee updated successfully.', 'success')
-        return redirect(url_for('.employees'))
+        try:
+            if password:
+                portal_user = User.query.filter_by(employee_id=emp.id).first()
+                if not portal_user:
+                    portal_user = User(username=phone, is_admin=False, employee_id=emp.id)
+                    db.session.add(portal_user)
+                portal_user.username = phone
+                portal_user.set_password(password)
+                db.session.commit()
+                flash(Markup(f'Employee updated. Portal password: <strong>{password}</strong>. Share it securely.'), 'success')
+            else:
+                db.session.commit()
+                flash('Employee updated successfully.', 'success')
+            return redirect(url_for('.employees'))
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.exception('Failed to update employee')
+            flash(f'Could not update employee: {str(e)}', 'danger')
+            return render_template('employees/form.html', departments=departments, schools=schools, form=emp, edit=True)
     return render_template('employees/form.html', departments=departments, schools=schools, form=emp, edit=True)
 
 
@@ -529,6 +549,11 @@ def attendance():
         db.session.commit()
         existing = {a.employee_id: a for a in Attendance.query.filter_by(date=sel_date).all()}
 
+    # Auto-mark Sundays as present for active employees
+    if sel_date.weekday() == 6:
+        ensure_sunday_attendance(sel_date)
+        existing = {a.employee_id: a for a in Attendance.query.filter_by(date=sel_date).all()}
+
     if request.method == 'POST':
         for emp in emps:
             status = request.form.get(f'status_{emp.id}', 'absent')
@@ -568,6 +593,12 @@ def attendance_report():
     year = int(request.args.get('year', date.today().year))
     emps = Employee.query.filter_by(is_active=True).order_by(Employee.name).all()
     _, days_in_month = calendar.monthrange(year, month)
+
+    # Auto-populate Sunday present records for the report month
+    for d in range(1, days_in_month + 1):
+        d_obj = date(year, month, d)
+        if d_obj.weekday() == 6:
+            ensure_sunday_attendance(d_obj)
 
     report = []
     for emp in emps:
