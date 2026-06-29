@@ -5,7 +5,7 @@ import calendar
 from flask import current_app
 from sqlalchemy import extract, and_
 from config import Config
-from models import db, Attendance, Leave, Advance, TaxDeclaration, Holiday
+from models import db, Attendance, Leave, Advance, TaxDeclaration
 from services.attendance_service import get_working_days_in_month, count_working_days_between
 
 
@@ -93,6 +93,10 @@ def calculate_payroll(employee, month, year):
     present_days = 0.0
     overtime_hours = 0.0
     for att in attendances:
+        # Sundays are weekly offs and are already covered by the monthly salary.
+        # Do not count them as extra paid days.
+        if att.date.weekday() == 6:
+            continue
         if att.status == 'present':
             present_days += 1.0
         elif att.status == 'half_day':
@@ -126,23 +130,6 @@ def calculate_payroll(employee, month, year):
         if start <= end:
             leave_days_in_month += count_working_days_between(start, end)
     present_days += leave_days_in_month
-
-    # Add paid weekly offs (Sundays) that have no explicit attendance record.
-    holidays = {h.date for h in Holiday.query.filter(
-        Holiday.date >= month_start,
-        Holiday.date <= month_end,
-        Holiday.is_active == True
-    ).all()}
-    att_dates = {a.date for a in attendances}
-    for d in range(1, dim + 1):
-        d_obj = date(year, month, d)
-        if (
-            d_obj.weekday() == 6
-            and d_obj not in holidays
-            and d_obj not in att_dates
-            and d_obj >= employee.joining_date
-        ):
-            present_days += 1.0
 
     daily_rate = employee.basic_salary / working_days if working_days > 0 else 0
     earned_basic = _round_money(daily_rate * present_days)
