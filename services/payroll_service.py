@@ -1,12 +1,12 @@
 """Payroll calculation service."""
-from datetime import date
+from datetime import date, timedelta
 import calendar
 
 from flask import current_app
 from sqlalchemy import extract, and_
 from config import Config
-from models import db, Attendance, Leave, Advance, TaxDeclaration
-from services.attendance_service import get_working_days_in_month, count_working_days_between
+from models import db, Attendance, Leave, Advance, TaxDeclaration, Holiday
+from services.attendance_service import count_working_days_between
 
 
 def _round_money(value):
@@ -84,36 +84,54 @@ def _calculate_tds(employee, gross_annual):
 
 
 def calculate_payroll(employee, month, year):
-    working_days = get_working_days_in_month(year, month)
+    """Calculate payroll using the calendar-day method.
+
+    Paid days = present attendance + approved leave + Sundays + holidays,
+    limited to days on/after the employee's joining date.
+    Daily rate = monthly basic / total days in month.
+    """
+    _, dim = calendar.monthrange(year, month)
+    month_start = date(year, month, 1)
+    month_end = date(year, month, dim)
+
+    # If employee hasn't joined yet this month, nothing is payable.
+    if employee.joining_date and employee.joining_date > month_end:
+        return {
+            'working_days': dim, 'present_days': 0.0,
+            'basic_salary': 0, 'overtime_hours': 0.0,
+            'overtime_pay': 0, 'hra': 0,
+            'other_allowances': 0, 'gross_salary': 0,
+            'pf_deduction': 0, 'esi_deduction': 0,
+            'pt_deduction': 0,
+            'lwf_deduction': 0,
+            'tds_deduction': 0,
+            'tax_regime': 'n/a',
+            'advance_deduction': 0.0, 'other_deductions': 0,
+            'total_deductions': 0, 'net_salary': 0,
+            'net_negative_clamped': False,
+        }
+
+    effective_start = max(month_start, employee.joining_date or month_start)
+
     attendances = Attendance.query.filter_by(employee_id=employee.id).filter(
-        extract('year', Attendance.date) == year,
-        extract('month', Attendance.date) == month
+        Attendance.date >= effective_start,
+        Attendance.date <= month_end
     ).all()
 
     present_days = 0.0
     overtime_hours = 0.0
+    attended_dates = set()
     for att in attendances:
-        # Sundays are weekly offs and are already covered by the monthly salary.
-        # Do not count them as extra paid days.
-        if att.date.weekday() == 6:
-            continue
-        if att.status == 'present':
+        attended_dates.add(att.date)
+        if att.status in ('present', 'overtime', 'holiday'):
             present_days += 1.0
         elif att.status == 'half_day':
             present_days += 0.5
-        elif att.status == 'overtime':
-            present_days += 1.0
-        # NOTE: 'leave' status in attendance table is just a marker;
+        # 'leave' status in attendance table is just a marker;
         # approved leave days are counted separately from Leave model
         overtime_hours += (att.overtime_hours or 0.0)
 
-    # Count approved leave days overlapping this month.
-    # Important: use start_date <= month_end AND end_date >= month_start
-    # so multi-month leaves are counted in every month they span.
-    month_start = date(year, month, 1)
-    _, dim = calendar.monthrange(year, month)
-    month_end = date(year, month, dim)
-
+    # Count approved leave days overlapping this month (working days only).
     approved_leaves = Leave.query.filter_by(
         employee_id=employee.id, status='approved'
     ).filter(
@@ -125,13 +143,28 @@ def calculate_payroll(employee, month, year):
 
     leave_days_in_month = 0.0
     for leave in approved_leaves:
-        start = max(leave.start_date, month_start)
+        start = max(leave.start_date, effective_start)
         end = min(leave.end_date, month_end)
         if start <= end:
             leave_days_in_month += count_working_days_between(start, end)
     present_days += leave_days_in_month
 
-    daily_rate = employee.basic_salary / working_days if working_days > 0 else 0
+    # Add unrecorded Sundays and holidays that fall on/after joining date.
+    # These are paid weekly offs / public holidays covered by the monthly salary.
+    holidays = {h.date for h in Holiday.query.filter(
+        Holiday.date >= effective_start,
+        Holiday.date <= month_end,
+        Holiday.is_active == True
+    ).all()}
+
+    current = effective_start
+    while current <= month_end:
+        if current not in attended_dates and (current.weekday() == 6 or current in holidays):
+            present_days += 1.0
+        current += timedelta(days=1)
+
+    days_in_month = dim
+    daily_rate = employee.basic_salary / days_in_month if days_in_month > 0 else 0
     earned_basic = _round_money(daily_rate * present_days)
     hourly_rate = (
         employee.basic_salary
@@ -176,7 +209,7 @@ def calculate_payroll(employee, month, year):
     net = _round_money(max(net_raw, 0))
 
     return {
-        'working_days': working_days, 'present_days': present_days,
+        'working_days': days_in_month, 'present_days': present_days,
         'basic_salary': earned_basic, 'overtime_hours': overtime_hours,
         'overtime_pay': overtime_pay, 'hra': hra,
         'other_allowances': 0, 'gross_salary': gross,

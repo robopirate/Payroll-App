@@ -79,7 +79,7 @@ def dashboard():
             Employee, Attendance.employee_id == Employee.id
         ).filter(
             Attendance.date == today,
-            Attendance.status.in_(['present', 'half_day', 'overtime']),
+            Attendance.status.in_(['present', 'half_day', 'overtime', 'holiday']),
             Employee.is_active == True
         ).scalar() or 0
     
@@ -606,7 +606,7 @@ def attendance_report():
             extract('year', Attendance.date) == year,
             extract('month', Attendance.date) == month
         ).all()}
-        present = sum(1 for a in atts.values() if a.status == 'present')
+        present = sum(1 for a in atts.values() if a.status in ('present', 'holiday'))
         half = sum(0.5 for a in atts.values() if a.status == 'half_day')
         absent = sum(1 for a in atts.values() if a.status == 'absent')
         ot = sum(a.overtime_hours or 0 for a in atts.values())

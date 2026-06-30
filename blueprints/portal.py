@@ -200,7 +200,7 @@ def portal_attendance():
         extract('month', Attendance.date) == month
     ).all()}
 
-    present = sum(1 for a in atts.values() if a.status == 'present')
+    present = sum(1 for a in atts.values() if a.status in ('present', 'holiday'))
     half = sum(0.5 for a in atts.values() if a.status == 'half_day')
     absent = sum(1 for a in atts.values() if a.status == 'absent')
 

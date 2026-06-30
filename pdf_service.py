@@ -70,7 +70,7 @@ def generate_payslip_pdf(employee, payroll):
                                textColor=colors.HexColor('#1a237e'), spaceAfter=3)
     elements.append(Paragraph("Attendance Summary", att_style))
     att_data = [
-        ['Working Days', 'Days Present', 'Overtime Hours'],
+        ['Days in Month', 'Paid Days', 'Overtime Hours'],
         [str(payroll.working_days), f"{payroll.present_days:.1f}", f"{payroll.overtime_hours:.1f} hrs"],
     ]
     att_table = Table(att_data, colWidths=[60*mm, 60*mm, 60*mm])
