@@ -350,7 +350,7 @@ def view_employee(emp_id):
     present_days = sum(1 for a in monthly_atts if a.status == 'present')
     half_days = sum(0.5 for a in monthly_atts if a.status == 'half_day')
     absent_days = sum(1 for a in monthly_atts if a.status == 'absent')
-    working_days = get_working_days_in_month(year, month)
+    working_days = days_in_month
 
     return render_template('employees/detail.html', emp=emp, recent_att=recent_att,
                            payrolls=payrolls, leaves=leaves, portal_user=portal_user,
