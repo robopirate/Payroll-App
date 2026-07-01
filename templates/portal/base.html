@@ -123,57 +123,99 @@
     }
 
     /* Glassmorphism Bottom Navigation */
+    body {
+      padding-bottom: calc(96px + env(safe-area-inset-bottom, 0));
+    }
     .bottom-nav {
       position: fixed;
       bottom: 0; left: 0; right: 0;
+      height: 64px;
       background: rgba(255, 255, 255, 0.72);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
       border-top: 1px solid rgba(255, 255, 255, 0.5);
       z-index: 300;
       display: flex;
+      align-items: center;
+      justify-content: space-around;
       box-shadow: 0 -4px 24px rgba(0,0,0,0.08);
       padding-bottom: env(safe-area-inset-bottom, 0);
     }
     .bottom-nav a {
-      flex: 1 1 0;
+      flex: 1;
       min-width: 0;
+      height: 100%;
       text-align: center;
-      padding: 9px 2px 6px;
-      padding-bottom: 6px;
       text-decoration: none;
       color: #9aa5b4;
-      font-size: 0.56rem;
+      font-size: 0.62rem;
       font-weight: 700;
       line-height: 1.1;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: flex-start;
-      gap: 2px;
-      letter-spacing: 0.2px;
+      justify-content: center;
+      gap: 3px;
+      letter-spacing: 0.3px;
       text-transform: uppercase;
       transition: color 0.15s;
       position: relative;
-      overflow-wrap: anywhere;
     }
-    .bottom-nav a i { font-size: 1.2rem; transition: transform 0.2s; order: 1; }
-    .bottom-nav a .nav-label { order: 2; }
+    .bottom-nav a i { font-size: 1.25rem; transition: transform 0.2s; }
     @media (max-width: 360px) {
-      .bottom-nav a { font-size: 0.52rem; padding: 8px 2px 6px; gap: 1px; }
+      .bottom-nav a { font-size: 0.55rem; gap: 2px; }
       .bottom-nav a i { font-size: 1.15rem; }
     }
     .bottom-nav a.active { color: var(--accent-orange); }
-    .bottom-nav a.active::before {
+    .bottom-nav a.active::after {
       content: '';
       position: absolute;
-      top: 0; left: 25%; right: 25%;
-      height: 2.5px;
-      background: linear-gradient(90deg, transparent, var(--accent-orange), transparent);
-      border-radius: 0 0 2px 2px;
+      bottom: 6px;
+      left: 38%;
+      right: 38%;
+      height: 3px;
+      border-radius: 2px;
+      background: var(--accent-orange);
     }
     .bottom-nav a:hover { color: var(--accent-orange); }
     .bottom-nav a:active i { transform: scale(0.85); }
+
+    /* Centered Punch floating action button */
+    .punch-fab {
+      position: fixed;
+      bottom: calc(34px + env(safe-area-inset-bottom, 0));
+      left: 50%;
+      transform: translateX(-50%);
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #0A1628, #1565C0);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      text-decoration: none;
+      font-size: 0.58rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      border: 3px solid rgba(255, 255, 255, 0.9);
+      box-shadow:
+        0 6px 20px rgba(0,0,0,0.22),
+        0 0 0 1px rgba(10,22,40,0.08);
+      z-index: 301;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .punch-fab i { font-size: 1.7rem; }
+    .punch-fab.active {
+      background: linear-gradient(135deg, #FF6B35, #FF8F50);
+      box-shadow:
+        0 6px 20px rgba(255,107,53,0.35),
+        0 0 0 4px rgba(255,107,53,0.18);
+    }
+    .punch-fab:active { transform: translateX(-50%) scale(0.92); }
 
     .portal-body { padding: 14px 14px 0; }
 
@@ -313,15 +355,10 @@
     <i class="bi bi-house{% if request.endpoint == 'portal.portal_dashboard' %}-fill{% endif %}"></i>
     <span class="nav-label">Home</span>
   </a>
-  <a href="{{ url_for('portal.portal_punch') }}"
-     class="{% if request.endpoint == 'portal.portal_punch' %}active{% endif %}">
-    <i class="bi bi-fingerprint{% if request.endpoint == 'portal.portal_punch' %}-fill{% endif %}"></i>
-    <span class="nav-label">Punch</span>
-  </a>
   <a href="{{ url_for('portal.portal_attendance') }}"
      class="{% if 'portal_attendance' in (request.endpoint or '') %}active{% endif %}">
     <i class="bi bi-calendar-check{% if 'portal_attendance' in (request.endpoint or '') %}-fill{% endif %}"></i>
-    <span class="nav-label">My Attendance</span>
+    <span class="nav-label">Attendance</span>
   </a>
   <a href="{{ url_for('portal.portal_payslips') }}"
      class="{% if 'payslip' in (request.endpoint or '') %}active{% endif %}">
@@ -334,14 +371,37 @@
     <span class="nav-label">Leaves</span>
   </a>
 </nav>
+<a href="{{ url_for('portal.portal_punch') }}"
+   class="punch-fab {% if request.endpoint == 'portal.portal_punch' %}active{% endif %}">
+  <i class="bi bi-fingerprint"></i>
+  <span>Punch</span>
+</a>
 {% endif %}
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('{{ url_for("static", filename="sw.js") }}')
-      .then(() => console.log('SW registered'))
+      .then(reg => {
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          if (!newWorker) return;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'activated' && navigator.serviceWorker.controller) {
+              window.location.reload();
+            }
+          });
+        });
+      })
       .catch(err => console.log('SW error', err));
+
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!refreshing) {
+        refreshing = true;
+        window.location.reload();
+      }
+    });
   }
 </script>
 <script>

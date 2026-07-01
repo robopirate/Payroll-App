@@ -181,7 +181,7 @@ def test_portal_profile_phone_unique(client, app):
 
 
 def test_portal_bottom_nav_links_present(client, app):
-    """The bottom navigation should appear on portal pages including Punch."""
+    """The bottom navigation and Punch FAB should appear on every portal page."""
     _make_approved_employee(app, '9876543217', emp_id='EMP208')
     resp = _portal_login(client, '9876543217')
     assert resp.status_code == 200
@@ -191,7 +191,9 @@ def test_portal_bottom_nav_links_present(client, app):
         resp = client.get(endpoint)
         assert resp.status_code == 200
         assert b'Home' in resp.data
-        assert b'Punch' in resp.data
-        assert b'My Attendance' in resp.data
+        assert b'Attendance' in resp.data
         assert b'Payslips' in resp.data
         assert b'Leaves' in resp.data
+        # The Punch FAB is a separate fixed link to /portal/punch.
+        assert b'/portal/punch' in resp.data
+        assert b'punch-fab' in resp.data

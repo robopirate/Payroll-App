@@ -1,7 +1,7 @@
 {
   "name": "Robo Pirate's Payroll",
   "short_name": "Robo Pirate's Payroll",
-  "start_url": "/",
+  "start_url": "/portal/dashboard",
   "display": "standalone",
   "background_color": "#F0F4F8",
   "theme_color": "#0A1628",
