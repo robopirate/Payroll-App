@@ -199,6 +199,8 @@ def safe_migrate():
                 conn.execute(text("ALTER TABLE employees ADD COLUMN working_hours_per_day REAL"))
             else:
                 conn.execute(text("ALTER TABLE employees ADD COLUMN working_hours_per_day FLOAT"))
+        if 'address' not in emp_cols:
+            conn.execute(text("ALTER TABLE employees ADD COLUMN address VARCHAR(300)"))
 
         # Schools table: location_type, working hours, and shift timings
         if db.engine.dialect.name == 'sqlite':

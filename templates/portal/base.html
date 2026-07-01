@@ -98,6 +98,29 @@
       color: white;
       border-color: rgba(255,255,255,0.2);
     }
+    .portal-profile-btn {
+      color: rgba(255,255,255,0.65);
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(8px);
+      padding: 5px 10px;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      text-decoration: none;
+      transition: all 0.2s;
+      white-space: nowrap;
+      margin-right: 8px;
+    }
+    .portal-profile-btn:hover {
+      background: rgba(255,255,255,0.12);
+      color: white;
+      border-color: rgba(255,255,255,0.2);
+    }
+    .header-actions { display: flex; align-items: center; }
+    @media (max-width: 360px) {
+      .portal-logout-btn span, .portal-profile-btn span { display: none; }
+      .portal-logout-btn, .portal-profile-btn { padding: 5px 8px; }
+    }
 
     /* Glassmorphism Bottom Navigation */
     .bottom-nav {
@@ -114,12 +137,13 @@
     }
     .bottom-nav a {
       flex: 1;
+      min-width: 0;
       text-align: center;
-      padding: 9px 4px 6px;
+      padding: 9px 3px 6px;
       padding-bottom: 6px;
       text-decoration: none;
       color: #9aa5b4;
-      font-size: 0.6rem;
+      font-size: 0.58rem;
       font-weight: 700;
       display: flex;
       flex-direction: column;
@@ -129,11 +153,12 @@
       text-transform: uppercase;
       transition: color 0.15s;
       position: relative;
+      white-space: nowrap;
     }
-    .bottom-nav a i { font-size: 1.25rem; transition: transform 0.2s; }
+    .bottom-nav a i { font-size: 1.2rem; transition: transform 0.2s; }
     @media (max-width: 360px) {
-      .bottom-nav a { font-size: 0; padding: 10px 2px 6px; gap: 0; }
-      .bottom-nav a i { font-size: 1.4rem; }
+      .bottom-nav a { font-size: 0.55rem; padding: 8px 2px 6px; }
+      .bottom-nav a i { font-size: 1.15rem; }
     }
     .bottom-nav a.active { color: var(--accent-orange); }
     .bottom-nav a.active::before {
@@ -251,9 +276,14 @@
       <div class="emp-name" id="hdr-emp-name">Employee Portal</div>
     {% endif %}
   </div>
-  <a href="{{ url_for('auth.logout') }}" class="portal-logout-btn">
-    <i class="bi bi-box-arrow-right me-1"></i>Logout
-  </a>
+  <div class="header-actions">
+    <a href="{{ url_for('portal.portal_profile') }}" class="portal-profile-btn">
+      <i class="bi bi-person-circle me-1"></i><span>Profile</span>
+    </a>
+    <a href="{{ url_for('auth.logout') }}" class="portal-logout-btn">
+      <i class="bi bi-box-arrow-right me-1"></i><span>Logout</span>
+    </a>
+  </div>
 </header>
 
 {% with messages = get_flashed_messages(with_categories=true) %}

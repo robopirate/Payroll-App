@@ -59,6 +59,7 @@ class Employee(db.Model):
     name = db.Column(db.String(100), nullable=False)
     phone = db.Column(db.String(15), unique=True, nullable=False)
     email = db.Column(db.String(120))
+    address = db.Column(db.String(300))
     department_id = db.Column(db.Integer, db.ForeignKey('departments.id'))
     designation = db.Column(db.String(100))
     employee_type = db.Column(db.String(20), default='full_time')  # full_time, contract, part_time

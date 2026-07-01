@@ -185,6 +185,67 @@ def portal_punch():
     return render_template('portal/punch.html', emp=emp, location=location, today_attendance=today_att)
 
 
+@bp.route('/portal/profile', methods=['GET', 'POST'])
+@portal_required
+def portal_profile():
+    """Let employees update their own contact, address, bank and ID details."""
+    emp = Employee.query.get(current_user.employee_id)
+
+    if request.method == 'POST':
+        phone = request.form.get('phone', '').strip()
+        email = request.form.get('email', '').strip() or None
+        address = request.form.get('address', '').strip() or None
+        bank_name = request.form.get('bank_name', '').strip() or None
+        account_number = request.form.get('account_number', '').strip() or None
+        ifsc_code = request.form.get('ifsc_code', '').strip() or None
+        pan_number = request.form.get('pan_number', '').strip() or None
+        aadhar_number = request.form.get('aadhar_number', '').strip() or None
+
+        if not phone.isdigit() or len(phone) != 10:
+            flash('Phone number must be exactly 10 digits.', 'danger')
+            return redirect(url_for('.portal_profile'))
+
+        phone_taken = Employee.query.filter(
+            Employee.phone == phone,
+            Employee.id != emp.id
+        ).first()
+        if phone_taken:
+            flash('This phone number is already registered to another employee.', 'danger')
+            return redirect(url_for('.portal_profile'))
+
+        emp.phone = phone
+        emp.email = email
+        emp.address = address
+        emp.bank_name = bank_name
+        emp.account_number = account_number
+        emp.ifsc_code = ifsc_code
+        emp.pan_number = pan_number
+        emp.aadhar_number = aadhar_number
+
+        # Keep portal login username in sync with the phone number.
+        portal_user = User.query.filter_by(employee_id=emp.id).first()
+        if portal_user and portal_user.username != phone:
+            username_taken = User.query.filter(
+                User.username == phone,
+                User.id != portal_user.id
+            ).first()
+            if username_taken:
+                flash('This phone number is already linked to another account.', 'danger')
+                return redirect(url_for('.portal_profile'))
+            portal_user.username = phone
+
+        try:
+            db.session.commit()
+            flash('Profile updated successfully.', 'success')
+        except Exception:
+            db.session.rollback()
+            flash('Could not update profile. Please try again.', 'danger')
+
+        return redirect(url_for('.portal_profile'))
+
+    return render_template('portal/profile.html', emp=emp)
+
+
 @bp.route('/portal/attendance')
 @portal_required
 def portal_attendance():
