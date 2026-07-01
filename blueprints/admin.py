@@ -842,9 +842,9 @@ def approve_advance(adv_id):
 def payroll():
     month = int(request.args.get('month', date.today().month))
     year = int(request.args.get('year', date.today().year))
-    payrolls = Payroll.query.filter_by(month=month, year=year).join(Employee).filter(
-        Employee.is_active == True, Employee.is_approved == True
-    ).all()
+    payrolls = Payroll.query.filter_by(month=month, year=year).join(
+        Employee, Payroll.employee_id == Employee.id
+    ).filter(Employee.is_active == True, Employee.is_approved == True).all()
     emp_ids_done = {p.employee_id for p in payrolls}
     emps = Employee.query.filter_by(is_active=True, is_approved=True).all()
     return render_template('payroll/list.html', payrolls=payrolls, month=month, year=year,
