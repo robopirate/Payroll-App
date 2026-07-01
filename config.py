@@ -42,7 +42,7 @@ class Config:
     RATELIMIT_STORAGE_URI = os.environ.get('RATELIMIT_STORAGE_URI', 'memory://')
     # Payroll settings
     OVERTIME_RATE_MULTIPLIER = 2.0   # overtime hourly rate = (basic/26/8) * multiplier
-    PF_RATE = 0.12                   # 12% of basic
+    PF_RATE = 0.0                    # disabled for small startup; set to 0.12 if PF becomes mandatory
     ESI_RATE = 0.0075                # employee contribution 0.75% of gross (if gross <= 21000)
     ESI_EMPLOYER_RATE = 0.0325       # employer contribution 3.25% of gross
     ESI_THRESHOLD = 21000
@@ -66,7 +66,7 @@ class Config:
         (1200000, 1500000, 0.20),
         (1500000, float('inf'), 0.30),
     ]
-    HRA_RATE = 0.40                  # 40% of basic
+    HRA_RATE = 0.0                   # disabled; set to 0.40 if HRA is offered
     WORKING_DAYS_PER_MONTH = 26
     WORKING_HOURS_PER_DAY = 8
     # Auto-absent marking: mark today's missing punches as absent only after this hour (24h).
