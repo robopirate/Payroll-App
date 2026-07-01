@@ -148,6 +148,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
+      justify-content: flex-start;
       gap: 2px;
       letter-spacing: 0.3px;
       text-transform: uppercase;
@@ -155,7 +156,8 @@
       position: relative;
       white-space: nowrap;
     }
-    .bottom-nav a i { font-size: 1.2rem; transition: transform 0.2s; }
+    .bottom-nav a i { font-size: 1.2rem; transition: transform 0.2s; order: 1; }
+    .bottom-nav a .nav-label { order: 2; }
     @media (max-width: 360px) {
       .bottom-nav a { font-size: 0.55rem; padding: 8px 2px 6px; }
       .bottom-nav a i { font-size: 1.15rem; }
@@ -307,23 +309,28 @@
 <nav class="bottom-nav">
   <a href="{{ url_for('portal.portal_dashboard') }}"
      class="{% if request.endpoint == 'portal.portal_dashboard' %}active{% endif %}">
-    <i class="bi bi-house{% if request.endpoint == 'portal.portal_dashboard' %}-fill{% endif %}"></i>Home
+    <i class="bi bi-house{% if request.endpoint == 'portal.portal_dashboard' %}-fill{% endif %}"></i>
+    <span class="nav-label">Home</span>
   </a>
   <a href="{{ url_for('portal.portal_punch') }}"
      class="{% if request.endpoint == 'portal.portal_punch' %}active{% endif %}">
-    <i class="bi bi-fingerprint{% if request.endpoint == 'portal.portal_punch' %}-fill{% endif %}"></i>Punch
+    <i class="bi bi-fingerprint{% if request.endpoint == 'portal.portal_punch' %}-fill{% endif %}"></i>
+    <span class="nav-label">Punch</span>
   </a>
   <a href="{{ url_for('portal.portal_attendance') }}"
      class="{% if 'portal_attendance' in (request.endpoint or '') %}active{% endif %}">
-    <i class="bi bi-calendar-check{% if 'portal_attendance' in (request.endpoint or '') %}-fill{% endif %}"></i>My Attendance
+    <i class="bi bi-calendar-check{% if 'portal_attendance' in (request.endpoint or '') %}-fill{% endif %}"></i>
+    <span class="nav-label">My Attendance</span>
   </a>
   <a href="{{ url_for('portal.portal_payslips') }}"
      class="{% if 'payslip' in (request.endpoint or '') %}active{% endif %}">
-    <i class="bi bi-receipt{% if 'payslip' in (request.endpoint or '') %}-cutoff{% endif %}"></i>Payslips
+    <i class="bi bi-receipt{% if 'payslip' in (request.endpoint or '') %}-cutoff{% endif %}"></i>
+    <span class="nav-label">Payslips</span>
   </a>
   <a href="{{ url_for('portal.portal_leaves') }}"
      class="{% if 'portal_leave' in (request.endpoint or '') %}active{% endif %}">
-    <i class="bi bi-calendar2-x{% if 'portal_leave' in (request.endpoint or '') %}-fill{% endif %}"></i>Leaves
+    <i class="bi bi-calendar2-x{% if 'portal_leave' in (request.endpoint or '') %}-fill{% endif %}"></i>
+    <span class="nav-label">Leaves</span>
   </a>
 </nav>
 {% endif %}
