@@ -315,30 +315,6 @@ def approve_employee(emp_id):
     return redirect(url_for('.employees', status='pending'))
 
 
-@bp.route('/employees/delete_test_users', methods=['POST'])
-@login_required
-@require_role('admin')
-def delete_test_users():
-    """Remove all employees named TestUser and their related data."""
-    test_emps = Employee.query.filter(Employee.name.ilike('TestUser')).all()
-    if not test_emps:
-        flash('No TestUser employees found.', 'info')
-        return redirect(url_for('.employees'))
-
-    for emp in test_emps:
-        Payroll.query.filter_by(employee_id=emp.id).delete()
-        Attendance.query.filter_by(employee_id=emp.id).delete()
-        Leave.query.filter_by(employee_id=emp.id).delete()
-        Advance.query.filter_by(employee_id=emp.id).delete()
-        LeaveBalance.query.filter_by(employee_id=emp.id).delete()
-        User.query.filter_by(employee_id=emp.id).delete()
-        db.session.delete(emp)
-
-    db.session.commit()
-    flash(f'Deleted {len(test_emps)} TestUser employee(s) and all related data.', 'success')
-    return redirect(url_for('.employees'))
-
-
 @bp.route('/employees/<int:emp_id>')
 @login_required
 def view_employee(emp_id):
