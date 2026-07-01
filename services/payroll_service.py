@@ -6,7 +6,7 @@ from flask import current_app
 from sqlalchemy import extract, and_
 from config import Config
 from models import db, Attendance, Leave, Advance, TaxDeclaration, Holiday
-from services.attendance_service import count_working_days_between
+from services.attendance_service import count_working_days_between, calculate_paid_days
 
 
 def _round_money(value):
@@ -113,55 +113,14 @@ def calculate_payroll(employee, month, year):
 
     effective_start = max(month_start, employee.joining_date or month_start)
 
+    present_days = calculate_paid_days(employee, year, month)
+
+    # Overtime hours come from recorded attendance rows
     attendances = Attendance.query.filter_by(employee_id=employee.id).filter(
         Attendance.date >= effective_start,
         Attendance.date <= month_end
     ).all()
-
-    present_days = 0.0
-    overtime_hours = 0.0
-    attended_dates = set()
-    for att in attendances:
-        attended_dates.add(att.date)
-        if att.status in ('present', 'overtime', 'holiday'):
-            present_days += 1.0
-        elif att.status == 'half_day':
-            present_days += 0.5
-        # 'leave' status in attendance table is just a marker;
-        # approved leave days are counted separately from Leave model
-        overtime_hours += (att.overtime_hours or 0.0)
-
-    # Count approved leave days overlapping this month (working days only).
-    approved_leaves = Leave.query.filter_by(
-        employee_id=employee.id, status='approved'
-    ).filter(
-        and_(
-            Leave.start_date <= month_end,
-            Leave.end_date >= month_start
-        )
-    ).all()
-
-    leave_days_in_month = 0.0
-    for leave in approved_leaves:
-        start = max(leave.start_date, effective_start)
-        end = min(leave.end_date, month_end)
-        if start <= end:
-            leave_days_in_month += count_working_days_between(start, end)
-    present_days += leave_days_in_month
-
-    # Add unrecorded Sundays and holidays that fall on/after joining date.
-    # These are paid weekly offs / public holidays covered by the monthly salary.
-    holidays = {h.date for h in Holiday.query.filter(
-        Holiday.date >= effective_start,
-        Holiday.date <= month_end,
-        Holiday.is_active == True
-    ).all()}
-
-    current = effective_start
-    while current <= month_end:
-        if current not in attended_dates and (current.weekday() == 6 or current in holidays):
-            present_days += 1.0
-        current += timedelta(days=1)
+    overtime_hours = sum((att.overtime_hours or 0.0) for att in attendances)
 
     days_in_month = dim
     daily_rate = employee.basic_salary / days_in_month if days_in_month > 0 else 0

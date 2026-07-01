@@ -14,63 +14,73 @@
   <!-- ── Key Metrics Grid ────────────────────── -->
   <div class="row g-4 mb-5">
     <div class="col">
-      <div class="card stat-card-modern grad-blue">
-        <div class="card-body">
-          <div>
-            <div class="stat-number">{{ total_employees }}</div>
-            <div class="stat-label">Active Employees</div>
+      <a href="{{ url_for('admin.employees') }}" class="text-decoration-none">
+        <div class="card stat-card-modern grad-blue">
+          <div class="card-body">
+            <div>
+              <div class="stat-number">{{ total_employees }}</div>
+              <div class="stat-label">Active Employees</div>
+            </div>
+            <div class="stat-emoji">👥</div>
           </div>
-          <div class="stat-emoji">👥</div>
         </div>
-      </div>
+      </a>
     </div>
 
     <div class="col">
-      <div class="card stat-card-modern grad-teal">
-        <div class="card-body">
-          <div>
-            <div class="stat-number">{{ present_today }}</div>
-            <div class="stat-label">Present Today</div>
+      <a href="{{ url_for('admin.attendance', date=today.isoformat()) }}" class="text-decoration-none">
+        <div class="card stat-card-modern grad-teal">
+          <div class="card-body">
+            <div>
+              <div class="stat-number">{{ present_today }}</div>
+              <div class="stat-label">Present Today</div>
+            </div>
+            <div class="stat-emoji">✅</div>
           </div>
-          <div class="stat-emoji">✅</div>
         </div>
-      </div>
+      </a>
     </div>
 
     <div class="col">
-      <div class="card stat-card-modern grad-orange">
-        <div class="card-body">
-          <div>
-            <div class="stat-number">{{ pending_leaves }}</div>
-            <div class="stat-label">Pending Leaves</div>
+      <a href="{{ url_for('admin.leaves', status='pending') }}" class="text-decoration-none">
+        <div class="card stat-card-modern grad-orange">
+          <div class="card-body">
+            <div>
+              <div class="stat-number">{{ pending_leaves }}</div>
+              <div class="stat-label">Pending Leaves</div>
+            </div>
+            <div class="stat-emoji">🏖️</div>
           </div>
-          <div class="stat-emoji">🏖️</div>
         </div>
-      </div>
+      </a>
     </div>
 
     <div class="col">
-      <div class="card stat-card-modern grad-purple">
-        <div class="card-body">
-          <div>
-            <div class="stat-number">{{ pending_advances }}</div>
-            <div class="stat-label">Pending Advances</div>
+      <a href="{{ url_for('admin.advances') }}" class="text-decoration-none">
+        <div class="card stat-card-modern grad-purple">
+          <div class="card-body">
+            <div>
+              <div class="stat-number">{{ pending_advances }}</div>
+              <div class="stat-label">Pending Advances</div>
+            </div>
+            <div class="stat-emoji">💰</div>
           </div>
-          <div class="stat-emoji">💰</div>
         </div>
-      </div>
+      </a>
     </div>
 
     <div class="col">
-      <div class="card stat-card-modern grad-cyan">
-        <div class="card-body">
-          <div>
-            <div class="stat-number">{{ schools_count }}</div>
-            <div class="stat-label">Locations</div>
+      <a href="{{ url_for('admin.schools') }}" class="text-decoration-none">
+        <div class="card stat-card-modern grad-cyan">
+          <div class="card-body">
+            <div>
+              <div class="stat-number">{{ schools_count }}</div>
+              <div class="stat-label">Locations</div>
+            </div>
+            <div class="stat-emoji">🏫</div>
           </div>
-          <div class="stat-emoji">🏫</div>
         </div>
-      </div>
+      </a>
     </div>
   </div>
 

@@ -11,7 +11,8 @@ from extensions import db, limiter
 from services.attendance_service import (
     get_working_days_in_month, count_working_days_between,
     update_attendance_timing_flags, ensure_sunday_attendance,
-    ensure_absent_attendance, backfill_absent_attendance
+    ensure_absent_attendance, backfill_absent_attendance,
+    calculate_paid_days
 )
 from services.payroll_service import calculate_payroll
 from models import (
@@ -59,22 +60,23 @@ def _get_optional_float(value):
 @bp.route('/dashboard')
 @login_required
 def dashboard():
-    total_employees = Employee.query.filter_by(is_active=True).count()
+    total_employees = Employee.query.filter_by(is_active=True, is_approved=True).count()
     today = date.today()
 
     # Auto-mark today's missing punches as absent if we're past the cutoff hour
     ensure_absent_attendance(today)
 
-    # Count distinct active employees who are absent today
+    # Count distinct active+approved employees who are absent today
     absent_today = db.session.query(func.count(distinct(Attendance.employee_id))).join(
         Employee, Attendance.employee_id == Employee.id
     ).filter(
         Attendance.date == today,
         Attendance.status == 'absent',
-        Employee.is_active == True
+        Employee.is_active == True,
+        Employee.is_approved == True
     ).scalar() or 0
 
-    # Count distinct active employees who are present today
+    # Count distinct active+approved employees who are present today
     # On Sundays, everyone is considered present (weekly off) unless explicitly marked absent.
     if today.weekday() == 6:
         present_today = max(0, total_employees - absent_today)
@@ -84,14 +86,19 @@ def dashboard():
         ).filter(
             Attendance.date == today,
             Attendance.status.in_(['present', 'half_day', 'overtime', 'holiday']),
-            Employee.is_active == True
+            Employee.is_active == True,
+            Employee.is_approved == True
         ).scalar() or 0
-    
-    pending_leaves = Leave.query.filter_by(status='pending').count()
-    pending_advances = Advance.query.filter_by(status='pending').count()
+
+    pending_leaves = Leave.query.filter_by(status='pending').join(
+        Employee, Leave.employee_id == Employee.id
+    ).filter(Employee.is_active == True, Employee.is_approved == True).count()
+    pending_advances = Advance.query.filter_by(status='pending').join(
+        Employee, Advance.employee_id == Employee.id
+    ).filter(Employee.is_active == True, Employee.is_approved == True).count()
     recent_payrolls = (
-        Payroll.query.join(Employee)
-        .filter(Employee.is_active == True)
+        Payroll.query.join(Employee, Payroll.employee_id == Employee.id)
+        .filter(Employee.is_active == True, Employee.is_approved == True)
         .order_by(Payroll.generated_on.desc())
         .limit(5)
         .all()
@@ -367,6 +374,7 @@ def view_employee(emp_id):
 
 @bp.route('/employees/<int:emp_id>/set_password', methods=['POST'])
 @login_required
+@require_role('admin')
 def set_employee_password(emp_id):
     emp = Employee.query.get_or_404(emp_id)
     new_pass = request.form.get('new_password', '').strip()
@@ -386,6 +394,7 @@ def set_employee_password(emp_id):
 
 @bp.route('/employees/<int:emp_id>/assign_schools', methods=['POST'])
 @login_required
+@require_role('admin')
 def assign_employee_schools(emp_id):
     emp = Employee.query.get_or_404(emp_id)
     school_ids = request.form.getlist('school_ids')
@@ -505,10 +514,10 @@ def view_school(school_id):
     today = date.today()
     employees_with_status = []
     for emp in school.assigned_employees:
-        if emp.is_active:
+        if emp.is_active and emp.is_approved:
             att = Attendance.query.filter_by(employee_id=emp.id, date=today).first()
             employees_with_status.append({'employee': emp, 'attendance': att})
-    all_employees = Employee.query.filter_by(is_active=True).order_by(Employee.name).all()
+    all_employees = Employee.query.filter_by(is_active=True, is_approved=True).order_by(Employee.name).all()
     return render_template('schools/detail.html', school=school,
                            employees_with_status=employees_with_status,
                            all_employees=all_employees, today=today)
@@ -516,6 +525,7 @@ def view_school(school_id):
 
 @bp.route('/schools/<int:school_id>/assign', methods=['POST'])
 @login_required
+@require_role('admin')
 def assign_school_employees(school_id):
     school = School.query.get_or_404(school_id)
     emp_ids = request.form.getlist('employee_ids')
@@ -540,7 +550,7 @@ def attendance():
     except ValueError:
         sel_date = date.today()
 
-    emps = Employee.query.filter_by(is_active=True).order_by(Employee.name).all()
+    emps = Employee.query.filter_by(is_active=True, is_approved=True).order_by(Employee.name).all()
     existing = {a.employee_id: a for a in Attendance.query.filter_by(date=sel_date).all()}
 
     # Auto-populate holiday status if date is a holiday and no record exists
@@ -595,7 +605,7 @@ def attendance():
 def attendance_report():
     month = int(request.args.get('month', date.today().month))
     year = int(request.args.get('year', date.today().year))
-    emps = Employee.query.filter_by(is_active=True).order_by(Employee.name).all()
+    emps = Employee.query.filter_by(is_active=True, is_approved=True).order_by(Employee.name).all()
     _, days_in_month = calendar.monthrange(year, month)
 
     # Auto-populate Sunday present records for the report month
@@ -613,15 +623,14 @@ def attendance_report():
             extract('year', Attendance.date) == year,
             extract('month', Attendance.date) == month
         ).all()}
-        present = sum(1 for a in atts.values() if a.status in ('present', 'holiday'))
-        half = sum(0.5 for a in atts.values() if a.status == 'half_day')
+        paid_days = calculate_paid_days(emp, year, month)
         absent = sum(1 for a in atts.values() if a.status == 'absent')
         ot = sum(a.overtime_hours or 0 for a in atts.values())
         late_days = sum(1 for a in atts.values() if a.late_minutes)
         early_days = sum(1 for a in atts.values() if a.early_minutes)
         report.append({
             'employee': emp, 'atts': atts,
-            'present': present + half, 'absent': absent, 'overtime': ot,
+            'present': paid_days, 'absent': absent, 'overtime': ot,
             'late_days': late_days, 'early_days': early_days,
         })
 
@@ -646,7 +655,7 @@ def leaves():
 @bp.route('/leaves/apply', methods=['GET', 'POST'])
 @login_required
 def apply_leave():
-    emps = Employee.query.filter_by(is_active=True).order_by(Employee.name).all()
+    emps = Employee.query.filter_by(is_active=True, is_approved=True).order_by(Employee.name).all()
     if request.method == 'POST':
         f = request.form
         emp_id = int(f.get('employee_id'))
@@ -775,7 +784,7 @@ def delete_leave(leave_id):
 @login_required
 def leave_balances():
     year = int(request.args.get('year', date.today().year))
-    emps = Employee.query.filter_by(is_active=True).order_by(Employee.name).all()
+    emps = Employee.query.filter_by(is_active=True, is_approved=True).order_by(Employee.name).all()
     return render_template('leaves/balances.html', employees=emps, year=year,
                            years=list(range(2020, date.today().year + 2)))
 
@@ -786,7 +795,7 @@ def leave_balances():
 @login_required
 @require_role('admin')
 def advances():
-    emps = Employee.query.filter_by(is_active=True).order_by(Employee.name).all()
+    emps = Employee.query.filter_by(is_active=True, is_approved=True).order_by(Employee.name).all()
     if request.method == 'POST':
         f = request.form
         # Amount validation
@@ -870,7 +879,7 @@ def generate_payroll():
     clamped = []
     for emp_id in emp_ids:
         emp = Employee.query.get(int(emp_id))
-        if not emp:
+        if not emp or not emp.is_active or not emp.is_approved:
             continue
         existing = Payroll.query.filter_by(employee_id=emp.id, month=month, year=year).first()
         data = calculate_payroll(emp, month, year)
@@ -965,7 +974,7 @@ def send_bulk_sms():
 @bp.route('/sms', methods=['GET', 'POST'])
 @login_required
 def sms_panel():
-    emps = Employee.query.filter_by(is_active=True).order_by(Employee.name).all()
+    emps = Employee.query.filter_by(is_active=True, is_approved=True).order_by(Employee.name).all()
     if request.method == 'POST':
         f = request.form
         emp_ids = f.getlist('employee_ids')
@@ -1204,7 +1213,7 @@ def school_schedule():
 @login_required
 @require_role('admin')
 def leave_balance_setup():
-    employees = Employee.query.filter_by(is_active=True).order_by(Employee.name).all()
+    employees = Employee.query.filter_by(is_active=True, is_approved=True).order_by(Employee.name).all()
     current_year = date.today().year
 
     leave_balances = {}
@@ -1226,7 +1235,7 @@ def setup_leave_quick():
     earned = float(f.get('earned_days', 20))
     year = date.today().year
 
-    employees = Employee.query.filter_by(is_active=True).all()
+    employees = Employee.query.filter_by(is_active=True, is_approved=True).all()
     count = 0
 
     for emp in employees:
@@ -1278,7 +1287,7 @@ def setup_employee_leaves():
 @login_required
 def export_employees():
     import csv
-    emps = Employee.query.filter_by(is_active=True).order_by(Employee.name).all()
+    emps = Employee.query.filter_by(is_active=True, is_approved=True).order_by(Employee.name).all()
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow(['Employee ID', 'Name', 'Phone', 'Email', 'Department', 'Designation',
@@ -1301,12 +1310,12 @@ def export_attendance():
     import csv
     month = int(request.args.get('month', date.today().month))
     year = int(request.args.get('year', date.today().year))
-    emps = Employee.query.filter_by(is_active=True).order_by(Employee.name).all()
+    emps = Employee.query.filter_by(is_active=True, is_approved=True).order_by(Employee.name).all()
     _, days_in_month = calendar.monthrange(year, month)
 
     output = io.StringIO()
     writer = csv.writer(output)
-    header = ['Employee ID', 'Name', 'Department'] + [str(d) for d in range(1, days_in_month + 1)] + ['Present', 'Absent', 'Half Day', 'Late Days', 'Early Days', 'Overtime Hrs']
+    header = ['Employee ID', 'Name', 'Department'] + [str(d) for d in range(1, days_in_month + 1)] + ['Paid Days', 'Absent', 'Half Day', 'Late Days', 'Early Days', 'Overtime Hrs']
     writer.writerow(header)
 
     for emp in emps:
@@ -1315,20 +1324,20 @@ def export_attendance():
             extract('month', Attendance.date) == month
         ).all()}
         row = [emp.emp_id, emp.name, emp.dept.name if emp.dept else '']
-        present = absent = half = ot = late = early = 0
+        paid_days = calculate_paid_days(emp, year, month)
+        absent = half = ot = late = early = 0
         for d in range(1, days_in_month + 1):
             a = atts.get(d)
             if a:
                 row.append(a.status.replace('_', ' ').title())
-                if a.status == 'present': present += 1
-                elif a.status == 'absent': absent += 1
+                if a.status == 'absent': absent += 1
                 elif a.status == 'half_day': half += 1
                 if a.overtime_hours: ot += a.overtime_hours
                 if a.late_minutes: late += 1
                 if a.early_minutes: early += 1
             else:
                 row.append('')
-        row += [present, absent, half, late, early, ot]
+        row += [paid_days, absent, half, late, early, ot]
         writer.writerow(row)
 
     output.seek(0)
@@ -1399,6 +1408,7 @@ def export_payroll_bank_csv(month, year):
 
 @bp.route('/attendance/lock', methods=['POST'])
 @login_required
+@require_role('admin')
 def lock_attendance():
     from models import AttendanceLock
     month = int(request.form.get('month', date.today().month))

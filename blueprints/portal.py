@@ -6,7 +6,11 @@ import io
 
 from extensions import db, limiter
 from decorators import portal_required
-from services.attendance_service import count_working_days_between, ensure_sunday_attendance, backfill_absent_attendance
+from services.attendance_service import (
+    count_working_days_between, ensure_sunday_attendance,
+    backfill_absent_attendance, calculate_paid_days,
+    get_employee_active_school
+)
 from services.login_protection import is_allowed
 from flask_limiter.util import get_remote_address
 from sqlalchemy import extract
@@ -177,7 +181,7 @@ def portal_punch():
     emp = Employee.query.get(current_user.employee_id)
     today = date.today()
     today_att = Attendance.query.filter_by(employee_id=emp.id, date=today).first()
-    location = emp.schools[0] if emp.schools else None
+    location = get_employee_active_school(emp)
     return render_template('portal/punch.html', emp=emp, location=location, today_attendance=today_att)
 
 
@@ -203,12 +207,11 @@ def portal_attendance():
         extract('month', Attendance.date) == month
     ).all()}
 
-    present = sum(1 for a in atts.values() if a.status in ('present', 'holiday'))
-    half = sum(0.5 for a in atts.values() if a.status == 'half_day')
+    paid_days = calculate_paid_days(emp, year, month)
     absent = sum(1 for a in atts.values() if a.status == 'absent')
 
     return render_template('portal/attendance.html', emp=emp, atts=atts, month=month, year=year,
-        days_in_month=days_in_month, present=present + half, absent=absent,
+        days_in_month=days_in_month, present=paid_days, absent=absent,
         get_month_name=get_month_name,
         months=list(range(1, 13)), years=list(range(2020, date.today().year + 2)))
 

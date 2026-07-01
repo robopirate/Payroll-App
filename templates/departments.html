@@ -42,7 +42,7 @@
                 {% for dept in departments %}
                 <tr>
                   <td class="fw-semibold">{{ dept.name }}</td>
-                  <td>{{ dept.employees|selectattr('is_active')|list|length }}</td>
+                  <td>{{ dept.employees|selectattr('is_active')|selectattr('is_approved')|list|length }}</td>
                 </tr>
                 {% endfor %}
               </tbody>

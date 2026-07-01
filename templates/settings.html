@@ -74,31 +74,31 @@
             <div class="col-sm-6">
               <div class="p-3 rounded bg-white bg-opacity-50">
                 <div class="text-muted small mb-1">PF Rate</div>
-                <div class="fw-semibold">12% of Basic</div>
+                <div class="fw-semibold">{{ "%.0f"|format(config.PF_RATE * 100) }}% of Basic</div>
               </div>
             </div>
             <div class="col-sm-6">
               <div class="p-3 rounded bg-white bg-opacity-50">
                 <div class="text-muted small mb-1">ESI Rate</div>
-                <div class="fw-semibold">1.75% of Gross (if Gross ≤ Rs.21,000)</div>
+                <div class="fw-semibold">{{ "%.2f"|format(config.ESI_RATE * 100) }}% of Gross (if Gross ≤ Rs.{{ config.ESI_THRESHOLD }})</div>
               </div>
             </div>
             <div class="col-sm-6">
               <div class="p-3 rounded bg-white bg-opacity-50">
                 <div class="text-muted small mb-1">HRA</div>
-                <div class="fw-semibold">40% of Basic</div>
+                <div class="fw-semibold">{{ "%.0f"|format(config.HRA_RATE * 100) }}% of Basic</div>
               </div>
             </div>
             <div class="col-sm-6">
               <div class="p-3 rounded bg-white bg-opacity-50">
                 <div class="text-muted small mb-1">Overtime Rate</div>
-                <div class="fw-semibold">2x hourly rate</div>
+                <div class="fw-semibold">{{ config.OVERTIME_RATE_MULTIPLIER }}x hourly rate</div>
               </div>
             </div>
             <div class="col-sm-6">
               <div class="p-3 rounded bg-white bg-opacity-50">
                 <div class="text-muted small mb-1">Working Days/Month</div>
-                <div class="fw-semibold">26 (Mon-Sat)</div>
+                <div class="fw-semibold">{{ config.WORKING_DAYS_PER_MONTH }} (used for overtime calc)</div>
               </div>
             </div>
           </div>

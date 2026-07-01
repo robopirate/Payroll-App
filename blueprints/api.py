@@ -5,7 +5,7 @@ from datetime import date, datetime, timezone, timedelta
 from sqlalchemy import extract
 
 from extensions import db, limiter, csrf
-from services.attendance_service import haversine_distance, update_attendance_timing_flags
+from services.attendance_service import haversine_distance, update_attendance_timing_flags, calculate_paid_days, get_employee_active_school
 from models import Employee, Attendance, Leave, LeaveBalance, Payroll, Holiday
 
 bp = Blueprint('api', __name__)
@@ -14,7 +14,10 @@ bp = Blueprint('api', __name__)
 # ─── Helper: get current employee from JWT ──────────────────────────────────
 
 def get_current_employee():
-    """Return the Employee object for the currently authenticated JWT user."""
+    """Return the Employee object for the currently authenticated JWT user.
+
+    Only returns active and approved employees.
+    """
     try:
         claims = get_jwt()
         if not claims:
@@ -22,7 +25,10 @@ def get_current_employee():
         employee_id = claims.get('employee_id')
         if not employee_id:
             return None
-        return Employee.query.get(int(employee_id))
+        emp = Employee.query.get(int(employee_id))
+        if not emp or not emp.is_active or not emp.is_approved:
+            return None
+        return emp
     except Exception:
         return None
 
@@ -114,7 +120,9 @@ def api_punch():
     # Fall back to session-based auth (for existing web portal users)
     if not emp and current_user.is_authenticated and not current_user.is_admin:
         emp = Employee.query.get(current_user.employee_id)
-    
+        if emp and (not emp.is_active or not emp.is_approved):
+            emp = None
+
     if not emp:
         return jsonify({'success': False, 'message': 'Unauthorized. Please login.'}), 401
 
@@ -126,8 +134,8 @@ def api_punch():
     if lat is None or lng is None:
         return jsonify({'success': False, 'message': 'GPS coordinates not received.'})
 
-    # Geofence check — determine if school or field punch
-    assigned_schools = [s for s in emp.schools if s.latitude and s.longitude]
+    # Geofence check — determine if school or field punch (active schools only)
+    assigned_schools = [s for s in emp.schools if s.is_active and s.latitude and s.longitude]
     location_type = 'field'
     closest_school = None
     min_distance = float('inf')
@@ -444,13 +452,15 @@ def api_attendance_monthly():
     month = int(request.args.get('month', date.today().month))
     year = int(request.args.get('year', date.today().year))
 
+    import calendar
+    _, days_in_month = calendar.monthrange(year, month)
+
     atts = Attendance.query.filter_by(employee_id=emp.id).filter(
         extract('year', Attendance.date) == year,
         extract('month', Attendance.date) == month
     ).all()
 
-    present = sum(1 for a in atts if a.status == 'present')
-    half = sum(0.5 for a in atts if a.status == 'half_day')
+    paid_days = calculate_paid_days(emp, year, month)
     absent = sum(1 for a in atts if a.status == 'absent')
     ot = sum(a.overtime_hours or 0 for a in atts)
 
@@ -459,10 +469,10 @@ def api_attendance_monthly():
         'month': month,
         'year': year,
         'summary': {
-            'present': present + half,
+            'present': paid_days,
             'absent': absent,
             'overtime_hours': ot,
-            'total_days': len(atts),
+            'total_days': days_in_month,
         },
         'records': [
             {

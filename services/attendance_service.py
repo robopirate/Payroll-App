@@ -139,7 +139,7 @@ def ensure_absent_attendance(date_obj):
     if is_holiday:
         return
 
-    employees = Employee.query.filter_by(is_active=True).all()
+    employees = Employee.query.filter_by(is_active=True, is_approved=True).all()
     existing = {a.employee_id for a in Attendance.query.filter_by(date=date_obj).all()}
     on_leave = {
         l.employee_id for l in Leave.query.filter(
@@ -167,6 +167,66 @@ def ensure_absent_attendance(date_obj):
 
     if added:
         db.session.commit()
+
+
+def calculate_paid_days(employee, year, month):
+    """Return the number of paid days for an employee in a given month,
+    using the same rules as payroll:
+      - present / overtime / holiday attendance
+      - half_day counts as 0.5
+      - approved leave working days
+      - unrecorded Sundays and holidays
+    Joining date is respected.
+    """
+    _, dim = calendar.monthrange(year, month)
+    month_start = date(year, month, 1)
+    month_end = date(year, month, dim)
+
+    if employee.joining_date and employee.joining_date > month_end:
+        return 0.0
+
+    effective_start = max(month_start, employee.joining_date or month_start)
+
+    attendances = Attendance.query.filter_by(employee_id=employee.id).filter(
+        Attendance.date >= effective_start,
+        Attendance.date <= month_end
+    ).all()
+
+    paid_days = 0.0
+    attended_dates = {a.date for a in attendances}
+    for att in attendances:
+        if att.status in ('present', 'overtime', 'holiday'):
+            paid_days += 1.0
+        elif att.status == 'half_day':
+            paid_days += 0.5
+
+    # Approved leave working days
+    approved_leaves = Leave.query.filter_by(
+        employee_id=employee.id, status='approved'
+    ).filter(
+        Leave.start_date <= month_end,
+        Leave.end_date >= effective_start
+    ).all()
+    for leave in approved_leaves:
+        start = max(leave.start_date, effective_start)
+        end = min(leave.end_date, month_end)
+        if start <= end:
+            paid_days += count_working_days_between(start, end)
+
+    # Unrecorded Sundays / holidays
+    holidays = {h.date for h in Holiday.query.filter(
+        Holiday.date >= effective_start,
+        Holiday.date <= month_end,
+        Holiday.is_active == True
+    ).all()}
+
+    current = effective_start
+    while current <= month_end:
+        if current not in attended_dates and (current.weekday() == 6 or current in holidays):
+            paid_days += 1.0
+        current += timedelta(days=1)
+
+    return paid_days
 
 
 def backfill_absent_attendance(year, month):
@@ -199,7 +259,7 @@ def ensure_sunday_attendance(date_obj):
     if is_holiday:
         return
 
-    employees = Employee.query.filter_by(is_active=True).all()
+    employees = Employee.query.filter_by(is_active=True, is_approved=True).all()
     existing = {a.employee_id for a in Attendance.query.filter_by(date=date_obj).all()}
     on_leave = {
         l.employee_id for l in Leave.query.filter(

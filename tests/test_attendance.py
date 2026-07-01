@@ -51,6 +51,8 @@ def test_update_attendance_timing_flags(app):
             department_id=dept.id,
             basic_salary=30000,
             joining_date=date(2024, 1, 1),
+            is_active=True,
+            is_approved=True,
         )
         emp.schools.append(school)
         db.session.add(emp)
@@ -146,6 +148,8 @@ def test_admin_attendance_save_computes_late_and_early(client, app):
             department_id=dept.id,
             basic_salary=30000,
             joining_date=date(2024, 1, 1),
+            is_active=True,
+            is_approved=True,
         )
         emp.schools.append(school)
         db.session.add(emp)
