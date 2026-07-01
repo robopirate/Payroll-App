@@ -842,9 +842,11 @@ def approve_advance(adv_id):
 def payroll():
     month = int(request.args.get('month', date.today().month))
     year = int(request.args.get('year', date.today().year))
-    payrolls = Payroll.query.filter_by(month=month, year=year).all()
+    payrolls = Payroll.query.filter_by(month=month, year=year).join(Employee).filter(
+        Employee.is_active == True, Employee.is_approved == True
+    ).all()
     emp_ids_done = {p.employee_id for p in payrolls}
-    emps = Employee.query.filter_by(is_active=True).all()
+    emps = Employee.query.filter_by(is_active=True, is_approved=True).all()
     return render_template('payroll/list.html', payrolls=payrolls, month=month, year=year,
         employees=emps, emp_ids_done=emp_ids_done, get_month_name=get_month_name,
         months=list(range(1, 13)), years=list(range(2020, date.today().year + 2)))
@@ -862,7 +864,7 @@ def generate_payroll():
 
     emp_ids = request.form.getlist('employee_ids')
     if not emp_ids:
-        emps = Employee.query.filter_by(is_active=True).all()
+        emps = Employee.query.filter_by(is_active=True, is_approved=True).all()
         emp_ids = [str(e.id) for e in emps]
     count = 0
     clamped = []
