@@ -6,7 +6,7 @@ import io
 
 from extensions import db, limiter
 from decorators import portal_required
-from services.attendance_service import count_working_days_between, ensure_sunday_attendance
+from services.attendance_service import count_working_days_between, ensure_sunday_attendance, backfill_absent_attendance
 from services.login_protection import is_allowed
 from flask_limiter.util import get_remote_address
 from sqlalchemy import extract
@@ -194,6 +194,9 @@ def portal_attendance():
         d_obj = date(year, month, d)
         if d_obj.weekday() == 6:
             ensure_sunday_attendance(d_obj)
+
+    # Backfill absent records for missing working days
+    backfill_absent_attendance(year, month)
 
     atts = {a.date.day: a for a in Attendance.query.filter_by(employee_id=emp.id).filter(
         extract('year', Attendance.date) == year,

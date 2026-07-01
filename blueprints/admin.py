@@ -10,7 +10,8 @@ import io
 from extensions import db, limiter
 from services.attendance_service import (
     get_working_days_in_month, count_working_days_between,
-    update_attendance_timing_flags, ensure_sunday_attendance
+    update_attendance_timing_flags, ensure_sunday_attendance,
+    ensure_absent_attendance, backfill_absent_attendance
 )
 from services.payroll_service import calculate_payroll
 from models import (
@@ -60,7 +61,10 @@ def _get_optional_float(value):
 def dashboard():
     total_employees = Employee.query.filter_by(is_active=True).count()
     today = date.today()
-    
+
+    # Auto-mark today's missing punches as absent if we're past the cutoff hour
+    ensure_absent_attendance(today)
+
     # Count distinct active employees who are absent today
     absent_today = db.session.query(func.count(distinct(Attendance.employee_id))).join(
         Employee, Attendance.employee_id == Employee.id
@@ -600,6 +604,9 @@ def attendance_report():
         if d_obj.weekday() == 6:
             ensure_sunday_attendance(d_obj)
 
+    # Backfill absent records for missing working days (up to yesterday, or today after cutoff)
+    backfill_absent_attendance(year, month)
+
     report = []
     for emp in emps:
         atts = {a.date.day: a for a in Attendance.query.filter_by(employee_id=emp.id).filter(
@@ -849,6 +856,10 @@ def payroll():
 def generate_payroll():
     month = int(request.form.get('month', date.today().month))
     year = int(request.form.get('year', date.today().year))
+
+    # Make sure missing working days are recorded as absent before payroll is calculated
+    backfill_absent_attendance(year, month)
+
     emp_ids = request.form.getlist('employee_ids')
     if not emp_ids:
         emps = Employee.query.filter_by(is_active=True).all()

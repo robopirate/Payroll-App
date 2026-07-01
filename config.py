@@ -69,3 +69,5 @@ class Config:
     HRA_RATE = 0.40                  # 40% of basic
     WORKING_DAYS_PER_MONTH = 26
     WORKING_HOURS_PER_DAY = 8
+    # Auto-absent marking: mark today's missing punches as absent only after this hour (24h).
+    ABSENT_MARK_CUTOFF_HOUR = int(os.environ.get('ABSENT_MARK_CUTOFF_HOUR', '18'))

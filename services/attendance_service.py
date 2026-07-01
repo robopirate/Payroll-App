@@ -1,5 +1,5 @@
 """Attendance and geolocation utilities."""
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 import calendar
 import math
 
@@ -126,6 +126,65 @@ def compute_early_minutes(check_out, shift_end):
     if out_mins is None or end_mins is None:
         return 0
     return max(0, end_mins - out_mins)
+
+
+def ensure_absent_attendance(date_obj):
+    """Create status='absent' attendance rows for active employees who have no
+    record for a working day. Skips Sundays, holidays, approved leaves, and
+    days before the employee's joining date. Idempotent.
+    """
+    if date_obj.weekday() == 6:
+        return
+    is_holiday = Holiday.query.filter_by(date=date_obj, is_active=True).first() is not None
+    if is_holiday:
+        return
+
+    employees = Employee.query.filter_by(is_active=True).all()
+    existing = {a.employee_id for a in Attendance.query.filter_by(date=date_obj).all()}
+    on_leave = {
+        l.employee_id for l in Leave.query.filter(
+            Leave.status == 'approved',
+            Leave.start_date <= date_obj,
+            Leave.end_date >= date_obj
+        ).all()
+    }
+
+    added = False
+    for emp in employees:
+        if emp.id in existing or emp.id in on_leave:
+            continue
+        if date_obj < emp.joining_date:
+            continue
+        db.session.add(Attendance(
+            employee_id=emp.id,
+            date=date_obj,
+            status='absent',
+            admin_override=False,
+            late_minutes=0,
+            early_minutes=0
+        ))
+        added = True
+
+    if added:
+        db.session.commit()
+
+
+def backfill_absent_attendance(year, month):
+    """Backfill absent records for all missing working days in the month up to
+    yesterday. If the current day is past the configured cutoff hour, include it.
+    """
+    from flask import current_app
+    _, dim = calendar.monthrange(year, month)
+    today = date.today()
+    cutoff = current_app.config.get('ABSENT_MARK_CUTOFF_HOUR', 18)
+
+    for d in range(1, dim + 1):
+        d_obj = date(year, month, d)
+        if d_obj > today:
+            continue
+        if d_obj == today and datetime.now().hour < cutoff:
+            continue
+        ensure_absent_attendance(d_obj)
 
 
 def ensure_sunday_attendance(date_obj):
