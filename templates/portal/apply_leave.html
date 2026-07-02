@@ -20,7 +20,7 @@ textarea.form-control { height: 90px !important; }
 {% block content %}
 <a href="{{ url_for('portal.portal_leaves') }}" class="back-btn"><i class="bi bi-arrow-left"></i> Leave Applications</a>
 <h5 class="fw-bold mb-3">Apply for Leave</h5>
-<div class="form-card-glass"><div class="card-body px-4 py-4" style="background:transparent;">
+<div class="form-card-glass mb-4"><div class="card-body px-4 py-4" style="background:transparent;">
   <form method="post">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="mb-4"><label class="form-label">Leave Type</label><select name="leave_type" class="form-select" required id="leaveTypeSelect" onchange="updateBalance()"><option value="">Select type…</option><option value="casual">Casual Leave</option><option value="sick">Sick Leave</option><option value="earned">Earned Leave</option></select><div id="balanceHint"></div></div>

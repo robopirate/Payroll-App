@@ -47,11 +47,15 @@
   .quick-att-card:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.7); }
   .quick-att-card:active { transform: translateY(0) scale(0.98); }
 
-  .leave-stats { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-bottom: 20px; padding-bottom: 8px; }
-  .leave-stat-card { flex: 0 0 calc(50% - 6px); background: rgba(255, 255, 255, 0.72); backdrop-filter: blur(16px); border-radius: 20px; text-align: center; padding: 16px 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.5); transition: all 0.25s ease; animation: cardSlideUp 0.5s ease-out both; }
-  .leave-stat-card:nth-child(2) { animation-delay: 0.2s; }
-  .leave-stat-card:nth-child(3) { animation-delay: 0.3s; }
-  .leave-stat-card:hover { transform: translateY(-6px); box-shadow: 0 8px 24px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.7); }
+  .leave-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; padding-bottom: 8px; }
+  @media (min-width: 480px) { .leave-stats { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); } }
+  .leave-stat-card { background: rgba(255, 255, 255, 0.72); backdrop-filter: blur(16px); border-radius: 20px; text-align: center; padding: 16px 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.5); transition: transform 0.2s, box-shadow 0.2s; }
+  .leave-stat-card:active { transform: scale(0.98); }
+  @media (prefers-reduced-motion: no-preference) {
+    .leave-stat-card { animation: cardSlideUp 0.5s ease-out both; }
+    .leave-stat-card:nth-child(2) { animation-delay: 0.2s; }
+    .leave-stat-card:nth-child(3) { animation-delay: 0.3s; }
+  }
   .leave-stat-card .num { font-family: 'Poppins', sans-serif; font-size: 2rem; font-weight: 800; color: var(--accent-orange, #FF6B35); line-height: 1; }
   .leave-stat-card .lbl { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #a0aab8; margin-top: 6px; }
 
@@ -61,6 +65,10 @@
     .btn-punch { width: 120px; height: 120px; font-size: 0.8rem; }
     .btn-punch i { font-size: 2rem; }
     .punch-card-hero { border-radius: 20px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .greet-section, .punch-card-hero, .quick-att-card, .leave-stat-card, .payslip-card, .card { animation: none !important; }
+    .btn-punch:hover, .btn-punch:active { transform: none; }
   }
 
   .att-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid rgba(0,0,0,0.04); transition: background 0.2s; }

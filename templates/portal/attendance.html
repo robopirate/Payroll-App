@@ -5,10 +5,10 @@
 <style>
   .month-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
   .month-title { font-weight: 800; font-size: 1.1rem; color: #0A1628; }
-  .summary-row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+  .summary-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
   .summary-box {
-    flex: 1 1 calc(33% - 7px); min-width: 80px; background: white; border-radius: 14px;
-    padding: 14px 10px; text-align: center;
+    min-width: 0; background: white; border-radius: 14px;
+    padding: 14px 8px; text-align: center;
     box-shadow: 0 2px 10px rgba(0,0,0,0.07);
   }
   .summary-box .num { font-size: 1.6rem; font-weight: 800; line-height: 1; }

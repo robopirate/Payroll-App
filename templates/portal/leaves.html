@@ -2,8 +2,9 @@
 {% block title %}My Leaves{% endblock %}
 {% block head %}
 <style>
-.balance-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
-.balance-card { flex: 1 1 auto; min-width: calc(50% - 5px); background: rgba(255,255,255,0.72); backdrop-filter: blur(16px); border-radius: 20px; padding: 14px 10px; text-align: center; box-shadow: 0 4px 16px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.5); transition: all 0.25s ease; }
+.balance-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px; }
+@media (min-width: 480px) { .balance-grid { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); } }
+.balance-card { background: rgba(255,255,255,0.72); backdrop-filter: blur(16px); border-radius: 20px; padding: 14px 10px; text-align: center; box-shadow: 0 4px 16px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.5); transition: transform 0.2s, box-shadow 0.2s; }
 .balance-card:active { transform: scale(0.98); }
 .balance-card .num { font-size: 1.7rem; font-weight: 800; color: #1565C0; line-height: 1; }
 .balance-card .used { font-size: 0.68rem; color: #aaa; margin-top: 2px; }
