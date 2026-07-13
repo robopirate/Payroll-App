@@ -56,17 +56,16 @@
       top: 0;
       z-index: 300;
       box-shadow: 0 2px 20px rgba(0,0,0,0.25);
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
+      display: flex;
       align-items: center;
+      justify-content: space-between;
       border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     }
     .header-brand {
       display: flex;
       flex-direction: column;
-      align-items: center;
       justify-content: center;
-      grid-column: 2;
+      align-items: flex-start;
       min-height: 36px;
     }
     .portal-header .app-name {
@@ -76,13 +75,12 @@
       color: white;
       text-shadow: 0 1px 4px rgba(0,0,0,0.3);
       line-height: 1.2;
-      text-align: center;
     }
     @media (max-width: 400px) {
-      .portal-header .app-name { font-size: 0.85rem; }
+      .portal-header .app-name { font-size: 0.9rem; }
     }
     .portal-header .emp-name {
-      font-size: 0.65rem;
+      font-size: 0.68rem;
       color: var(--accent-orange);
       margin-top: 2px;
       font-weight: 500;
@@ -90,11 +88,10 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      max-width: 140px;
+      max-width: 150px;
       line-height: 1.2;
-      text-align: center;
     }
-    .header-actions { grid-column: 3; justify-self: end; display: flex; align-items: center; }
+    .header-actions { display: flex; align-items: center; }
     .portal-logout-btn,
     .portal-profile-btn {
       display: inline-flex;
