@@ -100,10 +100,10 @@ def main():
         # CREATE and INSERT in dependency order
         for table in tables:
             # CREATE TABLE
-            create_sql = str(CreateTable(table).compile(dialect=postgresql.dialect()))
-            f.write(create_sql)
-            if not create_sql.endswith('\n'):
-                f.write('\n')
+            create_sql = str(CreateTable(table).compile(dialect=postgresql.dialect())).strip()
+            if not create_sql.endswith(';'):
+                create_sql += ';'
+            f.write(create_sql + '\n')
 
             # INSERT data
             columns = list(table.columns.keys())
