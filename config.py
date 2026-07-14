@@ -11,6 +11,9 @@ class Config:
     DB_PATH = os.environ.get('DB_PATH', os.path.join(os.path.expanduser('~'), 'payroll.db'))
     _database_url = os.environ.get('DATABASE_URL')
     if _database_url:
+        # Pasted Render/Supabase URLs can contain accidental leading/trailing
+        # whitespace or newlines, which break the database name parsing.
+        _database_url = _database_url.strip()
         # Render provides postgres:// or postgresql:// URLs.
         # SQLAlchemy defaults to psycopg2, which does not work on Python 3.14.
         # Force the psycopg 3 dialect (installed via psycopg[binary]).

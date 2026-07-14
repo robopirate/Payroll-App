@@ -12,6 +12,17 @@ from models import User, Employee, Department, AppConfig
 app = Flask(__name__)
 app.config.from_object(Config)
 
+# Diagnostic logging for the configured database (no credentials exposed)
+_safe_uri = app.config.get('SQLALCHEMY_DATABASE_URI')
+if _safe_uri and str(_safe_uri).startswith('postgresql'):
+    from urllib.parse import urlparse
+    _parsed = urlparse(_safe_uri)
+    app.logger.info(
+        'Using Postgres database host=%s db=%s',
+        _parsed.hostname,
+        _parsed.path.lstrip('/') if _parsed.path else 'unknown'
+    )
+
 # Swagger configuration
 app.config['SWAGGER'] = {
     'title': 'Robo Pirate Payroll API',
