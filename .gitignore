@@ -10,3 +10,5 @@ payroll.db
 scripts/backups/
 backups/
 PHASE3_PROMPT.md
+*_backup.sql
+*.dump
