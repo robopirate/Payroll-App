@@ -4,6 +4,7 @@ from flask_login import login_required, current_user
 from decorators import require_role
 from datetime import date, datetime, timezone, timedelta
 from sqlalchemy import extract
+from sqlalchemy.orm import joinedload
 import calendar
 import io
 
@@ -138,7 +139,7 @@ def employees():
         q = q.filter_by(is_approved=True)
     if dept_filter:
         q = q.join(Department).filter(Department.name == dept_filter)
-    emps = q.order_by(Employee.name).all()
+    emps = q.options(joinedload(Employee.dept)).order_by(Employee.name).all()
     departments = Department.query.order_by(Department.name).all()
     pending_count = Employee.query.filter_by(is_active=True, is_approved=False).count()
     return render_template('employees/list.html', employees=emps, departments=departments, dept_filter=dept_filter, status_filter=status_filter, pending_count=pending_count)

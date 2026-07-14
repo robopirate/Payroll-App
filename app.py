@@ -1,4 +1,4 @@
-from flask import Flask, redirect, url_for, flash, request
+from flask import Flask, redirect, url_for, flash, request, jsonify
 from flask_login import current_user, logout_user
 from sqlalchemy import text, inspect
 from flasgger import Swagger
@@ -7,7 +7,7 @@ import os
 import secrets
 import string
 from config import Config
-from extensions import db, login_manager, csrf, limiter, jwt
+from extensions import db, login_manager, csrf, limiter, jwt, compress
 from models import User, Employee, Department, AppConfig
 
 app = Flask(__name__)
@@ -55,6 +55,7 @@ app.config['SWAGGER'] = {
 }
 
 db.init_app(app)
+compress.init_app(app)
 login_manager.init_app(app)
 jwt.init_app(app)
 login_manager.login_view = 'auth.login'
@@ -105,6 +106,12 @@ def load_persisted_config():
         _persisted_config_loaded = True
 
 
+@app.route('/health')
+def health():
+    """Lightweight health endpoint for uptime pings."""
+    return jsonify({'status': 'ok'}), 200
+
+
 @login_manager.user_loader
 def load_user(user_id):
     return db.session.get(User, int(user_id))
@@ -143,6 +150,15 @@ def register_blueprints():
 
 
 register_blueprints()
+
+
+@app.after_request
+def add_cache_headers(response):
+    """Add long-term cache headers for static assets in production."""
+    if app.config.get('ENV') == 'production' and request.path.startswith('/static/'):
+        response.headers.setdefault('Cache-Control', 'public, max-age=31536000, immutable')
+    return response
+
 
 # Initialize Swagger UI for API documentation
 swagger = Swagger(app)
