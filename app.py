@@ -156,7 +156,7 @@ register_blueprints()
 def add_cache_headers(response):
     """Add long-term cache headers for static assets in production."""
     if app.config.get('ENV') == 'production' and request.path.startswith('/static/'):
-        response.headers.setdefault('Cache-Control', 'public, max-age=31536000, immutable')
+        response.headers['Cache-Control'] = 'public, max-age=31536000, immutable'
     return response
 
 
