@@ -108,7 +108,24 @@ def load_persisted_config():
 
 @app.route('/health')
 def health():
-    """Lightweight health endpoint for uptime pings."""
+    """Lightweight health endpoint for uptime pings.
+
+    Also triggers the daily auto-close of missing punch-outs once per day,
+    so no separate cron job is needed.
+    """
+    from datetime import date, timedelta
+    from services.attendance_service import auto_close_missing_checkouts
+
+    today_str = date.today().isoformat()
+    try:
+        last_run = AppConfig.get('auto_checkout_last_run')
+        if last_run != today_str:
+            auto_close_missing_checkouts(date.today() - timedelta(days=1))
+            AppConfig.set('auto_checkout_last_run', today_str)
+    except Exception:
+        # Don't break the health check if auto-close fails
+        pass
+
     return jsonify({'status': 'ok'}), 200
 
 
