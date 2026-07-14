@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from markupsafe import Markup
 from flask_login import login_required, current_user
 from decorators import require_role
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timezone, timedelta
 from sqlalchemy import extract
 import calendar
 import io
@@ -52,6 +52,19 @@ def _get_optional_float(value):
         v = float(str(value).strip())
         return v if v > 0 else None
     except (ValueError, TypeError):
+        return None
+
+
+def _parse_date(value, field_name=None):
+    """Parse a YYYY-MM-DD date string. Return None if empty/invalid and flash if field_name given."""
+    if not value:
+        return None
+    value = str(value).strip()
+    try:
+        return datetime.strptime(value, '%Y-%m-%d').date()
+    except (ValueError, TypeError):
+        if field_name:
+            flash(f'Invalid date for {field_name}. Use YYYY-MM-DD.', 'danger')
         return None
 
 
@@ -174,7 +187,7 @@ def add_employee():
             designation=f.get('designation', '').strip(),
             employee_type=f.get('employee_type', 'full_time').strip() or 'full_time',
             basic_salary=basic_salary,
-            joining_date=datetime.strptime(f.get('joining_date'), '%Y-%m-%d').date() if f.get('joining_date') else date.today(),
+            joining_date=_parse_date(f.get('joining_date'), 'Joining date') or date.today(),
             bank_name=f.get('bank_name', '').strip(),
             account_number=f.get('account_number', '').strip(),
             ifsc_code=f.get('ifsc_code', '').strip(),
@@ -272,10 +285,9 @@ def edit_employee(emp_id):
         # Update joining date if provided
         joining_date_str = f.get('joining_date', '').strip()
         if joining_date_str:
-            try:
-                emp.joining_date = datetime.strptime(joining_date_str, '%Y-%m-%d').date()
-            except ValueError:
-                pass  # Keep existing date if invalid
+            parsed_joining_date = _parse_date(joining_date_str, 'Joining date')
+            if parsed_joining_date:
+                emp.joining_date = parsed_joining_date
 
         password = f.get('password', '').strip()
         try:
@@ -400,7 +412,7 @@ def assign_employee_schools(emp_id):
     school_ids = request.form.getlist('school_ids')
     emp.schools = []
     for sid in school_ids:
-        school = School.query.get(int(sid))
+        school = db.session.get(School, int(sid))
         if school:
             emp.schools.append(school)
     db.session.commit()
@@ -531,7 +543,7 @@ def assign_school_employees(school_id):
     emp_ids = request.form.getlist('employee_ids')
     school.assigned_employees = []
     for eid in emp_ids:
-        emp = Employee.query.get(int(eid))
+        emp = db.session.get(Employee, int(eid))
         if emp:
             school.assigned_employees.append(emp)
     db.session.commit()
@@ -661,8 +673,10 @@ def apply_leave():
         emp_id = int(f.get('employee_id'))
         emp = Employee.query.get_or_404(emp_id)
         leave_type = f.get('leave_type')
-        start_date = datetime.strptime(f.get('start_date'), '%Y-%m-%d').date()
-        end_date = datetime.strptime(f.get('end_date'), '%Y-%m-%d').date()
+        start_date = _parse_date(f.get('start_date'), 'Start date')
+        end_date = _parse_date(f.get('end_date'), 'End date')
+        if not start_date or not end_date:
+            return render_template('leaves/apply.html', employees=emps, form=f)
         if f.get('half_day'):
             days = 0.5
         else:
@@ -691,7 +705,7 @@ def approve_leave(leave_id):
     leave = Leave.query.get_or_404(leave_id)
     leave.status = 'approved'
     leave.approved_by = current_user.username
-    leave.approved_on = datetime.utcnow()
+    leave.approved_on = datetime.now(timezone.utc)
     current_year = date.today().year
     balance = LeaveBalance.query.filter_by(employee_id=leave.employee_id,
                                             leave_type=leave.leave_type, year=current_year).first()
@@ -725,7 +739,7 @@ def reject_leave(leave_id):
     leave = Leave.query.get_or_404(leave_id)
     leave.status = 'rejected'
     leave.approved_by = current_user.username
-    leave.approved_on = datetime.utcnow()
+    leave.approved_on = datetime.now(timezone.utc)
     db.session.commit()
 
     # Send SMS notification
@@ -817,7 +831,7 @@ def advances():
         adv = Advance(
             employee_id=int(f.get('employee_id')),
             amount=amount,
-            date=datetime.strptime(f.get('date'), '%Y-%m-%d').date() if f.get('date') else date.today(),
+            date=_parse_date(f.get('date'), 'Advance date') or date.today(),
             reason=f.get('reason', '').strip(),
             month_deducted=int(f.get('month_deducted')) if f.get('month_deducted') else None,
             year_deducted=int(f.get('year_deducted')) if f.get('year_deducted') else None,
@@ -878,7 +892,7 @@ def generate_payroll():
     count = 0
     clamped = []
     for emp_id in emp_ids:
-        emp = Employee.query.get(int(emp_id))
+        emp = db.session.get(Employee, int(emp_id))
         if not emp or not emp.is_active or not emp.is_approved:
             continue
         existing = Payroll.query.filter_by(employee_id=emp.id, month=month, year=year).first()
@@ -888,7 +902,7 @@ def generate_payroll():
         if existing:
             for k, v in data.items():
                 setattr(existing, k, v)
-            existing.generated_on = datetime.utcnow()
+            existing.generated_on = datetime.now(timezone.utc)
         else:
             p = Payroll(employee_id=emp.id, month=month, year=year, **data)
             db.session.add(p)
@@ -918,7 +932,7 @@ def finalize_payroll(payroll_id):
 def mark_paid(payroll_id):
     p = Payroll.query.get_or_404(payroll_id)
     p.status = 'paid'
-    p.paid_on = datetime.utcnow()
+    p.paid_on = datetime.now(timezone.utc)
     db.session.commit()
     flash('Marked as paid.', 'success')
     return redirect(url_for('.payroll', month=p.month, year=p.year))
@@ -958,7 +972,7 @@ def send_bulk_sms():
     payrolls = Payroll.query.filter_by(month=month, year=year, status='paid').all()
     sent = 0
     for p in payrolls:
-        emp = Employee.query.get(p.employee_id)
+        emp = db.session.get(Employee, p.employee_id)
         if emp:
             success, _ = send_salary_credited_sms(emp, p)
             if success:
@@ -984,7 +998,7 @@ def sms_panel():
         elif not emp_ids:
             flash('Select at least one employee.', 'danger')
         else:
-            phones = [Employee.query.get(int(i)).phone for i in emp_ids if Employee.query.get(int(i))]
+            phones = [db.session.get(Employee, int(i)).phone for i in emp_ids if db.session.get(Employee, int(i))]
             success, msg = send_sms(phones, message)
             if success:
                 flash(f'SMS sent to {len(phones)} employees.', 'success')
@@ -1360,7 +1374,7 @@ def export_payroll():
                'Overtime Pay', 'Gross Salary', 'PF', 'ESI', 'Advance Deduction', 'Total Deductions', 'Net Salary', 'Status'])
 
     for p in payrolls:
-        emp = Employee.query.get(p.employee_id)
+        emp = db.session.get(Employee, p.employee_id)
         ws.append([
             emp.emp_id if emp else '', emp.name if emp else '', p.working_days, p.present_days,
             p.basic_salary, p.hra, p.overtime_pay, p.gross_salary,

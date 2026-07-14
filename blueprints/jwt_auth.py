@@ -194,7 +194,7 @@ def api_refresh():
         description: User not found
     """
     user_id = get_jwt_identity()
-    user = User.query.get(int(user_id))
+    user = db.session.get(User, int(user_id))
     
     if not user:
         return jsonify({'success': False, 'message': 'User not found.'}), 404
@@ -315,7 +315,7 @@ def api_me():
     """
     user_id = int(get_jwt_identity())
     claims = get_jwt()
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
     
     if not user:
         return jsonify({'success': False, 'message': 'User not found.'}), 404
@@ -330,7 +330,7 @@ def api_me():
     }
     
     if user.employee_id:
-        emp = Employee.query.get(user.employee_id)
+        emp = db.session.get(Employee, user.employee_id)
         if emp:
             result['employee'] = {
                 'id': emp.id,

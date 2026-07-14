@@ -2,6 +2,7 @@
 from functools import wraps
 from flask import redirect, url_for, request, flash
 from flask_login import current_user, logout_user
+from extensions import db
 
 
 def portal_required(f):
@@ -17,7 +18,7 @@ def portal_required(f):
             return redirect(url_for('portal.portal_login'))
         # Verify employee is active and approved
         from models import Employee
-        emp = Employee.query.get(current_user.employee_id)
+        emp = db.session.get(Employee, current_user.employee_id)
         if not emp or not emp.is_active or not emp.is_approved:
             logout_user()
             flash('Your account is inactive or pending admin approval. Please contact your administrator.', 'warning')

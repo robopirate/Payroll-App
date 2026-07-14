@@ -25,7 +25,7 @@ def get_current_employee():
         employee_id = claims.get('employee_id')
         if not employee_id:
             return None
-        emp = Employee.query.get(int(employee_id))
+        emp = db.session.get(Employee, int(employee_id))
         if not emp or not emp.is_active or not emp.is_approved:
             return None
         return emp
@@ -119,7 +119,7 @@ def api_punch():
     
     # Fall back to session-based auth (for existing web portal users)
     if not emp and current_user.is_authenticated and not current_user.is_admin:
-        emp = Employee.query.get(current_user.employee_id)
+        emp = db.session.get(Employee, current_user.employee_id)
         if emp and (not emp.is_active or not emp.is_approved):
             emp = None
 

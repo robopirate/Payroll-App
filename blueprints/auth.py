@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 import secrets
 
 from extensions import db, limiter
@@ -94,7 +94,7 @@ def forgot_password():
         reset = PasswordReset(
             user_id=user.id,
             token=token,
-            expires_at=datetime.utcnow() + timedelta(hours=1)
+            expires_at=datetime.now(timezone.utc) + timedelta(hours=1)
         )
         db.session.add(reset)
         audit = AuditLog(
@@ -121,7 +121,7 @@ def reset_password():
         confirm_password = request.form.get('confirm_password', '')
 
         reset = PasswordReset.query.filter_by(token=token, is_used=False).first()
-        if not reset or reset.expires_at < datetime.utcnow():
+        if not reset or reset.expires_at < datetime.now(timezone.utc):
             flash('Invalid or expired reset token.', 'danger')
             return redirect(url_for('.reset_password'))
 

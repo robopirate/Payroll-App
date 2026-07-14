@@ -1,7 +1,12 @@
 from flask_login import UserMixin
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from werkzeug.security import generate_password_hash, check_password_hash
 from extensions import db
+
+
+def _utcnow():
+    """Return the current UTC time as a timezone-aware datetime."""
+    return datetime.now(timezone.utc)
 
 # Many-to-many: Employee <-> School
 employee_schools = db.Table('employee_schools',
@@ -123,7 +128,7 @@ class Leave(db.Model):
     days = db.Column(db.Float, default=1.0)
     reason = db.Column(db.String(300))
     status = db.Column(db.String(20), default='pending')  # pending, approved, rejected
-    applied_on = db.Column(db.DateTime, default=datetime.utcnow)
+    applied_on = db.Column(db.DateTime, default=_utcnow)
     approved_by = db.Column(db.String(80))
     approved_on = db.Column(db.DateTime)
 
@@ -181,7 +186,7 @@ class Payroll(db.Model):
     total_deductions = db.Column(db.Float, default=0.0)
     net_salary = db.Column(db.Float, default=0.0)
     status = db.Column(db.String(20), default='draft')  # draft, finalized, paid
-    generated_on = db.Column(db.DateTime, default=datetime.utcnow)
+    generated_on = db.Column(db.DateTime, default=_utcnow)
     paid_on = db.Column(db.DateTime)
     sms_sent = db.Column(db.Boolean, default=False)
     __table_args__ = (db.UniqueConstraint('employee_id', 'month', 'year', name='uq_emp_month_year'),)
@@ -208,7 +213,7 @@ class SchoolSchedule(db.Model):
     semester2_start = db.Column(db.Date)
     semester2_end = db.Column(db.Date)
     notes = db.Column(db.String(500))
-    created_on = db.Column(db.DateTime, default=datetime.utcnow)
+    created_on = db.Column(db.DateTime, default=_utcnow)
 
 
 class AuditLog(db.Model):
@@ -218,7 +223,7 @@ class AuditLog(db.Model):
     user = db.Column(db.String(80), nullable=False)  # username who performed action
     affected_entity = db.Column(db.String(200))  # e.g., 'Holiday:123', 'Leave:456'
     details = db.Column(db.String(500))  # extra details about the action
-    timestamp = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    timestamp = db.Column(db.DateTime, nullable=False, default=_utcnow)
 
 
 class PasswordReset(db.Model):
@@ -226,7 +231,7 @@ class PasswordReset(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     token = db.Column(db.String(100), unique=True, nullable=False)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=_utcnow)
     expires_at = db.Column(db.DateTime, nullable=False)
     is_used = db.Column(db.Boolean, default=False)
     user = db.relationship('User', backref='password_resets')
@@ -238,7 +243,7 @@ class AttendanceLock(db.Model):
     school_id = db.Column(db.Integer, db.ForeignKey('schools.id'), nullable=True)
     month = db.Column(db.Integer, nullable=False)
     year = db.Column(db.Integer, nullable=False)
-    locked_on = db.Column(db.DateTime, default=datetime.utcnow)
+    locked_on = db.Column(db.DateTime, default=_utcnow)
     locked_by = db.Column(db.String(80))
     __table_args__ = (db.UniqueConstraint('school_id', 'month', 'year', name='uq_lock_school_month_year'),)
 
@@ -248,7 +253,7 @@ class AppConfig(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     key = db.Column(db.String(100), unique=True, nullable=False)
     value = db.Column(db.Text)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=_utcnow, onupdate=_utcnow)
 
     @classmethod
     def get(cls, key, default=None):
@@ -260,7 +265,7 @@ class AppConfig(db.Model):
         row = cls.query.filter_by(key=key).first()
         if row:
             row.value = value
-            row.updated_at = datetime.utcnow()
+            row.updated_at = _utcnow()
         else:
             row = cls(key=key, value=value)
             db.session.add(row)
@@ -280,8 +285,8 @@ class TaxDeclaration(db.Model):
     investment_80eea = db.Column(db.Float, default=0)  # Home loan interest (max 1.5L)
     hra_exemption = db.Column(db.Float, default=0)  # HRA exemption amount
     other_investments = db.Column(db.Float, default=0)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=_utcnow)
+    updated_at = db.Column(db.DateTime, default=_utcnow, onupdate=_utcnow)
     employee = db.relationship('Employee', backref='tax_declarations')
     __table_args__ = (db.UniqueConstraint('employee_id', 'year', name='uq_emp_tax_year'),)
 

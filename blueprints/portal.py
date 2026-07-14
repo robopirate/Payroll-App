@@ -20,6 +20,19 @@ from sms_service import get_month_name
 
 bp = Blueprint('portal', __name__)
 
+
+def _parse_date(value, field_name=None):
+    """Parse a YYYY-MM-DD date string. Return None if empty/invalid and flash if field_name given."""
+    if not value:
+        return None
+    value = str(value).strip()
+    try:
+        return datetime.strptime(value, '%Y-%m-%d').date()
+    except (ValueError, TypeError):
+        if field_name:
+            flash(f'Invalid date for {field_name}. Use YYYY-MM-DD.', 'danger')
+        return None
+
 @bp.route('/portal/login', methods=['GET', 'POST'])
 @limiter.limit("10 per minute")
 def portal_login():
@@ -152,7 +165,7 @@ def register():
 @bp.route('/portal/dashboard')
 @portal_required
 def portal_dashboard():
-    emp = Employee.query.get(current_user.employee_id)
+    emp = db.session.get(Employee, current_user.employee_id)
     today = date.today()
     today_att = Attendance.query.filter_by(employee_id=emp.id, date=today).first()
     recent_att = Attendance.query.filter_by(employee_id=emp.id).order_by(
@@ -178,7 +191,7 @@ def portal_dashboard():
 @bp.route('/portal/punch')
 @portal_required
 def portal_punch():
-    emp = Employee.query.get(current_user.employee_id)
+    emp = db.session.get(Employee, current_user.employee_id)
     today = date.today()
     today_att = Attendance.query.filter_by(employee_id=emp.id, date=today).first()
     location = get_employee_active_school(emp)
@@ -189,7 +202,7 @@ def portal_punch():
 @portal_required
 def portal_profile():
     """Let employees update their own contact, address, bank and ID details."""
-    emp = Employee.query.get(current_user.employee_id)
+    emp = db.session.get(Employee, current_user.employee_id)
 
     if request.method == 'POST':
         phone = request.form.get('phone', '').strip()
@@ -249,7 +262,7 @@ def portal_profile():
 @bp.route('/portal/attendance')
 @portal_required
 def portal_attendance():
-    emp = Employee.query.get(current_user.employee_id)
+    emp = db.session.get(Employee, current_user.employee_id)
     month = int(request.args.get('month', date.today().month))
     year = int(request.args.get('year', date.today().year))
     _, days_in_month = calendar.monthrange(year, month)
@@ -280,7 +293,7 @@ def portal_attendance():
 @bp.route('/portal/payslips')
 @portal_required
 def portal_payslips():
-    emp = Employee.query.get(current_user.employee_id)
+    emp = db.session.get(Employee, current_user.employee_id)
     payrolls = Payroll.query.filter_by(employee_id=emp.id).order_by(
         Payroll.year.desc(), Payroll.month.desc()).all()
     return render_template('portal/payslips.html', emp=emp, payrolls=payrolls, get_month_name=get_month_name)
@@ -302,7 +315,7 @@ def portal_download_payslip(payroll_id):
 @bp.route('/portal/leaves')
 @portal_required
 def portal_leaves():
-    emp = Employee.query.get(current_user.employee_id)
+    emp = db.session.get(Employee, current_user.employee_id)
     year = date.today().year
     leave_balances = LeaveBalance.query.filter_by(employee_id=emp.id, year=year).all()
     leaves_list = Leave.query.filter_by(employee_id=emp.id).order_by(Leave.applied_on.desc()).all()
@@ -313,7 +326,7 @@ def portal_leaves():
 @portal_required
 def portal_cancel_leave(leave_id):
     """Employee can cancel their own pending or future approved leave."""
-    emp = Employee.query.get(current_user.employee_id)
+    emp = db.session.get(Employee, current_user.employee_id)
     leave = Leave.query.get_or_404(leave_id)
     if leave.employee_id != emp.id:
         flash('You can only cancel your own leave.', 'danger')
@@ -345,14 +358,16 @@ def portal_cancel_leave(leave_id):
 @bp.route('/portal/leaves/apply', methods=['GET', 'POST'])
 @portal_required
 def portal_apply_leave():
-    emp = Employee.query.get(current_user.employee_id)
+    emp = db.session.get(Employee, current_user.employee_id)
     year = date.today().year
     leave_balances = LeaveBalance.query.filter_by(employee_id=emp.id, year=year).all()
     if request.method == 'POST':
         f = request.form
         leave_type = f.get('leave_type')
-        start_date = datetime.strptime(f.get('start_date'), '%Y-%m-%d').date()
-        end_date = datetime.strptime(f.get('end_date'), '%Y-%m-%d').date()
+        start_date = _parse_date(f.get('start_date'), 'Start date')
+        end_date = _parse_date(f.get('end_date'), 'End date')
+        if not start_date or not end_date:
+            return render_template('portal/apply_leave.html', emp=emp, leave_balances=leave_balances)
         if f.get('half_day'):
             days = 0.5
         else:

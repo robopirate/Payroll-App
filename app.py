@@ -3,6 +3,7 @@ from flask_login import current_user, logout_user
 from sqlalchemy import text, inspect
 from flasgger import Swagger
 from datetime import datetime
+import os
 import secrets
 import string
 from config import Config
@@ -106,7 +107,7 @@ def load_persisted_config():
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    return db.session.get(User, int(user_id))
 
 
 @app.before_request
@@ -336,4 +337,4 @@ except Exception as e:
     print(f'DB init warning: {e}')
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host=os.environ.get('FLASK_RUN_HOST', '127.0.0.1'), port=5000)

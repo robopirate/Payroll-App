@@ -6,7 +6,16 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 class Config:
     ENV = os.environ.get('FLASK_ENV', 'production')
     TESTING = os.environ.get('TESTING', 'False').lower() in ('true', '1')
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'payroll-secret-key-change-in-production')
+    _secret_key = os.environ.get('SECRET_KEY')
+    if not _secret_key:
+        if TESTING or ENV == 'development':
+            _secret_key = 'payroll-dev-secret-key-not-for-production'
+        else:
+            raise ValueError(
+                "SECRET_KEY environment variable must be set in production. "
+                "Set it in your Render environment or run with FLASK_ENV=development for local dev."
+            )
+    SECRET_KEY = _secret_key
     # Store database outside project folder so code updates don't wipe data
     DB_PATH = os.environ.get('DB_PATH', os.path.join(os.path.expanduser('~'), 'payroll.db'))
     _database_url = os.environ.get('DATABASE_URL')
