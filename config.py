@@ -46,6 +46,8 @@ class Config:
     JWT_TOKEN_LOCATION = ['headers']
     JWT_HEADER_NAME = 'Authorization'
     JWT_HEADER_TYPE = 'Bearer'
+    # Token for the daily auto-checkout task endpoint (cron-job.org / UptimeRobot)
+    AUTO_CHECKOUT_TOKEN = os.environ.get('AUTO_CHECKOUT_TOKEN', '')
     # Fast2SMS API Key
     FAST2SMS_API_KEY = os.environ.get('FAST2SMS_API_KEY', '')
     # Google Maps API Key (for Places Autocomplete on location form)

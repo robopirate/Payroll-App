@@ -1,4 +1,4 @@
-from flask import Flask, redirect, url_for, flash, request, jsonify
+from flask import Flask, redirect, url_for, flash, request, jsonify, abort
 from flask_login import current_user, logout_user
 from sqlalchemy import text, inspect
 from flasgger import Swagger
@@ -112,6 +112,19 @@ def health():
     return jsonify({'status': 'ok'}), 200
 
 
+@app.route('/tasks/auto-checkout', methods=['POST'])
+def auto_checkout_task():
+    """Daily cron task to close attendance records with missing check-outs."""
+    token = app.config.get('AUTO_CHECKOUT_TOKEN')
+    supplied = request.args.get('token') or request.headers.get('X-Auto-Checkout-Token')
+    if not token or supplied != token:
+        abort(403)
+    from datetime import date, timedelta
+    from services.attendance_service import auto_close_missing_checkouts
+    closed = auto_close_missing_checkouts(date.today() - timedelta(days=1))
+    return jsonify({'status': 'ok', 'closed': closed}), 200
+
+
 @login_manager.user_loader
 def load_user(user_id):
     return db.session.get(User, int(user_id))
@@ -182,6 +195,7 @@ def safe_migrate():
             ('gps_lng', 'REAL'),
             ('gps_verified', 'INTEGER DEFAULT 0'),
             ('admin_override', 'INTEGER DEFAULT 0'),
+            ('auto_checkout', 'INTEGER DEFAULT 0'),
             ('location_type', 'VARCHAR(20) DEFAULT \'school\''),
         ]:
             if col not in att_cols:

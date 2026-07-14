@@ -597,6 +597,7 @@ def attendance():
                 att.check_out = check_out
                 att.notes = notes
                 att.admin_override = True
+                att.auto_checkout = False
             else:
                 att = Attendance(
                     employee_id=emp.id, date=sel_date,

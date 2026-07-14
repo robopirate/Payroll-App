@@ -282,6 +282,65 @@ def ensure_sunday_attendance(date_obj):
         db.session.commit()
 
 
+def _compute_expected_end_time(check_in, shift_end, working_hours):
+    """Return the expected end-of-day time for an employee.
+
+    Uses the later of shift_end and (check_in + working_hours) so latecomers
+    who complete their full shift are not penalised.
+    """
+    check_mins = _time_to_minutes(check_in)
+    if check_mins is None:
+        return shift_end
+    required_minutes = int((working_hours or 8.0) * 60)
+    expected_from_checkin = _minutes_to_time(check_mins + required_minutes)
+    end_mins = _time_to_minutes(shift_end)
+    if end_mins is None:
+        return expected_from_checkin
+    return expected_from_checkin if _time_to_minutes(expected_from_checkin) > end_mins else shift_end
+
+
+def _compute_overtime_hours(check_out, expected_end):
+    """Return overtime hours worked past the expected end time."""
+    out_mins = _time_to_minutes(check_out)
+    end_mins = _time_to_minutes(expected_end)
+    if out_mins is None or end_mins is None:
+        return 0.0
+    return max(0.0, (out_mins - end_mins) / 60.0)
+
+
+def auto_close_missing_checkouts(date_obj):
+    """Close attendance records that have a check_in but no check_out.
+
+    Sets check_out to the employee's shift_end, flags the record as auto-closed,
+    and leaves overtime at zero. Returns the number of records closed.
+    """
+    records = Attendance.query.filter(
+        Attendance.date == date_obj,
+        Attendance.check_in.isnot(None),
+        db.or_(
+            Attendance.check_out.is_(None),
+            Attendance.check_out == ''
+        )
+    ).all()
+    closed = 0
+    for att in records:
+        emp = att.employee
+        shift_start, shift_end, working_hours = get_employee_effective_shift(emp)
+        if shift_end:
+            att.check_out = shift_end
+        elif att.check_in:
+            att.check_out = _compute_expected_end_time(att.check_in, None, working_hours)
+        else:
+            continue
+        att.auto_checkout = True
+        att.overtime_hours = 0.0
+        update_attendance_timing_flags(att, employee=emp)
+        closed += 1
+    if closed:
+        db.session.commit()
+    return closed
+
+
 def update_attendance_timing_flags(attendance, employee=None):
     """Set late_minutes / early_minutes based on effective shift timings."""
     if not attendance:

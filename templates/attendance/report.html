@@ -75,6 +75,7 @@
                     {% else %}
                       <span class="badge bg-success" style="font-size:0.65rem">P</span>
                     {% endif %}
+                    {% if att.auto_checkout %}<span class="badge bg-dark" style="font-size:0.55rem" title="Auto-closed missing checkout">A</span>{% endif %}
                   {% elif att.status == 'absent' %}
                     <span class="badge bg-danger" style="font-size:0.65rem">A</span>
                   {% elif att.status == 'half_day' %}
@@ -110,6 +111,7 @@
         <span><span class="badge bg-warning text-dark">H</span> Half Day</span>
         <span><span class="badge bg-info">OT</span> Overtime</span>
         <span><span class="badge bg-secondary">L</span> Leave</span>
+        <span><span class="badge bg-dark" style="font-size:0.55rem">A</span> Auto Checkout</span>
       </div>
     </div>
   </div>

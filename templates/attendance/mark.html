@@ -52,7 +52,7 @@
               {% set att = existing.get(emp.id) %}
               <tr>
                 <td class="fw-semibold">
-                  <div>{{ emp.name }}</div>
+                  <div>{{ emp.name }}{% if att and att.auto_checkout %} <span class="badge bg-info" title="Auto-closed: missing punch-out">AUTO</span>{% endif %}</div>
                   <small class="text-muted">{{ emp.emp_id }}</small>
                 </td>
                 <td>{{ emp.dept.name if emp.dept else '-' }}</td>

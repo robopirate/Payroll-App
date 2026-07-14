@@ -5,7 +5,11 @@ from datetime import date, datetime, timezone, timedelta
 from sqlalchemy import extract
 
 from extensions import db, limiter, csrf
-from services.attendance_service import haversine_distance, update_attendance_timing_flags, calculate_paid_days, get_employee_active_school
+from services.attendance_service import (
+    haversine_distance, update_attendance_timing_flags, calculate_paid_days,
+    get_employee_active_school, get_employee_effective_shift,
+    _compute_expected_end_time, _compute_overtime_hours
+)
 from models import Employee, Attendance, Leave, LeaveBalance, Payroll, Holiday
 
 bp = Blueprint('api', __name__)
@@ -190,6 +194,10 @@ def api_punch():
         if att.check_out:
             return jsonify({'success': False, 'message': f'Already punched OUT at {att.check_out}.'})
         att.check_out = now_time
+        att.auto_checkout = False
+        shift_start, shift_end, working_hours = get_employee_effective_shift(emp)
+        expected_end = _compute_expected_end_time(att.check_in, shift_end, working_hours)
+        att.overtime_hours = _compute_overtime_hours(now_time, expected_end)
         update_attendance_timing_flags(att, employee=emp)
         db.session.commit()
         msg = f'Punched OUT at {now_time}'
