@@ -59,6 +59,29 @@ def require_employee():
     return emp, None
 
 
+def _get_employee_from_request():
+    """Resolve employee from JWT or Flask-Login session."""
+    emp = get_current_employee()
+    if emp:
+        return emp
+    from flask_login import current_user
+    if current_user.is_authenticated and not current_user.is_admin:
+        emp = db.session.get(Employee, current_user.employee_id)
+        if emp and emp.is_active and emp.is_approved:
+            return emp
+    return None
+
+
+def _format_attendance_times(check_in, check_out):
+    """Return a human-readable In/Out string."""
+    parts = []
+    if check_in:
+        parts.append('In: ' + str(check_in))
+    if check_out:
+        parts.append('Out: ' + str(check_out))
+    return ' · '.join(parts) if parts else None
+
+
 # ─── GPS Punch ───────────────────────────────────────────────────────────────
 
 @bp.route('/api/punch', methods=['POST'])
@@ -127,21 +150,7 @@ def api_punch():
       401:
         description: Unauthorized - no valid session or JWT
     """
-    from flask_login import current_user
-    
-    emp = None
-    
-    # Try JWT first
-    jwt_claims = get_jwt()
-    if jwt_claims:
-        emp = get_current_employee()
-    
-    # Fall back to session-based auth (for existing web portal users)
-    if not emp and current_user.is_authenticated and not current_user.is_admin:
-        emp = db.session.get(Employee, current_user.employee_id)
-        if emp and (not emp.is_active or not emp.is_approved):
-            emp = None
-
+    emp = _get_employee_from_request()
     if not emp:
         return jsonify({'success': False, 'message': 'Unauthorized. Please login.'}), 401
 
@@ -219,6 +228,68 @@ def api_punch():
         if att.location_type == 'field':
             msg += ' (Field)'
         return jsonify({'success': True, 'message': msg, 'location_type': att.location_type or 'school'})
+
+
+# ─── Today Status (for live portal dashboard sync) ───────────────────────────
+
+@bp.route('/api/today-status', methods=['POST'])
+@csrf.exempt
+@limiter.exempt
+@jwt_required(optional=True)
+def api_today_status():
+    """Return current employee's today's attendance, summary and recent activity."""
+    emp = _get_employee_from_request()
+    if not emp:
+        return jsonify({'success': False, 'message': 'Unauthorized. Please login.'}), 401
+
+    today = date.today()
+    today_att = Attendance.query.filter_by(employee_id=emp.id, date=today).first()
+    shift_start, shift_end, working_hours_per_day = get_employee_effective_shift(emp)
+
+    present_this_month = calculate_paid_days(emp, today.year, today.month)
+    leave_balances = LeaveBalance.query.filter_by(employee_id=emp.id, year=today.year).all()
+    total_leave_remaining = sum((lb.remaining_days or 0) for lb in leave_balances)
+
+    thirty_days_later = today + timedelta(days=30)
+    upcoming_holiday_count = Holiday.query.filter(
+        Holiday.date >= today,
+        Holiday.date <= thirty_days_later,
+        Holiday.is_active == True
+    ).count()
+
+    recent_att = Attendance.query.filter_by(employee_id=emp.id).order_by(
+        Attendance.date.desc()).limit(7).all()
+    recent_activity = []
+    for att in recent_att:
+        recent_activity.append({
+            'day': att.date.strftime('%d %b'),
+            'date': att.date.strftime('%A'),
+            'status': att.status,
+            'location_type': att.location_type,
+            'times': _format_attendance_times(att.check_in, att.check_out)
+        })
+
+    return jsonify({
+        'success': True,
+        'today_att': {
+            'check_in': today_att.check_in if today_att else None,
+            'check_out': today_att.check_out if today_att else None,
+            'status': today_att.status if today_att else None,
+            'late_minutes': today_att.late_minutes if today_att else 0,
+            'early_minutes': today_att.early_minutes if today_att else 0,
+            'overtime_hours': today_att.overtime_hours if today_att else 0.0,
+            'location_type': today_att.location_type if today_att else None,
+        },
+        'summary': {
+            'present_this_month': float(present_this_month),
+            'total_leave_remaining': float(total_leave_remaining),
+            'upcoming_holiday_count': upcoming_holiday_count,
+        },
+        'recent_activity': recent_activity,
+        'shift_start': shift_start,
+        'shift_end': shift_end,
+        'working_hours_per_day': working_hours_per_day,
+    })
 
 
 # ─── Employee Profile ────────────────────────────────────────────────────────

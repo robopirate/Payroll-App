@@ -294,9 +294,10 @@ def portal_attendance():
     paid_days = calculate_paid_days(emp, year, month)
     absent = sum(1 for a in atts.values() if a.status == 'absent')
 
+    month_days = [date(year, month, d) for d in range(1, days_in_month + 1)]
     return render_template('portal/attendance.html', emp=emp, atts=atts, month=month, year=year,
         days_in_month=days_in_month, present=paid_days, absent=absent,
-        get_month_name=get_month_name,
+        month_days=month_days, get_month_name=get_month_name,
         months=list(range(1, 13)), years=list(range(2020, date.today().year + 2)))
 
 

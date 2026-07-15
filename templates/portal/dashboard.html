@@ -1,457 +1,191 @@
 {% extends 'portal/base.html' %}
 {% block title %}My Dashboard{% endblock %}
-{% block head %}
-<style>
-  :root {
-    --glass-bg: rgba(255, 255, 255, 0.72);
-    --glass-border: rgba(255, 255, 255, 0.55);
-    --primary-dark: #0A1628;
-    --primary-blue: #1565C0;
-    --accent-orange: #FF6B35;
-    --success: #00C853;
-  }
-
-  .pd-body {
-    background:
-      radial-gradient(ellipse 70% 50% at 0% 100%, rgba(21, 101, 192, 0.12), transparent),
-      radial-gradient(ellipse 60% 60% at 100% 0%, rgba(255, 107, 53, 0.1), transparent),
-      #F0F4F8;
-    min-height: 100vh;
-  }
-
-  .pd-appbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 14px 16px;
-    padding-top: calc(12px + env(safe-area-inset-top, 0));
-  }
-  .pd-appbar-left { display: flex; align-items: center; gap: 12px; }
-  .pd-avatar {
-    width: 44px; height: 44px; border-radius: 50%;
-    background: linear-gradient(135deg, #FF6B35, #E64A19);
-    color: white; display: flex; align-items: center; justify-content: center;
-    font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 1.1rem;
-    box-shadow: 0 4px 12px rgba(255,107,53,0.25);
-  }
-  .pd-greet { line-height: 1.2; }
-  .pd-greet .hi { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 1rem; color: var(--primary-dark); }
-  .pd-greet .date { font-size: 0.72rem; color: #6b7a99; }
-  .pd-bell {
-    width: 40px; height: 40px; border-radius: 50%;
-    background: var(--glass-bg); backdrop-filter: blur(12px);
-    border: 1px solid var(--glass-border);
-    display: flex; align-items: center; justify-content: center;
-    color: #6b7a99; font-size: 1.1rem; position: relative;
-  }
-  .pd-bell .dot {
-    position: absolute; top: 8px; right: 10px;
-    width: 8px; height: 8px; border-radius: 50%;
-    background: var(--accent-orange); border: 2px solid white;
-  }
-
-  .pd-card {
-    background: var(--glass-bg);
-    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-    border: 1px solid var(--glass-border);
-    border-radius: 24px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.7);
-    margin: 0 16px 16px;
-    overflow: hidden;
-  }
-  .pd-card-body { padding: 18px; }
-
-  .pd-status-top {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 16px;
-  }
-  .pd-status-title {
-    font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 0.95rem;
-    color: var(--primary-dark);
-  }
-  .pd-status-pill {
-    font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
-    padding: 5px 12px; border-radius: 20px;
-  }
-
-  .pd-time-chips { display: flex; gap: 10px; margin-bottom: 14px; }
-  .pd-chip {
-    flex: 1; background: rgba(255,255,255,0.6); border-radius: 16px;
-    padding: 12px; text-align: center;
-  }
-  .pd-chip i { font-size: 1.1rem; color: var(--accent-orange); display: block; margin-bottom: 4px; }
-  .pd-chip .lbl { font-size: 0.6rem; color: #6b7a99; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
-  .pd-chip .val { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 0.95rem; color: var(--primary-dark); }
-
-  .pd-progress-wrap { margin-bottom: 6px; }
-  .pd-progress-labels { display: flex; justify-content: space-between; font-size: 0.65rem; color: #6b7a99; margin-bottom: 6px; }
-  .pd-progress-bar {
-    height: 8px; border-radius: 10px; background: rgba(0,0,0,0.05);
-    overflow: hidden;
-  }
-  .pd-progress-fill {
-    height: 100%; border-radius: 10px;
-    background: linear-gradient(90deg, var(--accent-orange), #FFB74D);
-    width: 0%; transition: width 0.8s ease;
-  }
-
-  .pd-punch-section { text-align: center; padding: 10px 0 6px; }
-  .pd-punch-btn {
-    width: 150px; height: 150px; border-radius: 50%; border: none;
-    color: white; font-weight: 800; display: inline-flex; flex-direction: column;
-    align-items: center; justify-content: center; cursor: pointer;
-    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s;
-    box-shadow: 0 16px 40px rgba(0,0,0,0.18);
-    position: relative;
-  }
-  .pd-punch-btn:active { transform: scale(0.94); }
-  .pd-punch-btn i { font-size: 2.6rem; display: block; margin-bottom: 4px; }
-  .pd-punch-btn .lbl { font-size: 0.9rem; letter-spacing: 0.5px; text-transform: uppercase; }
-  .pd-punch-btn .sub { font-size: 0.6rem; opacity: 0.85; margin-top: 4px; font-weight: 500; }
-  .pd-punch-in { background: linear-gradient(135deg, #FF6B35 0%, #E64A19 100%); box-shadow: 0 16px 40px rgba(255,107,53,0.35); }
-  .pd-punch-out { background: linear-gradient(135deg, #1565C0 0%, #0D47A1 100%); box-shadow: 0 16px 40px rgba(21,101,192,0.35); }
-  .pd-punch-done { background: linear-gradient(135deg, #e8f5e9, #f1f8e9); color: var(--success); cursor: default; box-shadow: 0 4px 16px rgba(0,200,83,0.15); }
-  .pd-punch-done:active { transform: none; }
-
-  .pd-quick-grid {
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
-  }
-  .pd-quick-item {
-    text-decoration: none; text-align: center;
-    display: flex; flex-direction: column; align-items: center; gap: 6px;
-  }
-  .pd-quick-icon {
-    width: 54px; height: 54px; border-radius: 18px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.4rem; color: white;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.1);
-  }
-  .pd-quick-item span { font-size: 0.65rem; font-weight: 700; color: #4a5568; }
-
-  .pd-summary-strip {
-    display: flex; gap: 10px;
-  }
-  .pd-summary-pill {
-    flex: 1; background: rgba(255,255,255,0.55); border-radius: 16px;
-    padding: 12px 6px; text-align: center;
-  }
-  .pd-summary-pill .num { font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 1.3rem; color: var(--primary-dark); }
-  .pd-summary-pill .lbl { font-size: 0.6rem; color: #6b7a99; text-transform: uppercase; font-weight: 700; }
-
-  .pd-section-title {
-    font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 0.95rem;
-    color: var(--primary-dark); margin: 18px 16px 12px;
-  }
-
-  .pd-activity-list { padding: 6px 0; }
-  .pd-activity-row {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,0.04);
-  }
-  .pd-activity-row:last-child { border-bottom: none; }
-  .pd-activity-row .day { font-weight: 700; font-size: 0.9rem; color: var(--primary-dark); }
-  .pd-activity-row .date { font-size: 0.7rem; color: #6b7a99; }
-  .pd-activity-row .times { font-size: 0.7rem; color: #9aa5b4; margin-top: 2px; }
-  .pd-badge {
-    font-size: 0.65rem; font-weight: 700; padding: 5px 10px; border-radius: 12px;
-    text-transform: uppercase;
-  }
-
-  #pd-punch-feedback { min-height: 30px; margin-top: 12px; font-size: 0.82rem; }
-
-  @media (max-width: 360px) {
-    .pd-punch-btn { width: 130px; height: 130px; }
-    .pd-quick-icon { width: 48px; height: 48px; font-size: 1.2rem; }
-  }
-</style>
-{% endblock %}
-
 {% block content %}
-<div class="pd-body">
-  <!-- App Bar -->
-  <div class="pd-appbar">
-    <div class="pd-appbar-left">
-      <div class="pd-avatar">{{ emp.name[0]|upper }}</div>
-      <div class="pd-greet">
-        <div class="hi" id="greetingText">Hi, {{ emp.name.split()[0] }}!</div>
-        <div class="date">{{ today.strftime('%A, %d %B %Y') }}</div>
+
+<!-- Today's Status -->
+<div class="rp-card">
+  <div class="rp-card-body">
+    <div class="rp-card-header" style="margin-bottom: var(--space-4);">
+      <div class="rp-card-title">Today's Attendance</div>
+      <span id="rp-status-pill" class="rp-pill
+        {% if today_att and today_att.check_in and today_att.check_out %}rp-status-completed
+        {% elif today_att and today_att.check_in %}rp-status-onduty
+        {% else %}rp-status-notstarted{% endif %}">
+        {% if today_att and today_att.check_in and today_att.check_out %}Completed
+        {% elif today_att and today_att.check_in %}On Duty
+        {% else %}Not Started{% endif %}
+      </span>
+    </div>
+
+    <div class="rp-stat-row" style="margin-bottom: var(--space-4);">
+      <div class="rp-stat" style="text-align: center;">
+        <div class="rp-stat .lbl" style="color: var(--rp-orange); font-size: 0.8rem; margin-bottom: var(--space-1);"><i class="bi bi-box-arrow-in-right"></i></div>
+        <div id="rp-checkin" class="num" style="font-size: 1.2rem;">{{ today_att.check_in if today_att and today_att.check_in else '--:--' }}</div>
+        <div class="lbl">Check In</div>
+      </div>
+      <div class="rp-stat" style="text-align: center;">
+        <div class="rp-stat .lbl" style="color: var(--rp-blue); font-size: 0.8rem; margin-bottom: var(--space-1);"><i class="bi bi-box-arrow-right"></i></div>
+        <div id="rp-checkout" class="num" style="font-size: 1.2rem;">{{ today_att.check_out if today_att and today_att.check_out else '--:--' }}</div>
+        <div class="lbl">Check Out</div>
       </div>
     </div>
-    <div class="pd-bell">
-      <i class="bi bi-bell"></i>
-      {% if pending_leaves_count %}<span class="dot"></span>{% endif %}
-    </div>
-  </div>
 
-  <!-- Today's Status Card -->
-  <div class="pd-card">
-    <div class="pd-card-body">
-      <div class="pd-status-top">
-        <div class="pd-status-title">Today's Attendance</div>
-        {% if today_att and today_att.check_in and today_att.check_out %}
-          <span class="pd-status-pill" style="background:rgba(0,200,83,0.12);color:#00C853;">Completed</span>
-        {% elif today_att and today_att.check_in %}
-          <span class="pd-status-pill" style="background:rgba(255,193,7,0.15);color:#F9A825;">On Duty</span>
-        {% else %}
-          <span class="pd-status-pill" style="background:rgba(107,122,153,0.1);color:#6b7a99;">Not Started</span>
-        {% endif %}
+    <div class="rp-progress-wrap">
+      <div class="rp-progress-labels">
+        <span>Shift Progress</span>
+        <span id="rp-progress-text">0%</span>
       </div>
-
-      <div class="pd-time-chips">
-        <div class="pd-chip">
-          <i class="bi bi-box-arrow-in-right"></i>
-          <div class="lbl">Check In</div>
-          <div class="val" id="checkInVal">{{ today_att.check_in if today_att and today_att.check_in else '--:--' }}</div>
-        </div>
-        <div class="pd-chip">
-          <i class="bi bi-box-arrow-right"></i>
-          <div class="lbl">Check Out</div>
-          <div class="val" id="checkOutVal">{{ today_att.check_out if today_att and today_att.check_out else '--:--' }}</div>
-        </div>
-      </div>
-
-      <div class="pd-progress-wrap">
-        <div class="pd-progress-labels">
-          <span>Shift Progress</span>
-          <span id="progressText">0%</span>
-        </div>
-        <div class="pd-progress-bar">
-          <div class="pd-progress-fill" id="progressFill"></div>
-        </div>
+      <div class="rp-progress-bar">
+        <div class="rp-progress-fill" id="rp-progress-fill"></div>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- Punch Hero -->
-  <div class="pd-card">
-    <div class="pd-card-body pd-punch-section">
-      {% if today_att and today_att.check_in and today_att.check_out %}
-        <button class="pd-punch-btn pd-punch-done" disabled>
-          <i class="bi bi-check-circle-fill"></i>
-          <span class="lbl">Done</span>
-          <span class="sub">See you tomorrow</span>
-        </button>
-      {% elif today_att and today_att.check_in %}
-        <button class="pd-punch-btn pd-punch-out" id="punchBtn" onclick="doPunch('out')">
-          <i class="bi bi-box-arrow-right"></i>
-          <span class="lbl">Punch Out</span>
-          <span class="sub">Since {{ today_att.check_in }}</span>
-        </button>
-      {% else %}
-        <button class="pd-punch-btn pd-punch-in" id="punchBtn" onclick="doPunch('in')">
-          <i class="bi bi-fingerprint"></i>
-          <span class="lbl">Punch In</span>
-          <span class="sub">Tap to mark</span>
-        </button>
-      {% endif %}
-      <div id="pd-punch-feedback"></div>
+<!-- Punch Hero -->
+<div class="rp-card">
+  <div class="rp-card-body" style="text-align: center; padding: var(--space-6) var(--space-4);">
+    {% if today_att and today_att.check_in and today_att.check_out %}
+      <button class="rp-btn rp-btn-lg-circle rp-btn-success" id="rp-punch-btn" disabled>
+        <i class="bi bi-check-circle-fill"></i>
+        <span class="lbl">Done</span>
+        <span class="sub">See you tomorrow</span>
+      </button>
+    {% elif today_att and today_att.check_in %}
+      <button class="rp-btn rp-btn-lg-circle rp-btn-secondary" id="rp-punch-btn" onclick="doPunch('out', { feedbackId: 'rp-punch-feedback', onSuccess: function(data) { RP.updateDashboard(data); } })">
+        <i class="bi bi-box-arrow-right"></i>
+        <span class="lbl">Punch Out</span>
+        <span class="sub">Since {{ today_att.check_in }}</span>
+      </button>
+    {% else %}
+      <button class="rp-btn rp-btn-lg-circle rp-btn-primary" id="rp-punch-btn" onclick="doPunch('in', { feedbackId: 'rp-punch-feedback', onSuccess: function(data) { RP.updateDashboard(data); } })">
+        <i class="bi bi-fingerprint"></i>
+        <span class="lbl">Punch In</span>
+        <span class="sub">Tap to mark</span>
+      </button>
+    {% endif %}
+    <div id="rp-punch-feedback" style="min-height: 24px; margin-top: var(--space-4);"></div>
+  </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="rp-card">
+  <div class="rp-card-body">
+    <div class="rp-quick-grid">
+      <a href="{{ url_for('portal.portal_apply_leave') }}" class="rp-quick-item">
+        <div class="rp-quick-icon" style="background: linear-gradient(135deg, #FF6B35, #E64A19);"><i class="bi bi-calendar2-x"></i></div>
+        <span>Apply Leave</span>
+      </a>
+      <a href="{{ url_for('portal.portal_payslips') }}" class="rp-quick-item">
+        <div class="rp-quick-icon" style="background: linear-gradient(135deg, #00C853, #009624);"><i class="bi bi-receipt-cutoff"></i></div>
+        <span>Payslips</span>
+      </a>
+      <a href="{{ url_for('portal.portal_attendance') }}" class="rp-quick-item">
+        <div class="rp-quick-icon" style="background: linear-gradient(135deg, #1565C0, #0D47A1);"><i class="bi bi-clock-history"></i></div>
+        <span>History</span>
+      </a>
+      <a href="{{ url_for('portal.portal_profile') }}" class="rp-quick-item">
+        <div class="rp-quick-icon" style="background: linear-gradient(135deg, #7C4DFF, #651FFF);"><i class="bi bi-person"></i></div>
+        <span>Profile</span>
+      </a>
     </div>
   </div>
+</div>
 
-  <!-- Quick Actions -->
-  <div class="pd-card">
-    <div class="pd-card-body">
-      <div class="pd-quick-grid">
-        <a href="{{ url_for('portal.portal_apply_leave') }}" class="pd-quick-item">
-          <div class="pd-quick-icon" style="background:linear-gradient(135deg,#FF6B35,#E64A19);"><i class="bi bi-calendar2-x"></i></div>
-          <span>Apply Leave</span>
-        </a>
-        <a href="{{ url_for('portal.portal_payslips') }}" class="pd-quick-item">
-          <div class="pd-quick-icon" style="background:linear-gradient(135deg,#00C853,#009624);"><i class="bi bi-receipt-cutoff"></i></div>
-          <span>Payslips</span>
-        </a>
-        <a href="{{ url_for('portal.portal_attendance') }}" class="pd-quick-item">
-          <div class="pd-quick-icon" style="background:linear-gradient(135deg,#1565C0,#0D47A1);"><i class="bi bi-clock-history"></i></div>
-          <span>History</span>
-        </a>
-        <a href="{{ url_for('portal.portal_profile') }}" class="pd-quick-item">
-          <div class="pd-quick-icon" style="background:linear-gradient(135deg,#7C4DFF,#651FFF);"><i class="bi bi-person"></i></div>
-          <span>Profile</span>
-        </a>
-      </div>
-    </div>
-  </div>
-
-  <!-- Mini Summary -->
-  <div class="pd-card">
-    <div class="pd-card-body pd-summary-strip">
-      <div class="pd-summary-pill">
-        <div class="num">{{ "%.1f"|format(present_this_month) }}</div>
+<!-- Summary Strip -->
+<div class="rp-card">
+  <div class="rp-card-body">
+    <div class="rp-stat-row">
+      <div class="rp-stat">
+        <div id="rp-stat-present" class="num">{{ "%.1f"|format(present_this_month) }}</div>
         <div class="lbl">Present Days</div>
       </div>
-      <div class="pd-summary-pill">
-        <div class="num">{{ "%.0f"|format(total_leave_remaining) }}</div>
+      <div class="rp-stat">
+        <div id="rp-stat-leave" class="num">{{ "%.0f"|format(total_leave_remaining) }}</div>
         <div class="lbl">Leave Left</div>
       </div>
-      <div class="pd-summary-pill">
-        <div class="num">{{ upcoming_holidays|length }}</div>
+      <div class="rp-stat">
+        <div id="rp-stat-holidays" class="num">{{ upcoming_holidays|length }}</div>
         <div class="lbl">Holidays</div>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- Recent Activity -->
-  {% if recent_att %}
-  <div class="pd-section-title">Recent Activity</div>
-  <div class="pd-card">
-    <div class="pd-card-body pd-activity-list">
+<!-- Recent Activity -->
+<div class="rp-card">
+  <div class="rp-card-body">
+    <div class="rp-card-header">
+      <div class="rp-card-title">Recent Activity</div>
+      <a href="{{ url_for('portal.portal_attendance') }}" class="rp-card-action">View all</a>
+    </div>
+    <div id="rp-recent-list" class="rp-list">
       {% for att in recent_att %}
-      <div class="pd-activity-row">
-        <div>
-          <div class="day">{{ att.date.strftime('%d %b') }}</div>
-          <div class="date">{{ att.date.strftime('%A') }}</div>
-          {% if att.check_in %}
-          <div class="times">{{ att.check_in }}{% if att.check_out %} – {{ att.check_out }}{% endif %}</div>
+      <div class="rp-list-item">
+        <div class="rp-list-main">
+          <div class="rp-list-title">{{ att.date.strftime('%d %b') }} <span style="font-weight:500;color:var(--rp-text-3);">{{ att.date.strftime('%A') }}</span></div>
+          {% if att.check_in or att.check_out %}
+          <div class="rp-list-meta">{% if att.check_in %}In: {{ att.check_in }}{% endif %}{% if att.check_out %} · Out: {{ att.check_out }}{% endif %}</div>
           {% endif %}
         </div>
-        <div>
-          {% if att.status == 'present' %}
-            <span class="pd-badge" style="background:rgba(0,200,83,0.12);color:#00C853;">Present</span>
-          {% elif att.status == 'absent' %}
-            <span class="pd-badge" style="background:rgba(244,67,54,0.12);color:#F44336;">Absent</span>
-          {% elif att.status == 'half_day' %}
-            <span class="pd-badge" style="background:rgba(255,193,7,0.15);color:#F9A825;">Half Day</span>
-          {% elif att.status == 'leave' %}
-            <span class="pd-badge" style="background:rgba(108,117,125,0.12);color:#6c757d;">Leave</span>
-          {% elif att.status == 'holiday' %}
-            <span class="pd-badge" style="background:rgba(156,39,176,0.12);color:#9C27B0;">Holiday</span>
-          {% elif att.status == 'overtime' %}
-            <span class="pd-badge" style="background:rgba(0,188,212,0.12);color:#00BCD4;">OT</span>
-          {% else %}
-            <span class="pd-badge" style="background:rgba(240,244,248,0.8);color:#6b7a99;">{{ att.status|title }}</span>
-          {% endif %}
-        </div>
+        <span class="rp-badge
+          {% if att.status == 'present' %}rp-badge-present
+          {% elif att.status == 'absent' %}rp-badge-absent
+          {% elif att.status == 'half_day' %}rp-badge-half
+          {% elif att.status == 'leave' %}rp-badge-leave
+          {% elif att.status == 'holiday' %}rp-badge-holiday
+          {% elif att.status == 'overtime' %}rp-badge-ot
+          {% else %}rp-badge-draft{% endif %}">
+          {{ att.status|title }}{% if att.location_type == 'field' %} · Field{% endif %}
+        </span>
       </div>
+      {% else %}
+      <div class="rp-empty-state"><p class="mb-0">No recent activity.</p></div>
       {% endfor %}
-      <div class="text-center mt-2 pt-2 border-top">
-        <a href="{{ url_for('portal.portal_attendance') }}" style="font-size:0.82rem;color:#FF6B35;font-weight:700;text-decoration:none;">View Full History <i class="bi bi-arrow-right"></i></a>
-      </div>
     </div>
   </div>
-  {% endif %}
-
-  <div style="height:32px;"></div>
 </div>
+
+<!-- Upcoming Holidays -->
+{% if upcoming_holidays %}
+<div class="rp-card">
+  <div class="rp-card-body">
+    <div class="rp-card-header">
+      <div class="rp-card-title">Upcoming Holidays</div>
+    </div>
+    <div class="rp-list">
+      {% for h in upcoming_holidays %}
+      <div class="rp-list-item">
+        <div class="rp-list-main">
+          <div class="rp-list-title">{{ h.name }}</div>
+          <div class="rp-list-meta">{{ h.date.strftime('%A, %d %B %Y') }}</div>
+        </div>
+        <span class="rp-badge rp-badge-holiday">Holiday</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
 {% endblock %}
 
 {% block scripts %}
 <script>
-(function() {
+document.addEventListener('DOMContentLoaded', function() {
   const checkIn = '{{ today_att.check_in if today_att and today_att.check_in else '' }}';
   const checkOut = '{{ today_att.check_out if today_att and today_att.check_out else '' }}';
-  const workingHours = {{ working_hours_per_day|default(8) }};
+  const shiftStart = '{{ shift_start if shift_start else '' }}';
   const shiftEnd = '{{ shift_end if shift_end else '' }}';
+  const workingHours = {{ working_hours_per_day|default(8) }};
 
-  function setGreeting() {
-    const hour = new Date().getHours();
-    let text = 'Good evening';
-    if (hour < 12) text = 'Good morning';
-    else if (hour < 17) text = 'Good afternoon';
-    const el = document.getElementById('greetingText');
-    if (el) el.textContent = text + ', {{ emp.name.split()[0] }}!';
+  function tick() {
+    RP.updateProgressBar(checkIn, checkOut, shiftStart, shiftEnd, workingHours);
   }
-
-  function timeToMins(t) {
-    if (!t || !t.includes(':')) return null;
-    const [h, m] = t.split(':');
-    return parseInt(h, 10) * 60 + parseInt(m, 10);
+  tick();
+  if (checkIn && !checkOut) {
+    setInterval(tick, 60000);
   }
-
-  function updateProgress() {
-    const fill = document.getElementById('progressFill');
-    const txt = document.getElementById('progressText');
-    if (!fill) return;
-
-    let pct = 0;
-    if (checkIn && checkOut) {
-      pct = 100;
-    } else if (checkIn) {
-      const start = timeToMins(checkIn);
-      const now = new Date().getHours() * 60 + new Date().getMinutes();
-      const duration = Math.max(1, workingHours * 60);
-      pct = Math.min(100, Math.max(0, ((now - start) / duration) * 100));
-    }
-    fill.style.width = pct + '%';
-    txt.textContent = Math.round(pct) + '%';
-  }
-
-  setGreeting();
-  updateProgress();
-  setInterval(updateProgress, 60000);
-})();
-
-function showFeedback(type, html) {
-  const fb = document.getElementById('pd-punch-feedback');
-  if (!fb) return;
-  fb.innerHTML = '<div class="alert alert-' + type + ' py-2 px-3 mb-0">' + html + '</div>';
-}
-
-function resetBtn(action) {
-  const btn = document.getElementById('punchBtn');
-  if (!btn) return;
-  btn.disabled = false;
-  btn.style.opacity = '1';
-  const icon = action === 'in' ? 'bi-fingerprint' : 'bi-box-arrow-right';
-  const lbl = action === 'in' ? 'Punch In' : 'Punch Out';
-  const sub = action === 'in' ? 'Tap to mark' : 'Since {{ today_att.check_in if today_att and today_att.check_in else '' }}';
-  btn.innerHTML = '<i class="bi ' + icon + '"></i><span class="lbl">' + lbl + '</span><span class="sub">' + sub + '</span>';
-}
-
-async function doPunch(action) {
-  const btn = document.getElementById('punchBtn');
-  if (!btn) return;
-  btn.disabled = true;
-  btn.style.opacity = '0.65';
-  btn.innerHTML = '<div class="spinner-border" style="width:2.2rem;height:2.2rem;border-color:#fff transparent #fff transparent;border-width:3px;"></div>';
-  showFeedback('info', '<i class="bi bi-geo-alt me-1"></i>Getting GPS location…');
-
-  if (!navigator.geolocation) {
-    showFeedback('danger', 'GPS not supported by this browser.');
-    resetBtn(action);
-    return;
-  }
-
-  navigator.geolocation.getCurrentPosition(
-    async function(pos) {
-      showFeedback('info', '<i class="bi bi-wifi me-1"></i>Sending punch…');
-      const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 25000);
-
-      try {
-        const r = await fetch('{{ url_for("api.api_punch") }}', {
-          method: 'POST',
-          signal: controller.signal,
-          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
-          body: JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy, action: action })
-        });
-        clearTimeout(timeoutId);
-
-        let data;
-        const text = await r.text();
-        try { data = JSON.parse(text); } catch (e) { throw new Error('Server returned unexpected response. Please try again.'); }
-
-        if (data && data.success) {
-          const icon = data.location_type === 'field' ? 'bi-geo-alt' : 'bi-check-circle-fill';
-          showFeedback(data.location_type === 'field' ? 'warning' : 'success', '<i class="bi ' + icon + ' me-1"></i>' + data.message);
-          setTimeout(() => location.reload(), 1800);
-        } else {
-          showFeedback('danger', '<i class="bi bi-x-circle-fill me-1"></i>' + (data && data.message ? data.message : 'Punch failed.'));
-          resetBtn(action);
-        }
-      } catch (err) {
-        clearTimeout(timeoutId);
-        showFeedback('danger', '<i class="bi bi-wifi-off me-1"></i>' + (err.name === 'AbortError' ? 'Request timed out. Please try again.' : (err.message || 'Network error. Please check connection.')));
-        resetBtn(action);
-      }
-    },
-    function(err) {
-      const msgs = {1:'Location access denied. Enable GPS in browser settings.',2:'Location unavailable. Try outdoors or near a window.',3:'Location request timed out. Please try again.'};
-      showFeedback('warning', '<i class="bi bi-geo-alt me-1"></i>' + (msgs[err.code] || 'Location error — please try again.'));
-      resetBtn(action);
-    },
-    { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
-  );
-}
+});
 </script>
 {% endblock %}

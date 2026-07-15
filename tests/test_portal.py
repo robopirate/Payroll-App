@@ -196,7 +196,7 @@ def test_portal_bottom_nav_links_present(client, app):
         assert b'Leaves' in resp.data
         # The Punch FAB is a separate fixed link to /portal/punch.
         assert b'/portal/punch' in resp.data
-        assert b'punch-fab' in resp.data
+        assert b'rp-fab' in resp.data
 
 
 def test_portal_api_punch_returns_json(client, app):
@@ -245,3 +245,42 @@ def test_portal_api_punch_returns_json(client, app):
     data = resp.get_json()
     assert data['success'] is False
     assert 'Already punched IN' in data['message']
+
+
+def test_api_today_status_returns_json(client, app):
+    """The today-status API returns current attendance summary for the logged-in employee."""
+    with app.app_context():
+        dept = Department(name='Test Dept')
+        db.session.add(dept)
+        db.session.commit()
+
+        school = School(
+            name='Test School', address='Test Address',
+            latitude=12.34, longitude=56.78, geofence_radius=100
+        )
+        db.session.add(school)
+        db.session.commit()
+
+        emp = Employee(
+            emp_id='EMP210', name='Status User', phone='9876543219',
+            department_id=dept.id, basic_salary=20000, is_approved=True
+        )
+        emp.schools.append(school)
+        db.session.add(emp)
+        db.session.commit()
+
+        portal_user = User(username='9876543219', is_admin=False, employee_id=emp.id)
+        portal_user.set_password('secret')
+        db.session.add(portal_user)
+        db.session.commit()
+
+    resp = _portal_login(client, '9876543219')
+    assert resp.status_code == 200
+
+    resp = client.post('/api/today-status')
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data['success'] is True
+    assert 'today_att' in data
+    assert 'summary' in data
+    assert 'recent_activity' in data

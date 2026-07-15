@@ -1,70 +1,226 @@
 {% extends 'portal/base.html' %}
 {% block title %}Punch In/Out{% endblock %}
 {% block content %}
-<div class="pb-4">
-  <div class="d-flex align-items-center gap-2 mb-4">
-    <a href="{{ url_for('portal.portal_dashboard') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
-    <h4 class="page-header mb-0">Punch In/Out</h4>
-  </div>
-  <div class="row mb-4">
-    <div class="col-12 mb-3">
-      <div class="card glass-card"><div class="card-body text-center py-3"><p class="text-muted small mb-2">Current Status</p><h4 id="statusText" class="mb-0"><span class="badge bg-secondary">Loading...</span></h4></div></div>
+
+<div class="d-flex align-items-center gap-2 mb-3">
+  <a href="{{ url_for('portal.portal_dashboard') }}" class="rp-btn rp-btn-ghost" style="padding: 0; width: 38px; height: 38px;"><i class="bi bi-arrow-left"></i></a>
+  <h1 class="rp-title-2 mb-0">Punch In/Out</h1>
+</div>
+
+<!-- GPS / Location status -->
+<div class="rp-card">
+  <div class="rp-card-body">
+    <div class="rp-card-header">
+      <div class="rp-card-title">Location Status</div>
+      <span id="rp-gps-status" class="rp-pill rp-status-notstarted"><i class="bi bi-geo-alt"></i> Locating…</span>
     </div>
-    <div class="col-12">
-      <div class="card glass-card"><div class="card-body text-center py-3"><p class="text-muted small mb-2">Assigned Location</p><h5 class="mb-0">{{ location.name if location else 'Not Assigned' }}</h5>{% if location and location.location_type %}<span class="badge bg-light text-dark" style="font-size:0.7rem;">{{ location.location_type }}</span>{% endif %}<small class="text-muted d-block">{{ location.address if location else '-' }}</small></div></div>
-    </div>
-    {% set effective_start = emp.shift_start or (location.shift_start if location else None) %}
-    {% set effective_end = emp.shift_end or (location.shift_end if location else None) %}
-    {% set has_custom_shift = emp.shift_start or emp.shift_end %}
-    {% if effective_start or effective_end %}
-    <div class="col-12 mt-3">
-      <div class="card glass-card">
-        <div class="card-body text-center py-3">
-          <p class="text-muted small mb-2">
-            {% if has_custom_shift %}Your Shift{% else %}School Shift{% endif %}
-          </p>
-          <h5 class="mb-1">
-            {{ effective_start or '--:--' }} – {{ effective_end or '--:--' }}
-            {% if has_custom_shift %}<span class="badge bg-info" style="font-size:0.65rem;vertical-align:middle;">Custom</span>{% endif %}
-          </h5>
-          <small class="text-muted d-block">
-            {% if location and location.grace_minutes %}Grace: {{ location.grace_minutes }} min{% endif %}
-            {% if location and location.lunch_minutes %}| Lunch: {{ location.lunch_minutes }} min{% endif %}
-          </small>
-        </div>
+
+    <div id="rp-distance-card" style="display:none;">
+      <div class="text-center py-3">
+        <div class="rp-micro mb-1">Distance from {{ location.name if location else 'location' }}</div>
+        <div id="rp-distance" class="rp-title-1 rp-text-gradient mb-1">-- m</div>
+        <div id="rp-geofence-status" class="rp-caption" style="font-weight: 600;">--</div>
       </div>
     </div>
-    {% endif %}
-  </div>
-  <div class="row">
-    <div class="col-12 mx-auto">
-      <div class="card glass-card" style="box-shadow: 0 8px 32px rgba(0,0,0,0.08);">
-        <div class="card-body p-4" id="punchCardBody">
-          <div class="alert alert-info mb-4" id="locationAlert" style="backdrop-filter:blur(8px);"><small id="locationStatus">Getting your location...</small></div>
-          <div class="text-center mb-4" id="distanceContainer" style="display:none;"><p class="text-muted mb-2">Distance from Location</p><h2 id="distanceText" class="text-primary">-- m</h2><small id="geofenceStatus" class="text-success">✓ Within geofence</small></div>
-          <div class="d-flex justify-content-center mb-4"><button type="button" id="punchBtn" class="btn btn-lg btn-secondary" style="width: min(160px, 45vw); height: min(160px, 45vw); border-radius: 50%; box-shadow: 0 8px 24px rgba(0,0,0,0.12);" disabled><i id="punchBtnIcon" class="bi bi-clock d-block" style="font-size: 2.5rem;"></i><span id="punchBtnText" class="d-block mt-2" style="font-size: 1.1rem; font-weight: 600; color: inherit;">Punch</span></button></div>
-          <div class="text-center mb-3"><p class="text-muted mb-1">Current Time</p><h5 id="currentTime" class="mb-0">--:--:--</h5></div>
-          {% if today_attendance %}<div class="alert alert-success" style="backdrop-filter:blur(8px);">{% if today_attendance.check_in %}<p class="mb-2"><strong>Check In:</strong> {{ today_attendance.check_in }}{% if today_attendance.late_minutes %} <span class="badge bg-danger">Late {{ today_attendance.late_minutes }} min</span>{% endif %}</p>{% endif %}{% if today_attendance.check_out %}<p class="mb-0"><strong>Check Out:</strong> {{ today_attendance.check_out }}{% if today_attendance.early_minutes %} <span class="badge bg-warning text-dark">Early {{ today_attendance.early_minutes }} min</span>{% endif %}</p>{% else %}<p class="mb-0 text-warning"><small>Awaiting check-out...</small></p>{% endif %}</div>{% endif %}
-          <div id="statusMessage" class="alert alert-warning" style="display:none; margin-top: 20px; backdrop-filter:blur(8px);"><small id="statusMessageText"></small></div>
+
+    <div class="rp-list" style="margin-top: var(--space-3);">
+      <div class="rp-list-item">
+        <div class="rp-list-main">
+          <div class="rp-list-title">Assigned Location</div>
+          <div class="rp-list-meta">{{ location.name if location else 'Not Assigned' }}</div>
         </div>
       </div>
-      <div class="card glass-card mt-3"><div class="card-body py-3"><p style="color:#6b7a99;font-size:0.8rem;margin-bottom:8px;"><strong>Location Details</strong></p><small style="color:#6b7a99;font-size:0.8rem;display:block;">Your Location: <span id="userLocation">--</span></small>{% if location %}<small style="color:#6b7a99;font-size:0.8rem;display:block;">Location: <span id="locationCoords">{{ location.latitude }}, {{ location.longitude }}</span></small><small style="color:#6b7a99;font-size:0.8rem;display:block;">Geofence Radius: <span id="geofenceRadius">{{ location.geofence_radius }} m</span></small>{% endif %}</div></div>
+      {% set effective_start = emp.shift_start or (location.shift_start if location else None) %}
+      {% set effective_end = emp.shift_end or (location.shift_end if location else None) %}
+      {% if effective_start or effective_end %}
+      <div class="rp-list-item">
+        <div class="rp-list-main">
+          <div class="rp-list-title">{% if emp.shift_start or emp.shift_end %}Your Shift{% else %}School Shift{% endif %}</div>
+          <div class="rp-list-meta">{{ effective_start or '--:--' }} – {{ effective_end or '--:--' }}</div>
+        </div>
+        <span class="rp-badge rp-badge-info">{{ 'Custom' if (emp.shift_start or emp.shift_end) else 'Shift' }}</span>
+      </div>
+      {% endif %}
+      {% if location and (location.grace_minutes or location.lunch_minutes) %}
+      <div class="rp-list-item">
+        <div class="rp-list-main">
+          <div class="rp-list-title">Timings</div>
+          <div class="rp-list-meta">
+            {% if location.grace_minutes %}Grace: {{ location.grace_minutes }} min{% endif %}
+            {% if location.grace_minutes and location.lunch_minutes %} · {% endif %}
+            {% if location.lunch_minutes %}Lunch: {{ location.lunch_minutes }} min{% endif %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
     </div>
   </div>
 </div>
+
+<!-- Punch Button -->
+<div class="rp-card">
+  <div class="rp-card-body" style="text-align: center; padding: var(--space-6) var(--space-4);">
+    <button id="rp-punch-page-btn" class="rp-btn rp-btn-lg-circle rp-btn-secondary" disabled>
+      <i class="bi bi-hourglass-split"></i>
+      <span class="lbl">Loading…</span>
+    </button>
+    <div class="text-center mt-4">
+      <div class="rp-micro mb-1">Current Time</div>
+      <div id="rp-current-time" class="rp-title-2">--:--:--</div>
+    </div>
+  </div>
+</div>
+
+<!-- Today's Summary -->
+{% if today_attendance %}
+<div class="rp-card">
+  <div class="rp-card-body">
+    <div class="rp-card-title mb-3">Today's Summary</div>
+    <div class="rp-list">
+      {% if today_attendance.check_in %}
+      <div class="rp-list-item">
+        <div class="rp-list-main"><div class="rp-list-title">Check In</div></div>
+        <span class="rp-badge rp-badge-present">{{ today_attendance.check_in }}</span>
+      </div>
+      {% endif %}
+      {% if today_attendance.check_out %}
+      <div class="rp-list-item">
+        <div class="rp-list-main"><div class="rp-list-title">Check Out</div></div>
+        <span class="rp-badge rp-badge-secondary" style="background: rgba(21,101,192,0.10); color: #0D47A1;">{{ today_attendance.check_out }}</span>
+      </div>
+      {% endif %}
+      {% if today_attendance.late_minutes %}
+      <div class="rp-list-item">
+        <div class="rp-list-main"><div class="rp-list-title">Late</div></div>
+        <span class="rp-badge rp-badge-warning">{{ today_attendance.late_minutes }} min</span>
+      </div>
+      {% endif %}
+      {% if today_attendance.early_minutes %}
+      <div class="rp-list-item">
+        <div class="rp-list-main"><div class="rp-list-title">Early Exit</div></div>
+        <span class="rp-badge rp-badge-warning">{{ today_attendance.early_minutes }} min</span>
+      </div>
+      {% endif %}
+      {% if today_attendance.overtime_hours %}
+      <div class="rp-list-item">
+        <div class="rp-list-main"><div class="rp-list-title">Overtime</div></div>
+        <span class="rp-badge rp-badge-ot">+{{ today_attendance.overtime_hours }}h</span>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
 <script>
-const locLat = {{ (location.latitude or 0) if location else 0 }}, locLng = {{ (location.longitude or 0) if location else 0 }}, geofenceRadius = {{ (location.geofence_radius or 150) if location else 150 }};
-let userLat = null, userLng = null, checkedIn = false;
-function updateTime() { document.getElementById('currentTime').textContent = new Date().toLocaleTimeString('en-IN'); }
-function getDistance(lat1, lng1, lat2, lng2) { const R = 6371000, p1 = lat1 * Math.PI / 180, p2 = lat2 * Math.PI / 180, dp = (lat2 - lat1) * Math.PI / 180, dl = (lng2 - lng1) * Math.PI / 180, a = Math.sin(dp/2)*Math.sin(dp/2)+Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)*Math.sin(dl/2); return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); }
-function setButtonState(state) { const btn = document.getElementById('punchBtn'), icon = document.getElementById('punchBtnIcon'), text = document.getElementById('punchBtnText'); btn.classList.remove('btn-primary','btn-danger','btn-secondary','btn-success','btn-warning','btn-light','btn-dark','btn-info'); icon.className = 'd-block'; icon.style.fontSize = '2.5rem'; icon.style.color = ''; const states = {in:['btn-primary','bi-box-arrow-in-right','Punch In',false],out:['btn-danger','bi-box-arrow-right','Punch Out',false],'in-field':['btn-warning','bi-geo-alt','Field Punch In',false],'out-field':['btn-warning','bi-geo-alt','Field Punch Out',false],done:['btn-success','bi-check-circle-fill','Done',true],loading:['btn-secondary','bi-hourglass-split','Processing...',true]}; const s = states[state]||['btn-secondary','bi-clock','Punch',true]; btn.classList.add(s[0]); icon.classList.add('bi', s[1]); text.textContent = s[2]; btn.disabled = s[3]; if (['btn-primary','btn-danger','btn-success','btn-warning'].includes(s[0])) { text.style.color = 'white'; icon.style.color = 'white'; } else { text.style.color = '#333'; icon.style.color = '#333'; } }
-function getLocation() { if (!navigator.geolocation) { showStatus('Geolocation not supported', 'danger'); return; } navigator.geolocation.getCurrentPosition(p => { userLat = p.coords.latitude; userLng = p.coords.longitude; document.getElementById('userLocation').textContent = `${userLat.toFixed(5)}, ${userLng.toFixed(5)}`; document.getElementById('distanceContainer').style.display = 'block'; if (locLat && locLng) { const d = getDistance(userLat, userLng, locLat, locLng); document.getElementById('distanceText').textContent = Math.round(d) + ' m'; const st = document.getElementById('geofenceStatus'); if (d <= geofenceRadius) { st.textContent = '✓ Within geofence - Ready to punch'; st.className = 'text-success'; setButtonState(checkedIn ? 'out' : 'in'); } else { st.textContent = '⚠ Field punch (' + Math.round(d) + 'm from {{ location.name|default("location")|e }})'; st.className = 'text-warning'; setButtonState(checkedIn ? 'out-field' : 'in-field'); } } else { setButtonState(checkedIn ? 'out' : 'in'); } showStatus('Location retrieved. Ready to punch!', 'success'); }, e => showStatus('Error: ' + e.message, 'danger'), { enableHighAccuracy: true, timeout: 10000 }); }
-function showStatus(msg, type) { const d = document.getElementById('statusMessage'), t = document.getElementById('statusMessageText'); d.className = 'alert alert-' + type; t.textContent = msg; d.style.display = 'block'; }
-async function submitPunch() { if (!userLat || !userLng) { showStatus('Location not available', 'warning'); return; } setButtonState('loading'); const action = checkedIn ? 'out' : 'in'; try { const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''; const r = await fetch('{{ url_for("api.api_punch") }}', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf }, body: JSON.stringify({ lat: userLat, lng: userLng, action }) }); const d = await r.json(); if (d.success) { checkedIn = action === 'in'; const isField = d.location_type === 'field', st = document.getElementById('statusText'); if (checkedIn) st.innerHTML = isField ? '<span class="badge bg-warning text-dark">Checked In (Field)</span>' : '<span class="badge bg-success">Checked In</span>'; else { st.innerHTML = isField ? '<span class="badge bg-warning text-dark">Checked Out (Field)</span>' : '<span class="badge bg-secondary">Checked Out</span>'; setButtonState('done'); } showStatus(d.message, 'success'); setTimeout(() => location.reload(), 1500); } else { showStatus(d.message || 'Error', 'danger'); setButtonState(checkedIn ? 'out' : 'in'); } } catch(e) { showStatus('Network error', 'danger'); setButtonState(checkedIn ? 'out' : 'in'); } }
-{% if today_attendance and today_attendance.check_in and today_attendance.check_out %}checkedIn = false; document.getElementById('statusText').innerHTML = '<span class="badge bg-success">Done for Today</span>'; setButtonState('done');
-{% elif today_attendance and today_attendance.check_in %}checkedIn = true; document.getElementById('statusText').innerHTML = '<span class="badge bg-success">Checked In</span>';
-{% else %}checkedIn = false; document.getElementById('statusText').innerHTML = '<span class="badge bg-secondary">Ready to Punch In</span>';{% endif %}
-document.getElementById('punchBtn').addEventListener('click', submitPunch); updateTime(); setInterval(updateTime, 1000); getLocation(); setInterval(getLocation, 30000);
+document.addEventListener('DOMContentLoaded', function() {
+  const locLat = {{ (location.latitude or 0) if location else 0 }};
+  const locLng = {{ (location.longitude or 0) if location else 0 }};
+  const geofenceRadius = {{ (location.geofence_radius or 150) if location else 150 }};
+  const locationName = {{ (location.name|default('location'))|tojson }};
+  let userLat = null, userLng = null, checkedIn = {{ 'true' if (today_attendance and today_attendance.check_in and not today_attendance.check_out) else 'false' }};
+  let doneForDay = {{ 'true' if (today_attendance and today_attendance.check_in and today_attendance.check_out) else 'false' }};
+
+  function getDistance(lat1, lng1, lat2, lng2) {
+    const R = 6371000, p1 = lat1 * Math.PI / 180, p2 = lat2 * Math.PI / 180;
+    const dp = (lat2 - lat1) * Math.PI / 180, dl = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dp/2)**2 + Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  }
+
+  function setBtn(state) {
+    const btn = document.getElementById('rp-punch-page-btn');
+    const configs = {
+      in:        { cls: 'rp-btn-primary', icon: 'bi-box-arrow-in-right', text: 'Punch In' },
+      out:       { cls: 'rp-btn-secondary', icon: 'bi-box-arrow-right', text: 'Punch Out' },
+      'in-field':{ cls: 'rp-btn-primary', icon: 'bi-geo-alt', text: 'Field Punch In' },
+      'out-field':{ cls: 'rp-btn-secondary', icon: 'bi-geo-alt', text: 'Field Punch Out' },
+      done:      { cls: 'rp-btn-success', icon: 'bi-check-circle-fill', text: 'Done' },
+      loading:   { cls: 'rp-btn-ghost', icon: 'bi-hourglass-split', text: 'Processing…' }
+    };
+    const c = configs[state] || configs.loading;
+    btn.className = 'rp-btn rp-btn-lg-circle ' + c.cls;
+    btn.disabled = (state === 'loading' || state === 'done');
+    btn.innerHTML = '<i class="bi ' + c.icon + '"></i><span class="lbl">' + c.text + '</span>';
+  }
+
+  function getLocation() {
+    if (!navigator.geolocation) {
+      document.getElementById('rp-gps-status').className = 'rp-pill rp-status-notstarted';
+      document.getElementById('rp-gps-status').innerHTML = '<i class="bi bi-geo-alt"></i> GPS unavailable';
+      RP.toast('Geolocation not supported', 'warning');
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(p => {
+      userLat = p.coords.latitude;
+      userLng = p.coords.longitude;
+      document.getElementById('rp-distance-card').style.display = 'block';
+      const distEl = document.getElementById('rp-distance');
+      const geoEl = document.getElementById('rp-geofence-status');
+      const gpsEl = document.getElementById('rp-gps-status');
+
+      if (locLat && locLng) {
+        const d = getDistance(userLat, userLng, locLat, locLng);
+        distEl.textContent = Math.round(d) + ' m';
+        if (d <= geofenceRadius) {
+          geoEl.innerHTML = '<i class="bi bi-check-circle"></i> Within geofence';
+          geoEl.style.color = 'var(--rp-success)';
+          gpsEl.className = 'rp-pill rp-status-completed';
+          gpsEl.innerHTML = '<i class="bi bi-geo-alt-fill"></i> Ready';
+          if (!doneForDay) setBtn(checkedIn ? 'out' : 'in');
+        } else {
+          geoEl.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Field punch (' + Math.round(d) + 'm from ' + locationName + ')';
+          geoEl.style.color = 'var(--rp-warning)';
+          gpsEl.className = 'rp-pill rp-status-onduty';
+          gpsEl.innerHTML = '<i class="bi bi-geo-alt"></i> Field';
+          if (!doneForDay) setBtn(checkedIn ? 'out-field' : 'in-field');
+        }
+      } else {
+        distEl.textContent = 'No location set';
+        geoEl.textContent = 'Punching allowed (no geofence)';
+        gpsEl.className = 'rp-pill rp-status-completed';
+        gpsEl.innerHTML = '<i class="bi bi-geo-alt-fill"></i> Ready';
+        if (!doneForDay) setBtn(checkedIn ? 'out' : 'in');
+      }
+    }, e => {
+      document.getElementById('rp-gps-status').className = 'rp-pill rp-status-notstarted';
+      document.getElementById('rp-gps-status').innerHTML = '<i class="bi bi-geo-alt"></i> Location error';
+      RP.toast('Could not get location: ' + e.message, 'warning');
+    }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+  }
+
+  async function submitPunch() {
+    if (!userLat || !userLng) { RP.toast('Location not available', 'warning'); return; }
+    setBtn('loading');
+    const action = checkedIn ? 'out' : 'in';
+    const res = await RP.api('{{ url_for("api.api_punch") }}', {
+      method: 'POST',
+      body: JSON.stringify({ lat: userLat, lng: userLng, action: action })
+    });
+    if (!res.ok || !res.data) {
+      RP.toast(res.error || 'Unexpected response', 'danger');
+      setBtn(checkedIn ? 'out' : 'in');
+      return;
+    }
+    if (res.data.success) {
+      RP.toast(res.data.message, 'success');
+      if (action === 'in') { checkedIn = true; }
+      else { checkedIn = false; doneForDay = true; }
+      setTimeout(() => { window.location.href = '{{ url_for("portal.portal_dashboard") }}'; }, 1200);
+    } else {
+      RP.toast(res.data.message || 'Punch failed', 'danger');
+      setBtn(checkedIn ? 'out' : 'in');
+    }
+  }
+
+  document.getElementById('rp-punch-page-btn').addEventListener('click', submitPunch);
+  RP.updateCurrentTime('rp-current-time');
+  setInterval(() => RP.updateCurrentTime('rp-current-time'), 1000);
+  getLocation();
+  setInterval(getLocation, 30000);
+});
 </script>
-<style>.glass-card { background: rgba(255,255,255,0.72) !important; backdrop-filter: blur(16px) !important; -webkit-backdrop-filter: blur(16px) !important; border: none !important; border-radius: 20px !important; box-shadow: 0 4px 24px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.6) !important; } #punchBtn { transition: all 0.3s ease; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.1); } #punchBtn:hover:not(:disabled) { transform: scale(1.05); box-shadow: 0 6px 20px rgba(0,0,0,0.15); } #punchBtn:disabled { opacity: 0.6; } @media (max-width: 400px) { .glass-card .card-body { padding: 1rem !important; } }</style>
 {% endblock %}

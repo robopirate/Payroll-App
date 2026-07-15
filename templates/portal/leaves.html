@@ -1,36 +1,65 @@
 {% extends 'portal/base.html' %}
 {% block title %}My Leaves{% endblock %}
-{% block head %}
-<style>
-.balance-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px; }
-@media (min-width: 480px) { .balance-grid { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); } }
-.balance-card { background: rgba(255,255,255,0.72); backdrop-filter: blur(16px); border-radius: 20px; padding: 14px 10px; text-align: center; box-shadow: 0 4px 16px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.5); transition: transform 0.2s, box-shadow 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-.balance-card:active { transform: scale(0.98); }
-.balance-card .num { font-size: 1.7rem; font-weight: 800; color: #1565C0; line-height: 1; }
-.balance-card .used { font-size: 0.68rem; color: #aaa; margin-top: 2px; }
-.balance-card .lbl { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #bbb; margin-top: 3px; }
-.leave-item { padding: 13px 0; border-bottom: 1px solid rgba(0,0,0,0.04); display: flex; justify-content: space-between; align-items: flex-start; }
-.leave-item:last-child { border-bottom: none; }
-.leave-item .dates { font-size: 0.78rem; color: #888; margin-top: 3px; }
-.leave-item .reason { font-size: 0.75rem; color: #aaa; margin-top: 2px; font-style: italic; }
-.apply-btn-glass { background: linear-gradient(135deg, rgba(10,22,40,0.95), rgba(21,101,192,0.9)); color: white; border: none; border-radius: 16px; backdrop-filter: blur(8px); box-shadow: 0 6px 20px rgba(21,101,192,0.2), inset 0 1px 0 rgba(255,255,255,0.1); transition: all 0.25s; }
-.apply-btn-glass:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(21,101,192,0.3); }
-@media (max-width: 400px) {
-  .leave-item { flex-direction: column; gap: 8px; }
-  .leave-item > div:last-child { margin-left: 0; text-align: left; }
-  .card-body { padding: 1rem !important; }
-}
-</style>
-{% endblock %}
 {% block content %}
-<p class="section-title">Leave Balance ({{ emp.leave_balances[0].year if emp.leave_balances else '' }})</p>
-<div class="balance-grid">
-  {% for lb in leave_balances %}<div class="balance-card"><div class="num">{{ lb.remaining_days|int }}</div><div class="used">{{ lb.used_days|int }}/{{ lb.total_days|int }} used</div><div class="lbl">{{ lb.leave_type }}<br>Leave</div></div>{% else %}<p class="text-muted" style="font-size:0.9rem;">No leave balance records.</p>{% endfor %}
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <h1 class="rp-title-2 mb-0">My Leaves</h1>
+  <a href="{{ url_for('portal.portal_dashboard') }}" class="rp-btn rp-btn-ghost" style="padding: 0; width: 38px; height: 38px;"><i class="bi bi-house"></i></a>
 </div>
-<a href="{{ url_for('portal.portal_apply_leave') }}" class="btn btn-touch w-100 mb-3 apply-btn-glass"><i class="bi bi-plus-circle me-2"></i>Apply for Leave</a>
-<p class="section-title">Leave Applications</p>
-<div class="card"><div class="card-body px-4 py-2">
-  {% for leave in leaves %}<div class="leave-item"><div style="flex:1;"><div style="font-weight:700;font-size:0.95rem;text-transform:capitalize;">{{ leave.leave_type }} Leave <span style="font-size:0.75rem;font-weight:500;color:#888;">({{ leave.days }} day{% if leave.days != 1 %}s{% endif %})</span></div><div class="dates">{{ leave.start_date.strftime('%d %b') }}{% if leave.start_date != leave.end_date %} – {{ leave.end_date.strftime('%d %b %Y') }}{% else %}, {{ leave.start_date.strftime('%Y') }}{% endif %}</div>{% if leave.reason %}<div class="reason">"{{ leave.reason }}"</div>{% endif %}</div><div style="margin-left:12px;text-align:right;">{% if leave.status == 'pending' %}<span class="badge-status badge-pending">Pending</span>{% elif leave.status == 'approved' %}<span class="badge-status badge-approved">Approved</span>{% else %}<span class="badge-status badge-rejected">Rejected</span>{% endif %}{% if leave.status == 'pending' or (leave.status == 'approved' and leave.start_date >= today) %}<form method="POST" action="{{ url_for('portal.portal_cancel_leave', leave_id=leave.id) }}" class="mt-1"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit" class="btn btn-sm btn-outline-danger" style="font-size:0.7rem;padding:2px 8px;border-radius:10px;">Cancel</button></form>{% endif %}</div></div>{% else %}<p class="text-center text-muted py-4 mb-0">No leave applications yet.</p>{% endfor %}
-</div></div>
-<div style="height:10px;"></div>
+
+<!-- Leave Balance -->
+<div class="rp-card mb-3">
+  <div class="rp-card-body">
+    <div class="rp-card-title mb-3">Leave Balance ({{ emp.leave_balances[0].year if emp.leave_balances else '' }})</div>
+    <div class="rp-stat-row" style="grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));">
+      {% for lb in leave_balances %}
+      <div class="rp-stat">
+        <div class="num" style="color: var(--rp-blue);">{{ lb.remaining_days|int }}</div>
+        <div class="lbl">{{ lb.leave_type|title }}</div>
+        <div class="rp-micro mt-1">{{ lb.used_days|int }}/{{ lb.total_days|int }} used</div>
+      </div>
+      {% else %}
+      <div class="rp-empty-state" style="padding: var(--space-4);"><p class="mb-0">No leave balance records.</p></div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<a href="{{ url_for('portal.portal_apply_leave') }}" class="rp-btn rp-btn-primary rp-btn-block mb-3">
+  <i class="bi bi-plus-circle"></i> Apply for Leave
+</a>
+
+<!-- Applications -->
+<div class="rp-card">
+  <div class="rp-card-body">
+    <div class="rp-card-title mb-3">Leave Applications</div>
+    <div class="rp-list">
+      {% for leave in leaves %}
+      <div class="rp-list-item" style="align-items: flex-start;">
+        <div class="rp-list-main">
+          <div class="rp-list-title">{{ leave.leave_type|title }} Leave <span style="font-weight:500;color:var(--rp-text-3);">({{ leave.days }} day{% if leave.days != 1 %}s{% endif %})</span></div>
+          <div class="rp-list-meta">
+            {{ leave.start_date.strftime('%d %b') }}{% if leave.start_date != leave.end_date %} – {{ leave.end_date.strftime('%d %b %Y') }}{% else %}, {{ leave.start_date.strftime('%Y') }}{% endif %}
+          </div>
+          {% if leave.reason %}<div class="rp-caption mt-1" style="font-style: italic;">"{{ leave.reason }}"</div>{% endif %}
+        </div>
+        <div class="text-end" style="min-width: 80px;">
+          <span class="rp-badge
+            {% if leave.status == 'pending' %}rp-badge-pending
+            {% elif leave.status == 'approved' %}rp-badge-approved
+            {% else %}rp-badge-rejected{% endif %}">{{ leave.status|title }}</span>
+          {% if leave.status == 'pending' or (leave.status == 'approved' and leave.start_date >= today) %}
+          <form method="POST" action="{{ url_for('portal.portal_cancel_leave', leave_id=leave.id) }}" class="mt-2">
+            <button type="submit" class="rp-btn rp-btn-ghost" style="min-height: 28px; padding: 0 var(--space-3); font-size: 0.72rem;">Cancel</button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+      {% else %}
+      <div class="rp-empty-state"><p class="mb-0">No leave applications yet.</p></div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
 {% endblock %}

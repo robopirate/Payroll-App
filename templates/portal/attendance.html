@@ -1,121 +1,113 @@
 {% extends 'portal/base.html' %}
 {% block title %}My Attendance{% endblock %}
-
-{% block head %}
-<style>
-  .month-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-  .month-title { font-weight: 800; font-size: 1.1rem; color: #0A1628; }
-  .summary-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
-  .summary-box {
-    min-width: 0; background: white; border-radius: 14px;
-    padding: 14px 8px; text-align: center;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.07);
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-  }
-  .summary-box .num { font-size: 1.6rem; font-weight: 800; line-height: 1; }
-  .summary-box .lbl { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #aaa; margin-top: 4px; }
-  .att-day-row {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 12px 0; border-bottom: 1px solid #f5f5f5;
-  }
-  @media (max-width: 400px) {
-    .att-day-row { padding: 12px 4px; }
-    .month-nav a { width: 36px !important; height: 36px !important; }
-  }
-  .att-day-row:last-child { border-bottom: none; }
-  .day-badge { width: 40px; height: 40px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-  .day-badge .d  { font-weight: 800; font-size: 1rem; line-height: 1; }
-  .day-badge .wd { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.3px; }
-  .gps-dot { width: 8px; height: 8px; border-radius: 50%; background: #28a745; display: inline-block; margin-left: 4px; }
-  @media (max-width: 400px) {
-    .card-body { padding: 1rem !important; }
-  }
-</style>
-{% endblock %}
-
 {% block content %}
-<!-- Month selector -->
-<div class="month-nav">
-  {% set pm = month - 1 if month > 1 else 12 %}
-  {% set py = year if month > 1 else year - 1 %}
-  {% set nm = month + 1 if month < 12 else 1 %}
-  {% set ny = year if month < 12 else year + 1 %}
-  <a href="{{ url_for('portal.portal_attendance', month=pm, year=py) }}" class="btn btn-light btn-sm" style="border-radius:10px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;">
-    <i class="bi bi-chevron-left"></i>
-  </a>
-  <div class="month-title">{{ get_month_name(month) }} {{ year }}</div>
-  <a href="{{ url_for('portal.portal_attendance', month=nm, year=ny) }}" class="btn btn-light btn-sm" style="border-radius:10px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;">
-    <i class="bi bi-chevron-right"></i>
-  </a>
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <h1 class="rp-title-2 mb-0">Attendance</h1>
+  <a href="{{ url_for('portal.portal_dashboard') }}" class="rp-btn rp-btn-ghost" style="padding: 0; width: 38px; height: 38px;"><i class="bi bi-house"></i></a>
+</div>
+
+<!-- Month Navigator -->
+{% set pm = month - 1 if month > 1 else 12 %}
+{% set py = year if month > 1 else year - 1 %}
+{% set nm = month + 1 if month < 12 else 1 %}
+{% set ny = year if month < 12 else year + 1 %}
+<div class="rp-card mb-3">
+  <div class="rp-card-body">
+    <div class="d-flex align-items-center justify-content-between">
+      <a href="{{ url_for('portal.portal_attendance', month=pm, year=py) }}" class="rp-btn rp-btn-ghost" style="padding: 0; width: 40px; height: 40px;"><i class="bi bi-chevron-left"></i></a>
+      <div class="text-center">
+        <div class="rp-title-2">{{ get_month_name(month) }} {{ year }}</div>
+        <div class="rp-caption">{{ days_in_month }} days</div>
+      </div>
+      <a href="{{ url_for('portal.portal_attendance', month=nm, year=ny) }}" class="rp-btn rp-btn-ghost" style="padding: 0; width: 40px; height: 40px;"><i class="bi bi-chevron-right"></i></a>
+    </div>
+  </div>
 </div>
 
 <!-- Summary -->
-<div class="summary-row">
-  <div class="summary-box">
-    <div class="num" style="color:#28a745;">{{ present|int }}</div>
-    <div class="lbl">Present</div>
-  </div>
-  <div class="summary-box">
-    <div class="num" style="color:#dc3545;">{{ absent|int }}</div>
-    <div class="lbl">Absent</div>
-  </div>
-  <div class="summary-box">
-    <div class="num" style="color:#1565C0;">{{ days_in_month - (present|int) - (absent|int) }}</div>
-    <div class="lbl">Remaining</div>
-  </div>
-</div>
-
-<!-- Day list -->
-<div class="card">
-  <div class="card-body px-4 py-2">
-    {% for day in range(1, days_in_month + 1) %}
-      {% set att = atts.get(day) %}
-      {% if att %}
-      <div class="att-day-row">
-        <div class="d-flex align-items-center gap-3">
-          {% if att.status == 'present' %}
-            <div class="day-badge" style="background:#d4edda;color:#155724;">
-          {% elif att.status == 'absent' %}
-            <div class="day-badge" style="background:#f8d7da;color:#721c24;">
-          {% elif att.status == 'half_day' %}
-            <div class="day-badge" style="background:#fff3cd;color:#856404;">
-          {% else %}
-            <div class="day-badge" style="background:#e9ecef;color:#495057;">
-          {% endif %}
-            <span class="d">{{ "%02d"|format(day) }}</span>
-            <span class="wd">{{ att.date.strftime('%a') }}</span>
-          </div>
-          <div>
-            {% if att.status == 'present' %}
-              {% if att.location_type == 'field' %}<span class="badge-status" style="background:#e3f2fd;color:#1565C0;">Present · Field</span>
-              {% else %}<span class="badge-status badge-present">Present</span>
-              {% endif %}
-            {% elif att.status == 'absent' %}<span class="badge-status badge-absent">Absent</span>
-            {% elif att.status == 'half_day' %}<span class="badge-status badge-half">Half Day</span>
-            {% elif att.status == 'leave' %}<span class="badge-status badge-leave">On Leave</span>
-            {% else %}<span class="badge-status" style="background:#e9ecef;color:#495057;">{{ att.status|title }}</span>
-            {% endif %}
-            {% if att.gps_verified %}<span class="gps-dot" title="GPS verified"></span>{% endif %}
-            {% if att.check_in or att.check_out %}
-              <div style="font-size:0.72rem;color:#888;margin-top:3px;">
-                {% if att.check_in %}In: {{ att.check_in }}{% endif %}
-                {% if att.check_out %} · Out: {{ att.check_out }}{% endif %}
-              </div>
-            {% endif %}
-          </div>
-        </div>
-        {% if att.overtime_hours %}
-          <span style="font-size:0.75rem;color:#e67e22;font-weight:600;">+{{ att.overtime_hours }}h OT</span>
-        {% endif %}
+<div class="rp-card mb-3">
+  <div class="rp-card-body">
+    <div class="rp-stat-row">
+      <div class="rp-stat">
+        <div class="num" style="color: var(--rp-success);">{{ present|int }}</div>
+        <div class="lbl">Present</div>
       </div>
-      {% endif %}
-    {% endfor %}
-
-    {% if not atts %}
-    <p class="text-center text-muted py-4 mb-0">No attendance records for this month.</p>
-    {% endif %}
+      <div class="rp-stat">
+        <div class="num" style="color: var(--rp-danger);">{{ absent|int }}</div>
+        <div class="lbl">Absent</div>
+      </div>
+      <div class="rp-stat">
+        <div class="num" style="color: var(--rp-blue);">{{ (days_in_month - present|int - absent|int) }}</div>
+        <div class="lbl">Remaining</div>
+      </div>
+    </div>
   </div>
 </div>
 
-<div style="height:10px;"></div>
+<!-- Day List -->
+<div class="rp-card">
+  <div class="rp-card-body">
+    <div class="rp-card-title mb-3">Daily Log</div>
+    <div class="rp-list">
+      {% for day_date in month_days %}
+        {% set day = day_date.day %}
+        {% set att = atts.get(day) %}
+        {% if att %}
+          <div class="rp-day-card">
+            <div class="d-flex align-items-center gap-3">
+              <div class="rp-day-badge
+                {% if att.status == 'present' %}rp-badge-present
+                {% elif att.status == 'absent' %}rp-badge-absent
+                {% elif att.status == 'half_day' %}rp-badge-half
+                {% elif att.status == 'leave' %}rp-badge-leave
+                {% elif att.status == 'holiday' %}rp-badge-holiday
+                {% elif att.status == 'overtime' %}rp-badge-ot
+                {% else %}rp-badge-draft{% endif %}">
+                <span class="d">{{ "%02d"|format(day) }}</span>
+                <span class="wd">{{ att.date.strftime('%a') }}</span>
+              </div>
+              <div>
+                <span class="rp-badge
+                  {% if att.status == 'present' %}rp-badge-present
+                  {% elif att.status == 'absent' %}rp-badge-absent
+                  {% elif att.status == 'half_day' %}rp-badge-half
+                  {% elif att.status == 'leave' %}rp-badge-leave
+                  {% elif att.status == 'holiday' %}rp-badge-holiday
+                  {% elif att.status == 'overtime' %}rp-badge-ot
+                  {% else %}rp-badge-draft{% endif %}">
+                  {{ att.status|title }}{% if att.location_type == 'field' %} · Field{% endif %}
+                </span>
+                {% if att.gps_verified %}<span class="rp-badge rp-badge-success ms-1" style="padding: 3px 7px; font-size: 0.6rem;"><i class="bi bi-geo-alt-fill"></i></span>{% endif %}
+                {% if att.check_in or att.check_out %}
+                <div class="rp-caption mt-1" style="font-weight: 500;">
+                  {% if att.check_in %}In {{ att.check_in }}{% endif %}
+                  {% if att.check_out %} · Out {{ att.check_out }}{% endif %}
+                </div>
+                {% endif %}
+              </div>
+            </div>
+            {% if att.overtime_hours %}
+            <span class="rp-badge rp-badge-ot">+{{ att.overtime_hours }}h OT</span>
+            {% endif %}
+          </div>
+        {% else %}
+          <div class="rp-day-card" style="opacity: 0.75;">
+            <div class="d-flex align-items-center gap-3">
+              <div class="rp-day-badge rp-badge-draft">
+                <span class="d">{{ "%02d"|format(day) }}</span>
+                <span class="wd">{{ day_date.strftime('%a') }}</span>
+              </div>
+              <div>
+                <span class="rp-badge rp-badge-draft">No Record</span>
+                <div class="rp-caption mt-1">{{ day_date.strftime('%d %b %Y') }}</div>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
 {% endblock %}

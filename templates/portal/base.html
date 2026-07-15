@@ -7,444 +7,92 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0A1628">
-  <meta property="og:title" content="Robo Pirate's Payroll">
-  <meta property="og:description" content="Mark attendance, view payslips, and manage leaves.">
-  <meta property="og:type" content="website">
+  {% if emp %}<meta name="employee-first-name" content="{{ emp.name.split()[0] if emp.name else '' }}">{% endif %}
   <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
   <title>{% block title %}My Portal{% endblock %} — Robo Pirate's Payroll</title>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preconnect" href="https://cdn.jsdelivr.net">
-  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
-  <style>
-    :root {
-      --primary-dark:  #0A1628;
-      --primary-blue:  #1565C0;
-      --accent-orange: #FF6B35;
-      --accent-cyan:   #00BCD4;
-      --success:       #00C853;
-      --glass-bg:      rgba(255, 255, 255, 0.07);
-      --glass-border:  rgba(255, 255, 255, 0.15);
-    }
-
-    * {
-      -webkit-tap-highlight-color: rgba(255, 107, 53, 0.12);
-      box-sizing: border-box;
-    }
-
-    body {
-      background:
-        radial-gradient(ellipse 70% 50% at 0% 100%, rgba(21, 101, 192, 0.12), transparent),
-        radial-gradient(ellipse 60% 60% at 100% 0%, rgba(255, 107, 53, 0.1), transparent),
-        #F0F4F8;
-      background-attachment: fixed;
-      padding-bottom: 72px;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      color: #1A1A2E;
-    }
-
-    /* Glassmorphism Portal Header */
-    .portal-header {
-      background: rgba(10, 22, 40, 0.85);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      color: white;
-      padding: 12px 16px;
-      padding-top: env(safe-area-inset-top, 12px);
-      position: sticky;
-      top: 0;
-      z-index: 300;
-      box-shadow: 0 2px 20px rgba(0,0,0,0.25);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    }
-    .header-brand {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: flex-start;
-      min-height: 36px;
-    }
-    .portal-header .app-name {
-      font-family: 'Poppins', sans-serif;
-      font-weight: 700;
-      font-size: 1rem;
-      color: white;
-      text-shadow: 0 1px 4px rgba(0,0,0,0.3);
-      line-height: 1.2;
-    }
-    @media (max-width: 400px) {
-      .portal-header .app-name { font-size: 0.9rem; }
-    }
-    .portal-header .emp-name {
-      font-size: 0.68rem;
-      color: var(--accent-orange);
-      margin-top: 2px;
-      font-weight: 500;
-      opacity: 0.85;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 150px;
-      line-height: 1.2;
-    }
-    .header-actions { display: flex; align-items: center; }
-    .portal-logout-btn,
-    .portal-profile-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 5px;
-      color: rgba(255,255,255,0.65);
-      border: 1px solid rgba(255,255,255,0.12);
-      background: rgba(255,255,255,0.05);
-      backdrop-filter: blur(8px);
-      padding: 6px 12px;
-      border-radius: 8px;
-      font-size: 0.78rem;
-      line-height: 1;
-      text-decoration: none;
-      transition: background 0.2s, color 0.2s, border-color 0.2s;
-      white-space: nowrap;
-      height: 32px;
-      vertical-align: middle;
-    }
-    .portal-profile-btn { margin-right: 8px; }
-    .portal-logout-btn:hover,
-    .portal-profile-btn:hover {
-      background: rgba(255,255,255,0.12);
-      color: white;
-      border-color: rgba(255,255,255,0.2);
-    }
-    .header-actions { display: flex; align-items: center; }
-    @media (max-width: 400px) {
-      .portal-logout-btn span, .portal-profile-btn span { display: none; }
-      .portal-logout-btn, .portal-profile-btn { padding: 6px 8px; width: 32px; }
-    }
-
-    /* Glassmorphism Bottom Navigation */
-    body {
-      padding-bottom: calc(96px + env(safe-area-inset-bottom, 0));
-    }
-    .bottom-nav {
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      height: 64px;
-      background: rgba(255, 255, 255, 0.72);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border-top: 1px solid rgba(255, 255, 255, 0.5);
-      z-index: 300;
-      display: flex;
-      align-items: center;
-      justify-content: space-around;
-      box-shadow: 0 -4px 24px rgba(0,0,0,0.08);
-      padding-bottom: env(safe-area-inset-bottom, 0);
-    }
-    .bottom-nav a {
-      flex: 1;
-      min-width: 0;
-      height: 100%;
-      text-align: center;
-      text-decoration: none;
-      color: #9aa5b4;
-      font-size: 0.62rem;
-      font-weight: 700;
-      line-height: 1.1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 3px;
-      letter-spacing: 0.3px;
-      text-transform: uppercase;
-      transition: color 0.15s;
-      position: relative;
-    }
-    .bottom-nav a i { font-size: 1.25rem; transition: transform 0.2s; }
-    @media (max-width: 360px) {
-      .bottom-nav a { font-size: 0.55rem; gap: 2px; }
-      .bottom-nav a i { font-size: 1.15rem; }
-    }
-    .bottom-nav a.active { color: var(--accent-orange); }
-    .bottom-nav a.active::after {
-      content: '';
-      position: absolute;
-      bottom: 6px;
-      left: 38%;
-      right: 38%;
-      height: 3px;
-      border-radius: 2px;
-      background: var(--accent-orange);
-    }
-    .bottom-nav a:hover { color: var(--accent-orange); }
-    .bottom-nav a:active i { transform: scale(0.85); }
-
-    /* Centered Punch floating action button */
-    .punch-fab {
-      position: fixed;
-      bottom: calc(34px + env(safe-area-inset-bottom, 0));
-      left: 50%;
-      transform: translateX(-50%);
-      width: 68px;
-      height: 68px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #0A1628, #1565C0);
-      color: white;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 2px;
-      text-decoration: none;
-      font-size: 0.58rem;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.4px;
-      border: 3px solid rgba(255, 255, 255, 0.9);
-      box-shadow:
-        0 6px 20px rgba(0,0,0,0.22),
-        0 0 0 1px rgba(10,22,40,0.08);
-      z-index: 301;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .punch-fab i { font-size: 1.7rem; }
-    .punch-fab.active {
-      background: linear-gradient(135deg, #FF6B35, #FF8F50);
-      box-shadow:
-        0 6px 20px rgba(255,107,53,0.35),
-        0 0 0 4px rgba(255,107,53,0.18);
-    }
-    .punch-fab:active { transform: translateX(-50%) scale(0.92); }
-
-    .portal-body { padding: 14px 14px 0; }
-
-    /* Loading overlay for slow networks */
-    #page-loader {
-      position: fixed;
-      inset: 0;
-      background: #F0F4F8;
-      z-index: 1000;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      transition: opacity 0.3s ease, visibility 0.3s ease;
-    }
-    #page-loader.hidden {
-      opacity: 0;
-      visibility: hidden;
-      pointer-events: none;
-    }
-    #page-loader .spinner {
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      border: 4px solid rgba(21,101,192,0.15);
-      border-top-color: var(--accent-orange);
-      animation: spin 0.8s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    #page-loader .brand {
-      font-family: 'Poppins', sans-serif;
-      font-weight: 700;
-      font-size: 1.1rem;
-      color: #0A1628;
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-      }
-      #page-loader .spinner { animation: none; border-top-color: var(--accent-orange); }
-    }
-
-    /* Glassmorphism Cards */
-    .card {
-      border: none !important;
-      border-radius: 20px !important;
-      background: rgba(255, 255, 255, 0.72) !important;
-      backdrop-filter: blur(16px) !important;
-      -webkit-backdrop-filter: blur(16px) !important;
-      box-shadow:
-        0 4px 24px rgba(0,0,0,0.06),
-        0 1px 3px rgba(0,0,0,0.04),
-        inset 0 1px 0 rgba(255,255,255,0.6) !important;
-      overflow: hidden;
-    }
-    .card + .card { margin-top: 14px; }
-    .card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 20px; right: 20px;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
-      pointer-events: none;
-    }
-
-    .section-title {
-      font-family: 'Poppins', sans-serif;
-      font-size: 1rem;
-      font-weight: 700;
-      color: #0A1628;
-      margin-bottom: 14px;
-      margin-top: 20px;
-      letter-spacing: -0.2px;
-    }
-
-    .badge-status {
-      display: inline-block;
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 0.71rem;
-      font-weight: 700;
-      letter-spacing: 0.3px;
-      backdrop-filter: blur(4px);
-    }
-    .badge-present  { background: rgba(40, 167, 69, 0.12); color: #155724; border: 1px solid rgba(40, 167, 69, 0.2); }
-    .badge-absent   { background: rgba(220, 53, 69, 0.1); color: #721c24; border: 1px solid rgba(220, 53, 69, 0.15); }
-    .badge-half     { background: rgba(255, 193, 7, 0.12); color: #856404; border: 1px solid rgba(255, 193, 7, 0.2); }
-    .badge-leave    { background: rgba(23, 162, 184, 0.1); color: #0c5460; border: 1px solid rgba(23, 162, 184, 0.15); }
-    .badge-pending  { background: rgba(255, 193, 7, 0.12); color: #856404; border: 1px solid rgba(255, 193, 7, 0.2); }
-    .badge-approved { background: rgba(40, 167, 69, 0.12); color: #155724; border: 1px solid rgba(40, 167, 69, 0.2); }
-    .badge-rejected { background: rgba(220, 53, 69, 0.1); color: #721c24; border: 1px solid rgba(220, 53, 69, 0.15); }
-
-    .btn-touch {
-      min-height: 48px;
-      font-weight: 600;
-      border-radius: 14px;
-      font-size: 0.95rem;
-      backdrop-filter: blur(8px);
-      display: inline-flex !important;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      line-height: 1;
-    }
-
-    .form-control:focus, .form-select:focus {
-      border-color: var(--accent-orange);
-      box-shadow: 0 0 0 3px rgba(255,107,53,0.12);
-    }
-    .form-control, .form-select {
-      border-radius: 12px;
-      height: 48px;
-      font-size: 15px;
-      border: 1.5px solid #dde3ed;
-      background: rgba(255, 255, 255, 0.8);
-      backdrop-filter: blur(4px);
-    }
-
-    .alert {
-      border-radius: 14px;
-      border: none;
-      font-size: 0.88rem;
-      backdrop-filter: blur(8px);
-    }
-    .alert-success { background: rgba(25, 135, 84, 0.1); color: #0f5132; }
-    .alert-danger  { background: rgba(220, 53, 69, 0.1); color: #842029; }
-    .alert-warning { background: rgba(255, 193, 7, 0.1); color: #664d03; }
-    .alert-info    { background: rgba(13, 202, 240, 0.1); color: #055160; }
-
-    ::-webkit-scrollbar { width: 5px; height: 5px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(10, 22, 40, 0.15); border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: rgba(10, 22, 40, 0.25); }
-    @media (max-width: 400px) {
-      .portal-body { padding: 10px 10px 0; }
-      .card-body { padding: 1rem !important; }
-    }
-  </style>
+  <link href="{{ url_for('static', filename='css/portal.css') }}" rel="stylesheet">
   {% block head %}{% endblock %}
 </head>
 <body>
 
-<div id="page-loader"><div class="spinner"></div><div class="brand">Robo Pirate's Payroll</div></div>
-
-<header class="portal-header">
-  <div class="header-brand">
-    <div class="app-name">Robo Pirate's Payroll</div>
-    {% if current_user.is_authenticated and current_user.employee_id %}
-      <div class="emp-name" id="hdr-emp-name">Employee Portal</div>
-    {% endif %}
-  </div>
-  <div class="header-actions">
-    <a href="{{ url_for('portal.portal_profile') }}" class="portal-profile-btn">
-      <i class="bi bi-person-circle me-1"></i><span>Profile</span>
+<header class="rp-appbar">
+  <div class="rp-appbar-left">
+    <a href="{{ url_for('portal.portal_profile') }}" class="rp-avatar" style="text-decoration:none;">
+      {{ emp.name[0]|upper if emp and emp.name else '?' }}
     </a>
-    <a href="{{ url_for('auth.logout') }}" class="portal-logout-btn">
-      <i class="bi bi-box-arrow-right me-1"></i><span>Logout</span>
+    <div class="rp-greeting rp-truncate">
+      <div class="hi" id="rp-greeting">Hi, {{ emp.name.split()[0] if emp and emp.name else 'Employee' }}!</div>
+      <div class="sub">{{ today.strftime('%A, %d %B') if today else '' }}</div>
+    </div>
+  </div>
+  <div class="d-flex align-items-center gap-2">
+    <a href="{{ url_for('portal.portal_leaves') }}" class="rp-icon-btn" aria-label="Notifications">
+      <i class="bi bi-bell"></i>
+      {% if pending_leaves_count is defined and pending_leaves_count %}<span class="rp-dot"></span>{% endif %}
+    </a>
+    <a href="{{ url_for('auth.logout') }}" class="rp-icon-btn" aria-label="Logout">
+      <i class="bi bi-box-arrow-right"></i>
     </a>
   </div>
 </header>
 
 {% with messages = get_flashed_messages(with_categories=true) %}
   {% if messages %}
-    <div style="padding: 10px 14px 0;">
+    <div class="rp-page" style="padding-top: var(--space-3); padding-bottom: 0;">
       {% for category, message in messages %}
-        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-          {{ message }}
-          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <div class="rp-alert rp-alert-{{ category }} mb-2" role="alert">
+          <i class="bi bi-{{ 'check-circle-fill' if category == 'success' else 'x-circle-fill' if category == 'danger' else 'exclamation-triangle-fill' if category == 'warning' else 'info-circle-fill' }}"></i>
+          <span>{{ message }}</span>
         </div>
       {% endfor %}
     </div>
   {% endif %}
 {% endwith %}
 
-<main class="portal-body">
+<main class="rp-page">
   {% block content %}{% endblock %}
 </main>
 
 {% if current_user.is_authenticated and not current_user.is_admin %}
-<nav class="bottom-nav">
+<nav class="rp-bottom-nav">
   <a href="{{ url_for('portal.portal_dashboard') }}"
-     class="{% if request.endpoint == 'portal.portal_dashboard' %}active{% endif %}">
+     class="rp-nav-item {% if request.endpoint == 'portal.portal_dashboard' %}active{% endif %}">
     <i class="bi bi-house{% if request.endpoint == 'portal.portal_dashboard' %}-fill{% endif %}"></i>
-    <span class="nav-label">Home</span>
+    <span>Home</span>
   </a>
   <a href="{{ url_for('portal.portal_attendance') }}"
-     class="{% if 'portal_attendance' in (request.endpoint or '') %}active{% endif %}">
+     class="rp-nav-item {% if 'portal_attendance' in (request.endpoint or '') %}active{% endif %}">
     <i class="bi bi-calendar-check{% if 'portal_attendance' in (request.endpoint or '') %}-fill{% endif %}"></i>
-    <span class="nav-label">Attendance</span>
+    <span>Attendance</span>
   </a>
+  <span style="flex: 0.8;"></span>
   <a href="{{ url_for('portal.portal_payslips') }}"
-     class="{% if 'payslip' in (request.endpoint or '') %}active{% endif %}">
+     class="rp-nav-item {% if 'payslip' in (request.endpoint or '') %}active{% endif %}">
     <i class="bi bi-receipt{% if 'payslip' in (request.endpoint or '') %}-cutoff{% endif %}"></i>
-    <span class="nav-label">Payslips</span>
+    <span>Payslips</span>
   </a>
   <a href="{{ url_for('portal.portal_leaves') }}"
-     class="{% if 'portal_leave' in (request.endpoint or '') %}active{% endif %}">
+     class="rp-nav-item {% if 'portal_leave' in (request.endpoint or '') %}active{% endif %}">
     <i class="bi bi-calendar2-x{% if 'portal_leave' in (request.endpoint or '') %}-fill{% endif %}"></i>
-    <span class="nav-label">Leaves</span>
+    <span>Leaves</span>
   </a>
 </nav>
 <a href="{{ url_for('portal.portal_punch') }}"
-   class="punch-fab {% if request.endpoint == 'portal.portal_punch' %}active{% endif %}">
+   class="rp-fab {% if request.endpoint == 'portal.portal_punch' %}active{% endif %}">
   <i class="bi bi-fingerprint"></i>
   <span>Punch</span>
 </a>
 {% endif %}
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" defer></script>
-<script>
-  function hidePageLoader() {
-    const loader = document.getElementById('page-loader');
-    if (loader) loader.classList.add('hidden');
-  }
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', hidePageLoader);
-  } else {
-    hidePageLoader();
-  }
-</script>
+<script src="{{ url_for('static', filename='js/portal.js') }}" defer></script>
+
 <script>
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('{{ url_for("static", filename="sw.js") }}')
@@ -470,14 +118,13 @@
     });
   }
 </script>
+
 <script>
   (function() {
     var meta = document.querySelector('meta[name="csrf-token"]');
     var token = meta ? meta.getAttribute('content') : '';
     if (token) {
-      var forms = document.querySelectorAll('form');
-      for (var i = 0; i < forms.length; i++) {
-        var form = forms[i];
+      document.querySelectorAll('form').forEach(function(form) {
         if (!form.querySelector('input[name="csrf_token"]')) {
           var input = document.createElement('input');
           input.type = 'hidden';
@@ -485,17 +132,11 @@
           input.value = token;
           form.appendChild(input);
         }
-      }
+      });
     }
   })();
 </script>
-<script>
-  setTimeout(() => {
-    document.querySelectorAll('.alert').forEach(el => {
-      try { bootstrap.Alert.getOrCreateInstance(el).close(); } catch(e) {}
-    });
-  }, 5000);
-</script>
+
 {% block scripts %}{% endblock %}
 </body>
 </html>
