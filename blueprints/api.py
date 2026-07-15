@@ -209,7 +209,7 @@ def api_punch():
         if att.check_out:
             return jsonify({'success': False, 'message': f'Already punched OUT at {att.check_out}.'})
         att.check_out = now_time
-        att.auto_checkout = False
+        att.auto_checkout = 0
         shift_start, shift_end, working_hours = get_employee_effective_shift(emp)
         expected_end = _compute_expected_end_time(att.check_in, shift_end, working_hours)
         att.overtime_hours = _compute_overtime_hours(now_time, expected_end)

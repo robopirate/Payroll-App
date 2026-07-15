@@ -110,7 +110,8 @@ class Attendance(db.Model):
     gps_lng = db.Column(db.Float)
     gps_verified = db.Column(db.Boolean, default=False)
     admin_override = db.Column(db.Boolean, default=False)
-    auto_checkout = db.Column(db.Boolean, default=False)
+    # Stored as 0/1 because the production DB column is INTEGER.
+    auto_checkout = db.Column(db.Integer, default=0)
     # Late / early-exit tracking based on the employee's location shift timings
     late_minutes = db.Column(db.Integer, default=0)
     early_minutes = db.Column(db.Integer, default=0)

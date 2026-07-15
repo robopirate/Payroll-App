@@ -213,7 +213,7 @@ def safe_migrate():
             ('gps_lng', 'REAL'),
             ('gps_verified', bool_def),
             ('admin_override', bool_def),
-            ('auto_checkout', bool_def),
+            ('auto_checkout', 'INTEGER DEFAULT 0'),
             ('location_type', 'VARCHAR(20) DEFAULT \'school\''),
         ]:
             if col not in att_cols:
@@ -326,16 +326,6 @@ def safe_migrate():
                 conn.execute(text("ALTER TABLE payrolls ADD COLUMN tds_deduction FLOAT DEFAULT 0.0"))
         if 'tax_regime' not in payroll_cols:
             conn.execute(text("ALTER TABLE payrolls ADD COLUMN tax_regime VARCHAR(10) DEFAULT 'new'"))
-
-        # On PostgreSQL, make sure attendance boolean columns are BOOLEAN, not INTEGER,
-        # so SQLAlchemy Boolean model fields don't fail on insert.
-        if db.engine.dialect.name == 'postgresql':
-            att_col_types = {c['name']: c['type'] for c in inspector.get_columns('attendance')}
-            for bool_col in ('gps_verified', 'admin_override', 'auto_checkout'):
-                if bool_col in att_col_types and not isinstance(att_col_types[bool_col], db.Boolean):
-                    conn.execute(text(
-                        f"ALTER TABLE attendance ALTER COLUMN {bool_col} TYPE BOOLEAN USING ({bool_col}::int::boolean)"
-                    ))
 
         conn.commit()
 

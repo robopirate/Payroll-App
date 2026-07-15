@@ -332,7 +332,7 @@ def auto_close_missing_checkouts(date_obj):
             att.check_out = _compute_expected_end_time(att.check_in, None, working_hours)
         else:
             continue
-        att.auto_checkout = True
+        att.auto_checkout = 1
         att.overtime_hours = 0.0
         update_attendance_timing_flags(att, employee=emp)
         closed += 1
