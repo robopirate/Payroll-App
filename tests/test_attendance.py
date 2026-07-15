@@ -10,6 +10,7 @@ from services.attendance_service import (
     update_attendance_timing_flags,
     ensure_absent_attendance,
     backfill_absent_attendance,
+    run_monthly_attendance_backfill,
 )
 
 
@@ -348,3 +349,36 @@ def test_get_employee_location_mode(app):
         assert get_employee_location_mode(emp_office) == 'office'
         assert get_employee_location_mode(emp_wh) == 'office'
         assert get_employee_location_mode(emp_none) == 'office'
+
+
+def test_run_monthly_attendance_backfill_creates_records(app):
+    with app.app_context():
+        emp_id = _make_emp(app, 'EMP_BF_1', 'Backfill Monthly', '9876543307', date(2024, 1, 1))
+        target = date(2025, 1, 8)  # Wednesday
+
+        class FakeDate(date):
+            @classmethod
+            def today(cls):
+                return target
+
+        fake_now = MagicMock()
+        fake_now.hour = 20
+        with patch('services.attendance_service.date', FakeDate), \
+             patch('services.attendance_service.datetime') as fake_dt:
+            fake_dt.now.return_value = fake_now
+            run_monthly_attendance_backfill(2025, 1)
+
+        att = Attendance.query.filter_by(employee_id=emp_id, date=target).first()
+        assert att is not None
+        assert att.status == 'absent'
+
+
+def test_backfill_attendance_task_requires_token(client, app):
+    with app.app_context():
+        app.config['AUTO_CHECKOUT_TOKEN'] = 'secret-token'
+        resp_bad = client.post('/tasks/backfill-attendance?token=wrong')
+        assert resp_bad.status_code == 403
+
+        resp_ok = client.post('/tasks/backfill-attendance?token=secret-token')
+        assert resp_ok.status_code == 200
+        assert resp_ok.get_json()['status'] == 'ok'

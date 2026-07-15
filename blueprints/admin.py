@@ -3,7 +3,6 @@ from markupsafe import Markup
 from flask_login import login_required, current_user
 from decorators import require_role
 from datetime import date, datetime, timezone, timedelta
-from sqlalchemy import extract
 from sqlalchemy.orm import joinedload
 import calendar
 import io
@@ -12,8 +11,7 @@ from extensions import db, limiter
 from services.attendance_service import (
     get_working_days_in_month, count_working_days_between,
     update_attendance_timing_flags, ensure_sunday_attendance,
-    ensure_absent_attendance, backfill_absent_attendance,
-    calculate_paid_days
+    backfill_absent_attendance, calculate_paid_days
 )
 from services.payroll_service import calculate_payroll
 from models import (
@@ -77,9 +75,6 @@ def dashboard():
     total_employees = Employee.query.filter_by(is_active=True, is_approved=True).count()
     today = date.today()
 
-    # Auto-mark today's missing punches as absent if we're past the cutoff hour
-    ensure_absent_attendance(today)
-
     # Count distinct active+approved employees who are absent today
     absent_today = db.session.query(func.count(distinct(Attendance.employee_id))).join(
         Employee, Attendance.employee_id == Employee.id
@@ -113,6 +108,7 @@ def dashboard():
     recent_payrolls = (
         Payroll.query.join(Employee, Payroll.employee_id == Employee.id)
         .filter(Employee.is_active == True, Employee.is_approved == True)
+        .options(joinedload(Payroll.employee))
         .order_by(Payroll.generated_on.desc())
         .limit(5)
         .all()
@@ -443,18 +439,40 @@ def departments():
 @bp.route('/schools')
 @login_required
 def schools():
-    schools_list = School.query.filter_by(is_active=True).order_by(School.name).all()
+    schools_list = School.query.filter_by(is_active=True).options(
+        joinedload(School.assigned_employees)
+    ).order_by(School.name).all()
     today = date.today()
+
+    # Collect active assigned employee IDs per school
+    school_emp_ids = {}
+    all_emp_ids = set()
+    for school in schools_list:
+        ids = [
+            e.id for e in school.assigned_employees
+            if e.is_active and e.is_approved
+        ]
+        school_emp_ids[school.id] = ids
+        all_emp_ids.update(ids)
+
+    # Load today's attendance for all relevant employees in one query
+    attendance_map = {}
+    if all_emp_ids:
+        atts = Attendance.query.filter(
+            Attendance.employee_id.in_(list(all_emp_ids)),
+            Attendance.date == today
+        ).all()
+        attendance_map = {a.employee_id: a for a in atts}
+
     school_stats = {}
     for school in schools_list:
-        active_emps = [e for e in school.assigned_employees if e.is_active]
-        present = 0
-        for emp in active_emps:
-            att = Attendance.query.filter_by(employee_id=emp.id, date=today).first()
-            if att and att.status in ('present', 'overtime'):
-                present += 1
+        active_ids = school_emp_ids.get(school.id, [])
+        present = sum(
+            1 for eid in active_ids
+            if attendance_map.get(eid) and attendance_map[eid].status in ('present', 'overtime')
+        )
         school_stats[school.id] = {
-            'employee_count': len(active_emps),
+            'employee_count': len(active_ids),
             'present_today': present
         }
     return render_template('schools/list.html', schools=schools_list, school_stats=school_stats, today=today)
@@ -523,13 +541,27 @@ def delete_school(school_id):
 @bp.route('/schools/<int:school_id>')
 @login_required
 def view_school(school_id):
-    school = School.query.get_or_404(school_id)
+    school = School.query.options(joinedload(School.assigned_employees)).get_or_404(school_id)
     today = date.today()
-    employees_with_status = []
-    for emp in school.assigned_employees:
-        if emp.is_active and emp.is_approved:
-            att = Attendance.query.filter_by(employee_id=emp.id, date=today).first()
-            employees_with_status.append({'employee': emp, 'attendance': att})
+
+    active_emps = [
+        e for e in school.assigned_employees
+        if e.is_active and e.is_approved
+    ]
+    emp_ids = [e.id for e in active_emps]
+
+    attendance_map = {}
+    if emp_ids:
+        atts = Attendance.query.filter(
+            Attendance.employee_id.in_(emp_ids),
+            Attendance.date == today
+        ).all()
+        attendance_map = {a.employee_id: a for a in atts}
+
+    employees_with_status = [
+        {'employee': emp, 'attendance': attendance_map.get(emp.id)}
+        for emp in active_emps
+    ]
     all_employees = Employee.query.filter_by(is_active=True, is_approved=True).order_by(Employee.name).all()
     return render_template('schools/detail.html', school=school,
                            employees_with_status=employees_with_status,
@@ -622,20 +654,14 @@ def attendance_report():
     emps = Employee.query.filter_by(is_active=True, is_approved=True).order_by(Employee.name).all()
     _, days_in_month = calendar.monthrange(year, month)
 
-    # Auto-populate Sunday present records for the report month
-    for d in range(1, days_in_month + 1):
-        d_obj = date(year, month, d)
-        if d_obj.weekday() == 6:
-            ensure_sunday_attendance(d_obj)
-
-    # Backfill absent records for missing working days (up to yesterday, or today after cutoff)
-    backfill_absent_attendance(year, month)
+    month_start = date(year, month, 1)
+    month_end = date(year, month, days_in_month)
 
     report = []
     for emp in emps:
         atts = {a.date.day: a for a in Attendance.query.filter_by(employee_id=emp.id).filter(
-            extract('year', Attendance.date) == year,
-            extract('month', Attendance.date) == month
+            Attendance.date >= month_start,
+            Attendance.date <= month_end
         ).all()}
         paid_days = calculate_paid_days(emp, year, month)
         absent = sum(1 for a in atts.values() if a.status == 'absent')
@@ -659,7 +685,7 @@ def attendance_report():
 @login_required
 def leaves():
     status_filter = request.args.get('status', 'pending')
-    q = Leave.query
+    q = Leave.query.options(joinedload(Leave.employee))
     if status_filter != 'all':
         q = q.filter_by(status=status_filter)
     leave_list = q.order_by(Leave.applied_on.desc()).all()
@@ -842,7 +868,7 @@ def advances():
         db.session.commit()
         flash('Advance recorded.', 'success')
         return redirect(url_for('.advances'))
-    adv_list = Advance.query.order_by(Advance.date.desc()).all()
+    adv_list = Advance.query.options(joinedload(Advance.employee)).order_by(Advance.date.desc()).all()
     return render_template('advances.html', advances=adv_list, employees=emps,
                            today=date.today().isoformat(),
                            months=list(range(1, 13)), years=list(range(2020, date.today().year + 2)),
@@ -869,7 +895,9 @@ def payroll():
     year = int(request.args.get('year', date.today().year))
     payrolls = Payroll.query.filter_by(month=month, year=year).join(
         Employee, Payroll.employee_id == Employee.id
-    ).filter(Employee.is_active == True, Employee.is_approved == True).all()
+    ).filter(Employee.is_active == True, Employee.is_approved == True).options(
+        joinedload(Payroll.employee)
+    ).all()
     emp_ids_done = {p.employee_id for p in payrolls}
     emps = Employee.query.filter_by(is_active=True, is_approved=True).all()
     return render_template('payroll/list.html', payrolls=payrolls, month=month, year=year,
@@ -1326,8 +1354,13 @@ def export_attendance():
     import csv
     month = int(request.args.get('month', date.today().month))
     year = int(request.args.get('year', date.today().year))
-    emps = Employee.query.filter_by(is_active=True, is_approved=True).order_by(Employee.name).all()
     _, days_in_month = calendar.monthrange(year, month)
+    month_start = date(year, month, 1)
+    month_end = date(year, month, days_in_month)
+
+    emps = Employee.query.filter_by(is_active=True, is_approved=True).options(
+        joinedload(Employee.dept)
+    ).order_by(Employee.name).all()
 
     output = io.StringIO()
     writer = csv.writer(output)
@@ -1336,8 +1369,8 @@ def export_attendance():
 
     for emp in emps:
         atts = {a.date.day: a for a in Attendance.query.filter_by(employee_id=emp.id).filter(
-            extract('year', Attendance.date) == year,
-            extract('month', Attendance.date) == month
+            Attendance.date >= month_start,
+            Attendance.date <= month_end
         ).all()}
         row = [emp.emp_id, emp.name, emp.dept.name if emp.dept else '']
         paid_days = calculate_paid_days(emp, year, month)

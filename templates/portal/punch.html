@@ -60,6 +60,24 @@
   </div>
 </div>
 
+<!-- Today's Progress -->
+{% if today_attendance and today_attendance.check_in %}
+<div class="rp-card">
+  <div class="rp-card-body">
+    <div class="rp-card-title mb-3">Today's Progress</div>
+    <div class="rp-progress-wrap" style="margin: 0;">
+      <div class="rp-progress-labels">
+        <span>Completed</span>
+        <span id="rp-punch-progress-text">0%</span>
+      </div>
+      <div class="rp-progress-bar">
+        <div id="rp-punch-progress-fill" class="rp-progress-fill"></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 <!-- Today's Summary -->
 {% if today_attendance %}
 <div class="rp-card">
@@ -112,6 +130,21 @@ document.addEventListener('DOMContentLoaded', function() {
   const locationName = {{ (location.name|default('location'))|tojson }};
   let userLat = null, userLng = null, checkedIn = {{ 'true' if (today_attendance and today_attendance.check_in and not today_attendance.check_out) else 'false' }};
   let doneForDay = {{ 'true' if (today_attendance and today_attendance.check_in and today_attendance.check_out) else 'false' }};
+
+  const checkIn = '{{ today_attendance.check_in if today_attendance and today_attendance.check_in else '' }}';
+  const checkOut = '{{ today_attendance.check_out if today_attendance and today_attendance.check_out else '' }}';
+  const shiftStart = '{{ shift_start if shift_start else '' }}';
+  const shiftEnd = '{{ shift_end if shift_end else '' }}';
+  const workingHours = {{ (working_hours_per_day or 8) }};
+
+  function tickPunchProgress() {
+    RP.updateProgressBar(checkIn, checkOut, shiftStart, shiftEnd, workingHours,
+                         'rp-punch-progress-fill', 'rp-punch-progress-text');
+  }
+  tickPunchProgress();
+  if (checkIn && !checkOut) {
+    setInterval(tickPunchProgress, 60000);
+  }
 
   function getDistance(lat1, lng1, lat2, lng2) {
     const R = 6371000, p1 = lat1 * Math.PI / 180, p2 = lat2 * Math.PI / 180;

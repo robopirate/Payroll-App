@@ -828,3 +828,31 @@ textarea.rp-input { height: auto; min-height: 100px; padding: var(--space-3); }
   .rp-stat .num { font-size: 1.3rem; }
   .rp-nav-item { font-size: 0.58rem; }
 }
+
+
+/* ─── Page loader for tab switches ─── */
+.rp-page-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 22, 40, 0.22);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+.rp-page-loader.show {
+  display: flex;
+}
+.rp-page-loader .spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(21, 101, 192, 0.15);
+  border-top-color: var(--rp-blue);
+  border-radius: 50%;
+  animation: rp-spin 0.8s linear infinite;
+}
+@keyframes rp-spin {
+  to { transform: rotate(360deg); }
+}

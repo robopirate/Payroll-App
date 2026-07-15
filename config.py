@@ -32,6 +32,16 @@ class Config:
             _database_url = _database_url.replace('postgresql://', 'postgresql+psycopg://', 1)
     SQLALCHEMY_DATABASE_URI = _database_url or 'sqlite:///' + DB_PATH
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    # Connection pooling is only meaningful for Postgres; SQLite uses StaticPool.
+    if _database_url and 'postgresql' in _database_url:
+        SQLALCHEMY_ENGINE_OPTIONS = {
+            'pool_size': 5,
+            'max_overflow': 10,
+            'pool_recycle': 1800,
+            'pool_pre_ping': True,
+        }
+    else:
+        SQLALCHEMY_ENGINE_OPTIONS = {}
     # Session security
     SESSION_COOKIE_HTTPONLY = True
     # Secure cookies in production by default; allow override via env var

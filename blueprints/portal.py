@@ -7,14 +7,13 @@ import io
 from extensions import db, limiter
 from decorators import portal_required
 from services.attendance_service import (
-    count_working_days_between, ensure_sunday_attendance,
-    backfill_absent_attendance, calculate_paid_days,
+    count_working_days_between, calculate_paid_days,
     get_employee_active_school, get_employee_effective_shift,
     get_employee_location_mode
 )
 from services.login_protection import is_allowed
 from flask_limiter.util import get_remote_address
-from sqlalchemy import extract
+
 from models import Employee, Attendance, Leave, LeaveBalance, Payroll, Holiday, User
 from pdf_service import generate_payslip_pdf
 from sms_service import get_month_name
@@ -286,18 +285,11 @@ def portal_attendance():
     year = int(request.args.get('year', date.today().year))
     _, days_in_month = calendar.monthrange(year, month)
 
-    # Auto-populate Sunday present records for this month so the summary is consistent
-    for d in range(1, days_in_month + 1):
-        d_obj = date(year, month, d)
-        if d_obj.weekday() == 6:
-            ensure_sunday_attendance(d_obj)
-
-    # Backfill absent records for missing working days
-    backfill_absent_attendance(year, month)
-
+    month_start = date(year, month, 1)
+    month_end = date(year, month, days_in_month)
     atts = {a.date.day: a for a in Attendance.query.filter_by(employee_id=emp.id).filter(
-        extract('year', Attendance.date) == year,
-        extract('month', Attendance.date) == month
+        Attendance.date >= month_start,
+        Attendance.date <= month_end
     ).all()}
 
     paid_days = calculate_paid_days(emp, year, month)

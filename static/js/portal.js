@@ -279,9 +279,9 @@
     return h + 'h' + (m ? ' ' + m + 'm' : '');
   }
 
-  function updateProgressBar(checkIn, checkOut, shiftStart, shiftEnd, workingHours) {
-    const fill = document.getElementById('rp-progress-fill');
-    const txt = document.getElementById('rp-progress-text');
+  function updateProgressBar(checkIn, checkOut, shiftStart, shiftEnd, workingHours, fillId, textId) {
+    const fill = document.getElementById(fillId || 'rp-progress-fill');
+    const txt = document.getElementById(textId || 'rp-progress-text');
     if (!fill || !txt) return;
 
     let pct = 0;

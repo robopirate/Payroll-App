@@ -177,7 +177,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const checkOut = '{{ today_att.check_out if today_att and today_att.check_out else '' }}';
   const shiftStart = '{{ shift_start if shift_start else '' }}';
   const shiftEnd = '{{ shift_end if shift_end else '' }}';
-  const workingHours = {{ working_hours_per_day|default(8) }};
+  const workingHours = {{ (working_hours_per_day or 8) }};
 
   function tick() {
     RP.updateProgressBar(checkIn, checkOut, shiftStart, shiftEnd, workingHours);

@@ -110,22 +110,9 @@ def load_persisted_config():
 def health():
     """Lightweight health endpoint for uptime pings.
 
-    Also triggers the daily auto-close of missing punch-outs once per day,
-    so no separate cron job is needed.
+    Does NOT run maintenance tasks here; those are handled by dedicated
+    /tasks/* endpoints so this stays fast and keeps the app warm.
     """
-    from datetime import date, timedelta
-    from services.attendance_service import auto_close_missing_checkouts
-
-    today_str = date.today().isoformat()
-    try:
-        last_run = AppConfig.get('auto_checkout_last_run')
-        if last_run != today_str:
-            auto_close_missing_checkouts(date.today() - timedelta(days=1))
-            AppConfig.set('auto_checkout_last_run', today_str)
-    except Exception:
-        # Don't break the health check if auto-close fails
-        pass
-
     return jsonify({'status': 'ok'}), 200
 
 
@@ -140,6 +127,19 @@ def auto_checkout_task():
     from services.attendance_service import auto_close_missing_checkouts
     closed = auto_close_missing_checkouts(date.today() - timedelta(days=1))
     return jsonify({'status': 'ok', 'closed': closed}), 200
+
+
+@app.route('/tasks/backfill-attendance', methods=['POST'])
+def backfill_attendance_task():
+    """Daily cron task to backfill Sunday/present and absent records."""
+    token = app.config.get('AUTO_CHECKOUT_TOKEN')
+    supplied = request.args.get('token') or request.headers.get('X-Auto-Checkout-Token')
+    if not token or supplied != token:
+        abort(403)
+    from datetime import date
+    from services.attendance_service import run_monthly_attendance_backfill
+    run_monthly_attendance_backfill(date.today().year, date.today().month)
+    return jsonify({'status': 'ok'}), 200
 
 
 @login_manager.user_loader
@@ -326,6 +326,27 @@ def safe_migrate():
                 conn.execute(text("ALTER TABLE payrolls ADD COLUMN tds_deduction FLOAT DEFAULT 0.0"))
         if 'tax_regime' not in payroll_cols:
             conn.execute(text("ALTER TABLE payrolls ADD COLUMN tax_regime VARCHAR(10) DEFAULT 'new'"))
+
+        # Performance indexes for hot attendance/leave/holiday queries
+        index_statements = [
+            "CREATE INDEX IF NOT EXISTS idx_attendance_date ON attendance(date)",
+            "CREATE INDEX IF NOT EXISTS idx_attendance_status ON attendance(status)",
+            "CREATE INDEX IF NOT EXISTS idx_leaves_employee_status_dates ON leaves(employee_id, status, start_date, end_date)",
+            "CREATE INDEX IF NOT EXISTS idx_leaves_status_applied_on ON leaves(status, applied_on)",
+            "CREATE INDEX IF NOT EXISTS idx_holidays_date_active ON holidays(date, is_active)",
+            "CREATE INDEX IF NOT EXISTS idx_employees_active_approved ON employees(is_active, is_approved)",
+            "CREATE INDEX IF NOT EXISTS idx_employees_department_id ON employees(department_id)",
+            "CREATE INDEX IF NOT EXISTS idx_schools_active ON schools(is_active)",
+            "CREATE INDEX IF NOT EXISTS idx_users_employee_id ON users(employee_id)",
+            "CREATE INDEX IF NOT EXISTS idx_advances_employee_id ON advances(employee_id)",
+            "CREATE INDEX IF NOT EXISTS idx_payrolls_month_year ON payrolls(month, year)",
+        ]
+        for stmt in index_statements:
+            try:
+                conn.execute(text(stmt))
+            except Exception:
+                # Indexes are optimizations; don't fail startup if one can't be created
+                pass
 
         conn.commit()
 

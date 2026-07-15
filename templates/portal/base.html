@@ -21,6 +21,11 @@
 </head>
 <body>
 
+<!-- Page loader shown while navigating between portal tabs -->
+<div id="rp-page-loader" class="rp-page-loader">
+  <div class="spinner" role="status" aria-label="Loading"></div>
+</div>
+
 <header class="rp-appbar">
   <div class="rp-appbar-left">
     <a href="{{ url_for('portal.portal_profile') }}" class="rp-avatar" style="text-decoration:none;">
@@ -117,6 +122,28 @@
       }
     });
   }
+</script>
+
+<script>
+  (function() {
+    var loader = document.getElementById('rp-page-loader');
+    function showLoader() {
+      if (loader) loader.classList.add('show');
+    }
+    // Show loader on internal navigation links
+    document.querySelectorAll('a[href], button[type="submit"]').forEach(function(el) {
+      el.addEventListener('click', function(e) {
+        var href = el.getAttribute('href');
+        if (href && (href.indexOf('/portal') === 0 || href.indexOf(window.location.origin) === 0)) {
+          showLoader();
+        }
+        if (el.tagName === 'BUTTON' && el.type === 'submit') {
+          showLoader();
+        }
+      });
+    });
+    window.addEventListener('beforeunload', showLoader);
+  })();
 </script>
 
 <script>

@@ -259,6 +259,29 @@ def backfill_absent_attendance(year, month):
         ensure_absent_attendance(d_obj)
 
 
+def run_monthly_attendance_backfill(year, month):
+    """Backfill both Sunday present records and absent records for a full month.
+
+    Safe to run repeatedly (idempotent). Intended to be called from a daily
+    cron task rather than from a page request.
+    """
+    from flask import current_app
+    _, dim = calendar.monthrange(year, month)
+    today = date.today()
+    cutoff = current_app.config.get('ABSENT_MARK_CUTOFF_HOUR', 18)
+
+    for d in range(1, dim + 1):
+        d_obj = date(year, month, d)
+        if d_obj > today:
+            continue
+        if d_obj == today and datetime.now().hour < cutoff:
+            continue
+        if d_obj.weekday() == 6:
+            ensure_sunday_attendance(d_obj)
+        else:
+            ensure_absent_attendance(d_obj)
+
+
 def ensure_sunday_attendance(date_obj):
     """For a Sunday, auto-create status='present' attendance rows for all active
     employees who do not already have a record for that date, unless the date is
