@@ -9,7 +9,7 @@ from decorators import portal_required
 from services.attendance_service import (
     count_working_days_between, ensure_sunday_attendance,
     backfill_absent_attendance, calculate_paid_days,
-    get_employee_active_school
+    get_employee_active_school, get_employee_effective_shift
 )
 from services.login_protection import is_allowed
 from flask_limiter.util import get_remote_address
@@ -182,10 +182,20 @@ def portal_dashboard():
         Holiday.is_active == True
     ).order_by(Holiday.date).all()
 
+    present_this_month = calculate_paid_days(emp, today.year, today.month)
+    pending_leaves_count = Leave.query.filter_by(employee_id=emp.id, status='pending').count()
+    total_leave_remaining = sum((lb.remaining_days or 0) for lb in leave_balances)
+    shift_start, shift_end, working_hours_per_day = get_employee_effective_shift(emp)
+
     return render_template('portal/dashboard.html', emp=emp, today=today,
         today_att=today_att, recent_att=recent_att,
         leave_balances=leave_balances, latest_payroll=latest_payroll,
-        upcoming_holidays=upcoming_holidays)
+        upcoming_holidays=upcoming_holidays,
+        present_this_month=present_this_month,
+        pending_leaves_count=pending_leaves_count,
+        total_leave_remaining=total_leave_remaining,
+        shift_start=shift_start, shift_end=shift_end,
+        working_hours_per_day=working_hours_per_day)
 
 
 @bp.route('/portal/punch')

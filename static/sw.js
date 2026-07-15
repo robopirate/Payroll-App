@@ -1,4 +1,4 @@
-const CACHE_NAME = 'robo-pirate-hr-v3';
+const CACHE_NAME = 'robo-pirate-hr-v4';
 const STATIC_EXTENSIONS = ['.css', '.js', '.png', '.jpg', '.jpeg', '.webp', '.svg', '.ico', '.woff', '.woff2', '.ttf', '.json'];
 const CDN_HOSTS = ['cdn.jsdelivr.net', 'fonts.googleapis.com', 'fonts.gstatic.com'];
 
@@ -52,6 +52,12 @@ self.addEventListener('fetch', event => {
   const { request } = event;
   const url = new URL(request.url);
 
+  // Never cache or intercept mutations (POST/PUT/DELETE).
+  // Just let them hit the network directly so the app always talks to the server.
+  if (request.method !== 'GET') {
+    return;
+  }
+
   // Static assets (same-origin + CDN): cache first, update in background.
   if (isStaticAsset(url)) {
     event.respondWith(
@@ -85,7 +91,7 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Everything else: try network, then cache.
+  // Everything else (GET): try network, then cache.
   event.respondWith(
     fetch(request).catch(() => caches.match(request))
   );
