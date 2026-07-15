@@ -2,205 +2,456 @@
 {% block title %}My Dashboard{% endblock %}
 {% block head %}
 <style>
-  body { scroll-behavior: smooth; }
-  .greet-section { margin-bottom: 20px; animation: slideIn 0.4s ease-out; }
-  @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-  .greet-section h5 { font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 1.4rem; color: #0A1628; margin: 0; letter-spacing: -0.3px; }
-  .greet-section small { color: #9aa5b4; font-size: 0.85rem; display: block; margin-top: 4px; }
+  :root {
+    --glass-bg: rgba(255, 255, 255, 0.72);
+    --glass-border: rgba(255, 255, 255, 0.55);
+    --primary-dark: #0A1628;
+    --primary-blue: #1565C0;
+    --accent-orange: #FF6B35;
+    --success: #00C853;
+  }
 
-  .punch-card-hero {
-    background: linear-gradient(135deg, rgba(10, 22, 40, 0.95) 0%, rgba(21, 101, 192, 0.85) 100%);
+  .pd-body {
+    background:
+      radial-gradient(ellipse 70% 50% at 0% 100%, rgba(21, 101, 192, 0.12), transparent),
+      radial-gradient(ellipse 60% 60% at 100% 0%, rgba(255, 107, 53, 0.1), transparent),
+      #F0F4F8;
+    min-height: 100vh;
+  }
+
+  .pd-appbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    padding-top: calc(12px + env(safe-area-inset-top, 0));
+  }
+  .pd-appbar-left { display: flex; align-items: center; gap: 12px; }
+  .pd-avatar {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: linear-gradient(135deg, #FF6B35, #E64A19);
+    color: white; display: flex; align-items: center; justify-content: center;
+    font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 1.1rem;
+    box-shadow: 0 4px 12px rgba(255,107,53,0.25);
+  }
+  .pd-greet { line-height: 1.2; }
+  .pd-greet .hi { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 1rem; color: var(--primary-dark); }
+  .pd-greet .date { font-size: 0.72rem; color: #6b7a99; }
+  .pd-bell {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: var(--glass-bg); backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    display: flex; align-items: center; justify-content: center;
+    color: #6b7a99; font-size: 1.1rem; position: relative;
+  }
+  .pd-bell .dot {
+    position: absolute; top: 8px; right: 10px;
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent-orange); border: 2px solid white;
+  }
+
+  .pd-card {
+    background: var(--glass-bg);
     backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-    border-radius: 24px; overflow: hidden; margin-bottom: 20px;
-    box-shadow: 0 16px 48px rgba(21, 101, 192, 0.2), 0 4px 12px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.1);
-    animation: cardSlideUp 0.5s ease-out 0.1s both; border: 1px solid rgba(255, 255, 255, 0.08); position: relative;
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.7);
+    margin: 0 16px 16px;
+    overflow: hidden;
   }
-  .punch-card-hero::before { content: ''; position: absolute; top: 0; left: 20%; right: 20%; height: 1.5px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent); border-radius: 2px; }
-  @keyframes cardSlideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  .pd-card-body { padding: 18px; }
 
-  .punch-card-top { padding: 18px 22px 14px; color: white; text-align: center; }
-  .punch-card-top .label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 1.2px; opacity: 0.5; font-weight: 600; }
-  .punch-card-top .date-str { font-family: 'Poppins', sans-serif; font-size: 1rem; font-weight: 700; margin-top: 3px; text-shadow: 0 1px 4px rgba(0,0,0,0.2); }
-  .status-pill { display: inline-block; padding: 5px 18px; border-radius: 20px; font-size: 0.78rem; font-weight: 700; margin-top: 10px; letter-spacing: 0.3px; backdrop-filter: blur(8px); }
-
-  .punch-area { background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(20px); padding: 30px 20px 24px; text-align: center; border-radius: 0 0 24px 24px; border-top: 1px solid rgba(255, 255, 255, 0.3); }
-
-  .btn-punch { width: 140px; height: 140px; border-radius: 50%; border: none; font-weight: 800; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); user-select: none; font-size: 0.9rem; letter-spacing: 0.4px; text-transform: uppercase; position: relative; outline: none; box-shadow: 0 8px 28px rgba(0, 0, 0, 0.15); }
-  .btn-punch::before { content: ''; position: absolute; inset: -12px; border-radius: 50%; opacity: 0; transition: opacity 0.3s; }
-  .btn-punch:hover::before { opacity: 0.5; }
-  .btn-punch:hover { transform: scale(1.08); }
-  .btn-punch:active { transform: scale(0.95); }
-  .btn-punch i { font-size: 2.5rem; margin-bottom: 4px; display: block; }
-  .btn-punch small { font-size: 0.6rem; opacity: 0.8; font-weight: 500; display: block; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
-
-  .btn-punch-in { background: linear-gradient(135deg, #FF6B35 0%, #E64A19 100%); color: white; box-shadow: 0 12px 40px rgba(255,107,53,0.35); }
-  .btn-punch-in::before { background: radial-gradient(circle, rgba(255,107,53,0.5), transparent 70%); }
-  .btn-punch-out { background: linear-gradient(135deg, #1565C0 0%, #0D47A1 100%); color: white; box-shadow: 0 12px 40px rgba(21,101,192,0.35); }
-  .btn-punch-out::before { background: radial-gradient(circle, rgba(21,101,192,0.4), transparent 70%); }
-  .btn-punch-done { background: linear-gradient(135deg, #e8f5e9, #f1f8e9); color: #00C853; cursor: default; box-shadow: 0 4px 12px rgba(0, 200, 83, 0.12); border: 2px solid #e8f5e9; }
-  .btn-punch-done:hover, .btn-punch-done:active { transform: none; }
-
-  #punch-feedback { min-height: 36px; margin-top: 16px; animation: fadeInScale 0.3s ease-out; }
-  @keyframes fadeInScale { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-
-  .quick-att-card { display: block; text-decoration: none; margin-bottom: 16px; animation: cardSlideUp 0.5s ease-out 0.15s both; background: rgba(255, 255, 255, 0.72); backdrop-filter: blur(16px); border-radius: 20px; box-shadow: 0 4px 24px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.5); transition: all 0.25s ease; }
-  .quick-att-card:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.7); }
-  .quick-att-card:active { transform: translateY(0) scale(0.98); }
-
-  .leave-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; padding-bottom: 8px; }
-  @media (min-width: 480px) { .leave-stats { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); } }
-  .leave-stat-card { background: rgba(255, 255, 255, 0.72); backdrop-filter: blur(16px); border-radius: 20px; text-align: center; padding: 16px 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.5); transition: transform 0.2s, box-shadow 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-  .leave-stat-card:active { transform: scale(0.98); }
-  @media (prefers-reduced-motion: no-preference) {
-    .leave-stat-card { animation: cardSlideUp 0.5s ease-out both; }
-    .leave-stat-card:nth-child(2) { animation-delay: 0.2s; }
-    .leave-stat-card:nth-child(3) { animation-delay: 0.3s; }
+  .pd-status-top {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px;
   }
-  .leave-stat-card .num { font-family: 'Poppins', sans-serif; font-size: 2rem; font-weight: 800; color: var(--accent-orange, #FF6B35); line-height: 1; }
-  .leave-stat-card .lbl { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #a0aab8; margin-top: 6px; }
-
-  .section-title { font-family: 'Poppins', sans-serif; font-size: 1rem; font-weight: 700; color: #0A1628; margin-bottom: 14px; margin-top: 20px; letter-spacing: -0.2px; }
-  @media (max-width: 400px) {
-    .section-title { margin-top: 16px; }
-    .btn-punch { width: 120px; height: 120px; font-size: 0.8rem; }
-    .btn-punch i { font-size: 2rem; }
-    .punch-card-hero { border-radius: 20px; }
+  .pd-status-title {
+    font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 0.95rem;
+    color: var(--primary-dark);
   }
-  @media (prefers-reduced-motion: reduce) {
-    .greet-section, .punch-card-hero, .quick-att-card, .leave-stat-card, .payslip-card, .card { animation: none !important; }
-    .btn-punch:hover, .btn-punch:active { transform: none; }
+  .pd-status-pill {
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+    padding: 5px 12px; border-radius: 20px;
   }
 
-  .att-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid rgba(0,0,0,0.04); transition: background 0.2s; }
-  .att-row:hover { background: rgba(255, 107, 53, 0.02); }
-  .att-row:last-child { border-bottom: none; }
-  .att-row .day-name { font-weight: 700; font-size: 0.98rem; color: #0A1628; }
-  .att-row .day-date { font-size: 0.78rem; color: #a0aab8; }
-  .att-row .times { font-size: 0.73rem; color: #9aa5b4; margin-top: 2px; }
+  .pd-time-chips { display: flex; gap: 10px; margin-bottom: 14px; }
+  .pd-chip {
+    flex: 1; background: rgba(255,255,255,0.6); border-radius: 16px;
+    padding: 12px; text-align: center;
+  }
+  .pd-chip i { font-size: 1.1rem; color: var(--accent-orange); display: block; margin-bottom: 4px; }
+  .pd-chip .lbl { font-size: 0.6rem; color: #6b7a99; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
+  .pd-chip .val { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 0.95rem; color: var(--primary-dark); }
 
-  .payslip-card { animation: cardSlideUp 0.5s ease-out 0.3s both; }
-  .payslip-amount { font-family: 'Poppins', sans-serif; font-size: 1.8rem; font-weight: 800; color: #00C853; line-height: 1; }
-  .payslip-meta { font-size: 0.75rem; color: #9aa5b4; margin-top: 4px; }
+  .pd-progress-wrap { margin-bottom: 6px; }
+  .pd-progress-labels { display: flex; justify-content: space-between; font-size: 0.65rem; color: #6b7a99; margin-bottom: 6px; }
+  .pd-progress-bar {
+    height: 8px; border-radius: 10px; background: rgba(0,0,0,0.05);
+    overflow: hidden;
+  }
+  .pd-progress-fill {
+    height: 100%; border-radius: 10px;
+    background: linear-gradient(90deg, var(--accent-orange), #FFB74D);
+    width: 0%; transition: width 0.8s ease;
+  }
+
+  .pd-punch-section { text-align: center; padding: 10px 0 6px; }
+  .pd-punch-btn {
+    width: 150px; height: 150px; border-radius: 50%; border: none;
+    color: white; font-weight: 800; display: inline-flex; flex-direction: column;
+    align-items: center; justify-content: center; cursor: pointer;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.18);
+    position: relative;
+  }
+  .pd-punch-btn:active { transform: scale(0.94); }
+  .pd-punch-btn i { font-size: 2.6rem; display: block; margin-bottom: 4px; }
+  .pd-punch-btn .lbl { font-size: 0.9rem; letter-spacing: 0.5px; text-transform: uppercase; }
+  .pd-punch-btn .sub { font-size: 0.6rem; opacity: 0.85; margin-top: 4px; font-weight: 500; }
+  .pd-punch-in { background: linear-gradient(135deg, #FF6B35 0%, #E64A19 100%); box-shadow: 0 16px 40px rgba(255,107,53,0.35); }
+  .pd-punch-out { background: linear-gradient(135deg, #1565C0 0%, #0D47A1 100%); box-shadow: 0 16px 40px rgba(21,101,192,0.35); }
+  .pd-punch-done { background: linear-gradient(135deg, #e8f5e9, #f1f8e9); color: var(--success); cursor: default; box-shadow: 0 4px 16px rgba(0,200,83,0.15); }
+  .pd-punch-done:active { transform: none; }
+
+  .pd-quick-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+  }
+  .pd-quick-item {
+    text-decoration: none; text-align: center;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  .pd-quick-icon {
+    width: 54px; height: 54px; border-radius: 18px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem; color: white;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+  }
+  .pd-quick-item span { font-size: 0.65rem; font-weight: 700; color: #4a5568; }
+
+  .pd-summary-strip {
+    display: flex; gap: 10px;
+  }
+  .pd-summary-pill {
+    flex: 1; background: rgba(255,255,255,0.55); border-radius: 16px;
+    padding: 12px 6px; text-align: center;
+  }
+  .pd-summary-pill .num { font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 1.3rem; color: var(--primary-dark); }
+  .pd-summary-pill .lbl { font-size: 0.6rem; color: #6b7a99; text-transform: uppercase; font-weight: 700; }
+
+  .pd-section-title {
+    font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 0.95rem;
+    color: var(--primary-dark); margin: 18px 16px 12px;
+  }
+
+  .pd-activity-list { padding: 6px 0; }
+  .pd-activity-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,0.04);
+  }
+  .pd-activity-row:last-child { border-bottom: none; }
+  .pd-activity-row .day { font-weight: 700; font-size: 0.9rem; color: var(--primary-dark); }
+  .pd-activity-row .date { font-size: 0.7rem; color: #6b7a99; }
+  .pd-activity-row .times { font-size: 0.7rem; color: #9aa5b4; margin-top: 2px; }
+  .pd-badge {
+    font-size: 0.65rem; font-weight: 700; padding: 5px 10px; border-radius: 12px;
+    text-transform: uppercase;
+  }
+
+  #pd-punch-feedback { min-height: 30px; margin-top: 12px; font-size: 0.82rem; }
+
+  @media (max-width: 360px) {
+    .pd-punch-btn { width: 130px; height: 130px; }
+    .pd-quick-icon { width: 48px; height: 48px; font-size: 1.2rem; }
+  }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="greet-section">
-  <h5>Hi, {{ emp.name.split()[0] }}! 👋</h5>
-  <small>{{ today.strftime('%A, %d %B %Y') }}</small>
-</div>
-
-<div class="punch-card-hero">
-  <div class="punch-card-top">
-    <div class="label">Today's Attendance</div>
-    <div class="date-str">{{ today.strftime('%d %B %Y') }}</div>
-    {% if today_att %}
-      {% if today_att.check_in and today_att.check_out %}
-        <span class="status-pill" style="background:rgba(0,200,83,0.2);color:#69f0ae;border:1px solid rgba(0,200,83,0.4);">✓ Completed &nbsp;{{ today_att.check_in }} → {{ today_att.check_out }}</span>
-      {% elif today_att.check_in %}
-        <span class="status-pill" style="background:rgba(255,193,7,0.2);color:#ffd54f;border:1px solid rgba(255,193,7,0.4);text-shadow:0 1px 2px rgba(0,0,0,0.3);">⏱ In since {{ today_att.check_in }}</span>
-      {% else %}
-        <span class="status-pill" style="background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.75);border:1px solid rgba(255,255,255,0.15);">Not yet marked</span>
-      {% endif %}
-    {% else %}
-      <span class="status-pill" style="background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.75);border:1px solid rgba(255,255,255,0.15);">Not yet punched in</span>
-    {% endif %}
-  </div>
-  <div class="punch-area">
-    {% if today_att and today_att.check_in and today_att.check_out %}
-      <button class="btn-punch btn-punch-done" disabled><i class="bi bi-check-circle-fill"></i>Done<small>See you tomorrow!</small></button>
-    {% elif today_att and today_att.check_in %}
-      <button class="btn-punch btn-punch-out" id="punchBtn" onclick="doPunch('out')"><i class="bi bi-box-arrow-right"></i>Punch Out<small>Since {{ today_att.check_in }}</small></button>
-    {% else %}
-      <button class="btn-punch btn-punch-in" id="punchBtn" onclick="doPunch('in')"><i class="bi bi-fingerprint"></i>Punch In<small>Tap to mark</small></button>
-    {% endif %}
-    <div id="punch-feedback"></div>
-    {% set emp_schools = emp.schools %}
-    {% if not emp_schools %}
-      <div class="mt-3" style="font-size:0.78rem;color:#dc3545;"><i class="bi bi-exclamation-triangle-fill me-1"></i>No school assigned — contact admin.</div>
-    {% else %}
-      <div class="mt-2" style="font-size:0.72rem;color:#a0aab8;"><i class="bi bi-geo-alt me-1"></i>{{ emp_schools|map(attribute='name')|join(', ') }}</div>
-    {% endif %}
-  </div>
-</div>
-
-{% if leave_balances %}
-<p class="section-title">Leave Balance</p>
-<div class="leave-stats">
-  {% for lb in leave_balances %}<div class="leave-stat-card"><div class="num">{{ lb.remaining_days|int }}</div><div class="lbl">{{ lb.leave_type }}<br>Leave</div></div>{% endfor %}
-</div>
-{% endif %}
-
-{% if upcoming_holidays %}
-<p class="section-title"><i class="bi bi-calendar-event me-2" style="color:#FF6B35;"></i>Upcoming Holidays</p>
-<div class="card" style="animation: cardSlideUp 0.5s ease-out 0.25s both; margin-bottom: 20px;">
-  <div class="card-body px-4 py-3">
-    {% for holiday in upcoming_holidays %}
-    <div class="att-row"><div><div class="day-name">{{ holiday.date.strftime('%d %b') }} — {{ holiday.name }}</div><div class="day-date">{{ holiday.date.strftime('%A') }}</div>{% if holiday.description %}<div class="times">{{ holiday.description }}</div>{% endif %}</div><div><span class="badge-status" style="background:rgba(237,231,246,0.8);color:#4a148c;border:1px solid rgba(74,20,140,0.1);">🎉 Holiday</span></div></div>
-    {% endfor %}
-  </div>
-</div>
-{% endif %}
-
-{% if latest_payroll and latest_payroll.status == 'paid' %}
-<div class="card payslip-card" style="margin-bottom:20px;">
-  <div class="card-body py-4 px-4">
-    <div class="d-flex align-items-center justify-content-between gap-3">
-      <div style="flex: 1;">
-        <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#a0aab8;margin-bottom:4px;">💰 Latest Payslip</div>
-        <div class="payslip-amount">₹{{ "%.0f"|format(latest_payroll.net_salary) }}</div>
-        <div class="payslip-meta">{{ latest_payroll.month }}/{{ latest_payroll.year }} net salary</div>
+<div class="pd-body">
+  <!-- App Bar -->
+  <div class="pd-appbar">
+    <div class="pd-appbar-left">
+      <div class="pd-avatar">{{ emp.name[0]|upper }}</div>
+      <div class="pd-greet">
+        <div class="hi" id="greetingText">Hi, {{ emp.name.split()[0] }}!</div>
+        <div class="date">{{ today.strftime('%A, %d %B %Y') }}</div>
       </div>
-      <a href="{{ url_for('portal.portal_download_payslip', payroll_id=latest_payroll.id) }}" class="btn btn-sm" style="background: linear-gradient(135deg, #FF6B35, #E64A19); color:white; border-radius:14px; padding:11px 16px; font-weight:700; white-space:nowrap; font-size:0.8rem; border: none; box-shadow: 0 4px 16px rgba(255, 107, 53, 0.25); transition: all 0.25s;"><i class="bi bi-download me-1"></i>Download</a>
+    </div>
+    <div class="pd-bell">
+      <i class="bi bi-bell"></i>
+      {% if pending_leaves_count %}<span class="dot"></span>{% endif %}
     </div>
   </div>
-</div>
-{% endif %}
 
-<p class="section-title"><i class="bi bi-clock-history me-2" style="color:#FF6B35;"></i>Recent Attendance</p>
-<div class="card" style="animation: cardSlideUp 0.5s ease-out 0.4s both; margin-bottom: 20px;">
-  <div class="card-body px-4 py-3">
-    {% for att in recent_att %}
-    <div class="att-row"><div><div class="day-name">{{ att.date.strftime('%d %b') }}</div><div class="day-date">{{ att.date.strftime('%A') }}</div>{% if att.check_in %}<div class="times">⏱ {{ att.check_in }}{% if att.check_out %} – {{ att.check_out }}{% endif %}{% if att.gps_verified %}<i class="bi bi-geo-alt-fill text-success ms-1" style="font-size:0.65rem;"></i>{% endif %}</div>{% endif %}</div><div>{% if att.status == 'present' %}<span class="badge-status badge-present">✓ Present</span>{% elif att.status == 'absent' %}<span class="badge-status badge-absent">✗ Absent</span>{% elif att.status == 'half_day' %}<span class="badge-status badge-half">½ Half Day</span>{% elif att.status == 'leave' %}<span class="badge-status badge-leave">🏖 Leave</span>{% elif att.status == 'holiday' %}<span class="badge-status" style="background:rgba(237,231,246,0.8);color:#4a148c;border:1px solid rgba(74,20,140,0.1);">🎉 Holiday</span>{% elif att.status == 'overtime' %}<span class="badge-status" style="background:rgba(224,247,250,0.8);color:#006064;border:1px solid rgba(0,96,100,0.1);">⚡ Overtime</span>{% else %}<span class="badge-status" style="background:rgba(240,244,248,0.8);color:#6b7a99;border:1px solid rgba(107,122,153,0.1);">{{ att.status|title }}</span>{% endif %}</div></div>
-    {% else %}<p class="text-muted text-center py-5 mb-0" style="font-size:0.88rem;"><i class="bi bi-inbox" style="font-size: 2rem; display: block; color: #dde3ed; margin-bottom: 8px;"></i>No attendance records yet</p>{% endfor %}
-    {% if recent_att %}<div class="text-center mt-3 pt-2 border-top"><a href="{{ url_for('portal.portal_attendance') }}" style="font-size:0.85rem;color:#FF6B35;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:4px;">View Full History <i class="bi bi-arrow-right"></i></a></div>{% endif %}
+  <!-- Today's Status Card -->
+  <div class="pd-card">
+    <div class="pd-card-body">
+      <div class="pd-status-top">
+        <div class="pd-status-title">Today's Attendance</div>
+        {% if today_att and today_att.check_in and today_att.check_out %}
+          <span class="pd-status-pill" style="background:rgba(0,200,83,0.12);color:#00C853;">Completed</span>
+        {% elif today_att and today_att.check_in %}
+          <span class="pd-status-pill" style="background:rgba(255,193,7,0.15);color:#F9A825;">On Duty</span>
+        {% else %}
+          <span class="pd-status-pill" style="background:rgba(107,122,153,0.1);color:#6b7a99;">Not Started</span>
+        {% endif %}
+      </div>
+
+      <div class="pd-time-chips">
+        <div class="pd-chip">
+          <i class="bi bi-box-arrow-in-right"></i>
+          <div class="lbl">Check In</div>
+          <div class="val" id="checkInVal">{{ today_att.check_in if today_att and today_att.check_in else '--:--' }}</div>
+        </div>
+        <div class="pd-chip">
+          <i class="bi bi-box-arrow-right"></i>
+          <div class="lbl">Check Out</div>
+          <div class="val" id="checkOutVal">{{ today_att.check_out if today_att and today_att.check_out else '--:--' }}</div>
+        </div>
+      </div>
+
+      <div class="pd-progress-wrap">
+        <div class="pd-progress-labels">
+          <span>Shift Progress</span>
+          <span id="progressText">0%</span>
+        </div>
+        <div class="pd-progress-bar">
+          <div class="pd-progress-fill" id="progressFill"></div>
+        </div>
+      </div>
+    </div>
   </div>
+
+  <!-- Punch Hero -->
+  <div class="pd-card">
+    <div class="pd-card-body pd-punch-section">
+      {% if today_att and today_att.check_in and today_att.check_out %}
+        <button class="pd-punch-btn pd-punch-done" disabled>
+          <i class="bi bi-check-circle-fill"></i>
+          <span class="lbl">Done</span>
+          <span class="sub">See you tomorrow</span>
+        </button>
+      {% elif today_att and today_att.check_in %}
+        <button class="pd-punch-btn pd-punch-out" id="punchBtn" onclick="doPunch('out')">
+          <i class="bi bi-box-arrow-right"></i>
+          <span class="lbl">Punch Out</span>
+          <span class="sub">Since {{ today_att.check_in }}</span>
+        </button>
+      {% else %}
+        <button class="pd-punch-btn pd-punch-in" id="punchBtn" onclick="doPunch('in')">
+          <i class="bi bi-fingerprint"></i>
+          <span class="lbl">Punch In</span>
+          <span class="sub">Tap to mark</span>
+        </button>
+      {% endif %}
+      <div id="pd-punch-feedback"></div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="pd-card">
+    <div class="pd-card-body">
+      <div class="pd-quick-grid">
+        <a href="{{ url_for('portal.portal_apply_leave') }}" class="pd-quick-item">
+          <div class="pd-quick-icon" style="background:linear-gradient(135deg,#FF6B35,#E64A19);"><i class="bi bi-calendar2-x"></i></div>
+          <span>Apply Leave</span>
+        </a>
+        <a href="{{ url_for('portal.portal_payslips') }}" class="pd-quick-item">
+          <div class="pd-quick-icon" style="background:linear-gradient(135deg,#00C853,#009624);"><i class="bi bi-receipt-cutoff"></i></div>
+          <span>Payslips</span>
+        </a>
+        <a href="{{ url_for('portal.portal_attendance') }}" class="pd-quick-item">
+          <div class="pd-quick-icon" style="background:linear-gradient(135deg,#1565C0,#0D47A1);"><i class="bi bi-clock-history"></i></div>
+          <span>History</span>
+        </a>
+        <a href="{{ url_for('portal.portal_profile') }}" class="pd-quick-item">
+          <div class="pd-quick-icon" style="background:linear-gradient(135deg,#7C4DFF,#651FFF);"><i class="bi bi-person"></i></div>
+          <span>Profile</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mini Summary -->
+  <div class="pd-card">
+    <div class="pd-card-body pd-summary-strip">
+      <div class="pd-summary-pill">
+        <div class="num">{{ "%.1f"|format(present_this_month) }}</div>
+        <div class="lbl">Present Days</div>
+      </div>
+      <div class="pd-summary-pill">
+        <div class="num">{{ "%.0f"|format(total_leave_remaining) }}</div>
+        <div class="lbl">Leave Left</div>
+      </div>
+      <div class="pd-summary-pill">
+        <div class="num">{{ upcoming_holidays|length }}</div>
+        <div class="lbl">Holidays</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Activity -->
+  {% if recent_att %}
+  <div class="pd-section-title">Recent Activity</div>
+  <div class="pd-card">
+    <div class="pd-card-body pd-activity-list">
+      {% for att in recent_att %}
+      <div class="pd-activity-row">
+        <div>
+          <div class="day">{{ att.date.strftime('%d %b') }}</div>
+          <div class="date">{{ att.date.strftime('%A') }}</div>
+          {% if att.check_in %}
+          <div class="times">{{ att.check_in }}{% if att.check_out %} – {{ att.check_out }}{% endif %}</div>
+          {% endif %}
+        </div>
+        <div>
+          {% if att.status == 'present' %}
+            <span class="pd-badge" style="background:rgba(0,200,83,0.12);color:#00C853;">Present</span>
+          {% elif att.status == 'absent' %}
+            <span class="pd-badge" style="background:rgba(244,67,54,0.12);color:#F44336;">Absent</span>
+          {% elif att.status == 'half_day' %}
+            <span class="pd-badge" style="background:rgba(255,193,7,0.15);color:#F9A825;">Half Day</span>
+          {% elif att.status == 'leave' %}
+            <span class="pd-badge" style="background:rgba(108,117,125,0.12);color:#6c757d;">Leave</span>
+          {% elif att.status == 'holiday' %}
+            <span class="pd-badge" style="background:rgba(156,39,176,0.12);color:#9C27B0;">Holiday</span>
+          {% elif att.status == 'overtime' %}
+            <span class="pd-badge" style="background:rgba(0,188,212,0.12);color:#00BCD4;">OT</span>
+          {% else %}
+            <span class="pd-badge" style="background:rgba(240,244,248,0.8);color:#6b7a99;">{{ att.status|title }}</span>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+      <div class="text-center mt-2 pt-2 border-top">
+        <a href="{{ url_for('portal.portal_attendance') }}" style="font-size:0.82rem;color:#FF6B35;font-weight:700;text-decoration:none;">View Full History <i class="bi bi-arrow-right"></i></a>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div style="height:32px;"></div>
 </div>
-<div style="height:32px;"></div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-function doPunch(action) {
-  const btn = document.getElementById('punchBtn'), fb = document.getElementById('punch-feedback');
+(function() {
+  const checkIn = '{{ today_att.check_in if today_att and today_att.check_in else '' }}';
+  const checkOut = '{{ today_att.check_out if today_att and today_att.check_out else '' }}';
+  const workingHours = {{ working_hours_per_day|default(8) }};
+  const shiftEnd = '{{ shift_end if shift_end else '' }}';
+
+  function setGreeting() {
+    const hour = new Date().getHours();
+    let text = 'Good evening';
+    if (hour < 12) text = 'Good morning';
+    else if (hour < 17) text = 'Good afternoon';
+    const el = document.getElementById('greetingText');
+    if (el) el.textContent = text + ', {{ emp.name.split()[0] }}!';
+  }
+
+  function timeToMins(t) {
+    if (!t || !t.includes(':')) return null;
+    const [h, m] = t.split(':');
+    return parseInt(h, 10) * 60 + parseInt(m, 10);
+  }
+
+  function updateProgress() {
+    const fill = document.getElementById('progressFill');
+    const txt = document.getElementById('progressText');
+    if (!fill) return;
+
+    let pct = 0;
+    if (checkIn && checkOut) {
+      pct = 100;
+    } else if (checkIn) {
+      const start = timeToMins(checkIn);
+      const now = new Date().getHours() * 60 + new Date().getMinutes();
+      const duration = Math.max(1, workingHours * 60);
+      pct = Math.min(100, Math.max(0, ((now - start) / duration) * 100));
+    }
+    fill.style.width = pct + '%';
+    txt.textContent = Math.round(pct) + '%';
+  }
+
+  setGreeting();
+  updateProgress();
+  setInterval(updateProgress, 60000);
+})();
+
+function showFeedback(type, html) {
+  const fb = document.getElementById('pd-punch-feedback');
+  if (!fb) return;
+  fb.innerHTML = '<div class="alert alert-' + type + ' py-2 px-3 mb-0">' + html + '</div>';
+}
+
+function resetBtn(action) {
+  const btn = document.getElementById('punchBtn');
   if (!btn) return;
-  btn.disabled = true; btn.style.opacity = '0.65';
-  btn.innerHTML = '<div class="spinner-border" style="width:2.2rem;height:2.2rem;border-color:#FF6B35 transparent #FF6B35 transparent;border-width:3px;"></div>';
-  showFeedback('info', '<i class="bi bi-geo-alt me-1"></i>Getting your GPS location…');
-  if (!navigator.geolocation) { showFeedback('danger', 'GPS not supported by this browser.'); resetBtn(action, btn); return; }
+  btn.disabled = false;
+  btn.style.opacity = '1';
+  const icon = action === 'in' ? 'bi-fingerprint' : 'bi-box-arrow-right';
+  const lbl = action === 'in' ? 'Punch In' : 'Punch Out';
+  const sub = action === 'in' ? 'Tap to mark' : 'Since {{ today_att.check_in if today_att and today_att.check_in else '' }}';
+  btn.innerHTML = '<i class="bi ' + icon + '"></i><span class="lbl">' + lbl + '</span><span class="sub">' + sub + '</span>';
+}
+
+async function doPunch(action) {
+  const btn = document.getElementById('punchBtn');
+  if (!btn) return;
+  btn.disabled = true;
+  btn.style.opacity = '0.65';
+  btn.innerHTML = '<div class="spinner-border" style="width:2.2rem;height:2.2rem;border-color:#fff transparent #fff transparent;border-width:3px;"></div>';
+  showFeedback('info', '<i class="bi bi-geo-alt me-1"></i>Getting GPS location…');
+
+  if (!navigator.geolocation) {
+    showFeedback('danger', 'GPS not supported by this browser.');
+    resetBtn(action);
+    return;
+  }
+
   navigator.geolocation.getCurrentPosition(
-    function(pos) {
-      showFeedback('info', '<i class="bi bi-wifi me-1"></i>Verifying location…');
-      var csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-      fetch('{{ url_for("api.api_punch") }}', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }, body: JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy, action: action }) })
-      .then(r => r.json()).then(data => {
-        if (data.success) { var fbType = data.location_type === 'field' ? 'warning' : 'success', fbIcon = data.location_type === 'field' ? 'bi-geo-alt' : 'bi-check-circle-fill'; showFeedback(fbType, '<i class="bi ' + fbIcon + ' me-1"></i>' + data.message); btn.style.opacity = '1'; btn.innerHTML = '<i class="bi ' + fbIcon + '" style="font-size:2.5rem;"></i>'; setTimeout(() => location.reload(), 2200); }
-        else { showFeedback('danger', '<i class="bi bi-x-circle-fill me-1"></i>' + data.message); resetBtn(action, btn); }
-      }).catch(() => { showFeedback('danger', 'Network error — please try again.'); resetBtn(action, btn); });
+    async function(pos) {
+      showFeedback('info', '<i class="bi bi-wifi me-1"></i>Sending punch…');
+      const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 25000);
+
+      try {
+        const r = await fetch('{{ url_for("api.api_punch") }}', {
+          method: 'POST',
+          signal: controller.signal,
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+          body: JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy, action: action })
+        });
+        clearTimeout(timeoutId);
+
+        let data;
+        const text = await r.text();
+        try { data = JSON.parse(text); } catch (e) { throw new Error('Server returned unexpected response. Please try again.'); }
+
+        if (data && data.success) {
+          const icon = data.location_type === 'field' ? 'bi-geo-alt' : 'bi-check-circle-fill';
+          showFeedback(data.location_type === 'field' ? 'warning' : 'success', '<i class="bi ' + icon + ' me-1"></i>' + data.message);
+          setTimeout(() => location.reload(), 1800);
+        } else {
+          showFeedback('danger', '<i class="bi bi-x-circle-fill me-1"></i>' + (data && data.message ? data.message : 'Punch failed.'));
+          resetBtn(action);
+        }
+      } catch (err) {
+        clearTimeout(timeoutId);
+        showFeedback('danger', '<i class="bi bi-wifi-off me-1"></i>' + (err.name === 'AbortError' ? 'Request timed out. Please try again.' : (err.message || 'Network error. Please check connection.')));
+        resetBtn(action);
+      }
     },
-    function(err) { const msgs = {1:'📍 Location access denied. Enable GPS in browser settings.',2:'📍 Location unavailable. Try outdoors or near a window.',3:'📍 Location request timed out. Please try again.'}; showFeedback('warning', msgs[err.code] || 'Location error — please try again.'); resetBtn(action, btn); },
+    function(err) {
+      const msgs = {1:'Location access denied. Enable GPS in browser settings.',2:'Location unavailable. Try outdoors or near a window.',3:'Location request timed out. Please try again.'};
+      showFeedback('warning', '<i class="bi bi-geo-alt me-1"></i>' + (msgs[err.code] || 'Location error — please try again.'));
+      resetBtn(action);
+    },
     { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
   );
 }
-function resetBtn(action, btn) {
-  btn.disabled = false;
-  btn.style.opacity = '1';
-  btn.style.color = 'white';
-  const iconClass = action === 'in' ? 'bi-fingerprint' : 'bi-box-arrow-right';
-  const label = action === 'in' ? 'Punch In' : 'Punch Out';
-  const sub = action === 'in' ? 'Tap to mark' : 'Tap to punch out';
-  btn.innerHTML = `<i class="bi ${iconClass}" style="font-size:2.5rem;margin-bottom:4px;display:block;"></i>${label}<small style="font-size:0.6rem;opacity:0.8;font-weight:500;display:block;margin-top:2px;text-transform:uppercase;letter-spacing:0.5px;">${sub}</small>`;
-}
-function showFeedback(type, msg) { const fb = document.getElementById('punch-feedback'), styles = { success:'background:rgba(232,255,242,0.9);color:#1a6640;border:1px solid #a3dfc0;backdrop-filter:blur(8px);', danger:'background:rgba(255,240,240,0.9);color:#9b2335;border:1px solid #f5c0c0;backdrop-filter:blur(8px);', warning:'background:rgba(255,251,235,0.9);color:#8a6800;border:1px solid #f5e0a0;backdrop-filter:blur(8px);', info:'background:rgba(239,246,255,0.9);color:#1e40af;border:1px solid #bfdbfe;backdrop-filter:blur(8px);' }; fb.innerHTML = `<div style="${styles[type]||styles.info}padding:10px 14px;border-radius:12px;font-size:0.83rem;font-weight:500;">${msg}</div>`; }
 </script>
 {% endblock %}
