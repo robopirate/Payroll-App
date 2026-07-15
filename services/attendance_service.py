@@ -84,6 +84,18 @@ def get_employee_active_school(employee):
     return None
 
 
+def get_employee_location_mode(employee):
+    """Return 'school' if the active assigned school is a School, else 'office'.
+
+    Office / Headquarters / Warehouse / Store / Site staff care about working
+    hours first, while School staff care about shift timings first.
+    """
+    school = get_employee_active_school(employee)
+    if school and school.location_type == 'School':
+        return 'school'
+    return 'office'
+
+
 def get_employee_effective_shift(employee):
     """Return the effective (shift_start, shift_end, working_hours_per_day) for an employee.
 

@@ -273,22 +273,36 @@
     }
   }
 
+  function formatDuration(mins) {
+    const h = Math.floor(mins / 60);
+    const m = Math.round(mins % 60);
+    return h + 'h' + (m ? ' ' + m + 'm' : '');
+  }
+
   function updateProgressBar(checkIn, checkOut, shiftStart, shiftEnd, workingHours) {
     const fill = document.getElementById('rp-progress-fill');
     const txt = document.getElementById('rp-progress-text');
     if (!fill || !txt) return;
 
     let pct = 0;
+    let labelText = '0%';
     if (checkIn && checkOut) {
       pct = 100;
+      labelText = 'Done';
     } else if (checkIn) {
-      const start = RP.timeToMins(shiftStart) || RP.timeToMins(checkIn) || (8 * 60);
-      const end = RP.timeToMins(shiftEnd) || (start + (workingHours || 8) * 60);
+      const start = RP.timeToMins(checkIn) || (RP.timeToMins(shiftStart) || 8 * 60);
+      let duration = (workingHours || 8) * 60;
+      // If no working hours but shift end exists, fall back to shift window
+      if (!workingHours && shiftEnd) {
+        duration = Math.max(1, (RP.timeToMins(shiftEnd) || (start + duration)) - start);
+      }
       const now = new Date().getHours() * 60 + new Date().getMinutes();
-      pct = Math.min(100, Math.max(0, ((now - start) / (end - start)) * 100));
+      const elapsed = Math.max(0, now - start);
+      pct = Math.min(100, Math.max(0, (elapsed / duration) * 100));
+      labelText = formatDuration(elapsed) + ' of ' + formatDuration(duration);
     }
     fill.style.width = pct + '%';
-    txt.textContent = Math.round(pct) + '%';
+    txt.textContent = labelText;
   }
 
   RP.setPunchButtonState = setPunchButtonState;

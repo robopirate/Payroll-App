@@ -30,15 +30,23 @@
           <div class="rp-list-meta">{{ location.name if location else 'Not Assigned' }}</div>
         </div>
       </div>
-      {% set effective_start = emp.shift_start or (location.shift_start if location else None) %}
-      {% set effective_end = emp.shift_end or (location.shift_end if location else None) %}
-      {% if effective_start or effective_end %}
+      {% if location_mode == 'school' %}
       <div class="rp-list-item">
         <div class="rp-list-main">
-          <div class="rp-list-title">{% if emp.shift_start or emp.shift_end %}Your Shift{% else %}School Shift{% endif %}</div>
-          <div class="rp-list-meta">{{ effective_start or '--:--' }} – {{ effective_end or '--:--' }}</div>
+          <div class="rp-list-title">Shift</div>
+          <div class="rp-list-meta">{{ shift_start or '--:--' }} – {{ shift_end or '--:--' }}</div>
         </div>
-        <span class="rp-badge rp-badge-info">{{ 'Custom' if (emp.shift_start or emp.shift_end) else 'Shift' }}</span>
+        <span class="rp-badge rp-badge-info">{{ working_hours_per_day }} hrs</span>
+      </div>
+      {% else %}
+      <div class="rp-list-item">
+        <div class="rp-list-main">
+          <div class="rp-list-title">Working Hours</div>
+          <div class="rp-list-meta">{{ working_hours_per_day }} hrs target</div>
+        </div>
+        {% if shift_start and shift_end %}
+        <span class="rp-badge rp-badge-info">{{ shift_start }} – {{ shift_end }}</span>
+        {% endif %}
       </div>
       {% endif %}
       {% if location and (location.grace_minutes or location.lunch_minutes) %}

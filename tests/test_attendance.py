@@ -306,3 +306,45 @@ def test_backfill_absent_attendance_is_idempotent(app):
         atts = Attendance.query.filter_by(employee_id=emp_id, date=target).all()
         assert len(atts) == 1
         assert atts[0].status == 'absent'
+
+
+def test_get_employee_location_mode(app):
+    """Location mode should be 'school' only for School-type locations; otherwise 'office'."""
+    from services.attendance_service import get_employee_location_mode
+    with app.app_context():
+        school_loc = School(name='Test School', location_type='School', is_active=True)
+        office_loc = School(name='HQ', location_type='Office', is_active=True)
+        warehouse_loc = School(name='Warehouse', location_type='Warehouse', is_active=True)
+        db.session.add_all([school_loc, office_loc, warehouse_loc])
+        db.session.commit()
+
+        emp_school = Employee(
+            emp_id='EMP500', name='School Teacher', phone='9876545000',
+            basic_salary=20000, is_active=True, is_approved=True
+        )
+        emp_school.schools.append(school_loc)
+
+        emp_office = Employee(
+            emp_id='EMP501', name='HQ Staff', phone='9876545001',
+            basic_salary=20000, is_active=True, is_approved=True
+        )
+        emp_office.schools.append(office_loc)
+
+        emp_wh = Employee(
+            emp_id='EMP502', name='Warehouse Staff', phone='9876545002',
+            basic_salary=20000, is_active=True, is_approved=True
+        )
+        emp_wh.schools.append(warehouse_loc)
+
+        emp_none = Employee(
+            emp_id='EMP503', name='Unassigned', phone='9876545003',
+            basic_salary=20000, is_active=True, is_approved=True
+        )
+
+        db.session.add_all([emp_school, emp_office, emp_wh, emp_none])
+        db.session.commit()
+
+        assert get_employee_location_mode(emp_school) == 'school'
+        assert get_employee_location_mode(emp_office) == 'office'
+        assert get_employee_location_mode(emp_wh) == 'office'
+        assert get_employee_location_mode(emp_none) == 'office'

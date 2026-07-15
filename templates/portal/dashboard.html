@@ -32,13 +32,31 @@
 
     <div class="rp-progress-wrap">
       <div class="rp-progress-labels">
-        <span>Shift Progress</span>
+        <span>Progress</span>
         <span id="rp-progress-text">0%</span>
       </div>
       <div class="rp-progress-bar">
         <div class="rp-progress-fill" id="rp-progress-fill"></div>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- Shift / Working Hours -->
+<div class="rp-card">
+  <div class="rp-card-body">
+    <div class="rp-card-title mb-2">Shift & Hours</div>
+    {% if location_mode == 'school' %}
+      <div class="rp-title-1 mb-1">{{ shift_start or '--:--' }} – {{ shift_end or '--:--' }}</div>
+      <div class="rp-caption">{{ working_hours_per_day }} working hours</div>
+    {% else %}
+      <div class="rp-title-1 mb-1">{{ working_hours_per_day }} hrs</div>
+      {% if shift_start and shift_end %}
+        <div class="rp-caption">Shift: {{ shift_start }} – {{ shift_end }}</div>
+      {% else %}
+        <div class="rp-caption">Target working hours</div>
+      {% endif %}
+    {% endif %}
   </div>
 </div>
 

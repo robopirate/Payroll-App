@@ -9,7 +9,8 @@ from decorators import portal_required
 from services.attendance_service import (
     count_working_days_between, ensure_sunday_attendance,
     backfill_absent_attendance, calculate_paid_days,
-    get_employee_active_school, get_employee_effective_shift
+    get_employee_active_school, get_employee_effective_shift,
+    get_employee_location_mode
 )
 from services.login_protection import is_allowed
 from flask_limiter.util import get_remote_address
@@ -186,6 +187,8 @@ def portal_dashboard():
     pending_leaves_count = Leave.query.filter_by(employee_id=emp.id, status='pending').count()
     total_leave_remaining = sum((lb.remaining_days or 0) for lb in leave_balances)
     shift_start, shift_end, working_hours_per_day = get_employee_effective_shift(emp)
+    location = get_employee_active_school(emp)
+    location_mode = get_employee_location_mode(emp)
 
     return render_template('portal/dashboard.html', emp=emp, today=today,
         today_att=today_att, recent_att=recent_att,
@@ -195,7 +198,8 @@ def portal_dashboard():
         pending_leaves_count=pending_leaves_count,
         total_leave_remaining=total_leave_remaining,
         shift_start=shift_start, shift_end=shift_end,
-        working_hours_per_day=working_hours_per_day)
+        working_hours_per_day=working_hours_per_day,
+        location=location, location_mode=location_mode)
 
 
 @bp.route('/portal/punch')
@@ -205,7 +209,12 @@ def portal_punch():
     today = date.today()
     today_att = Attendance.query.filter_by(employee_id=emp.id, date=today).first()
     location = get_employee_active_school(emp)
-    return render_template('portal/punch.html', emp=emp, location=location, today_attendance=today_att)
+    location_mode = get_employee_location_mode(emp)
+    shift_start, shift_end, working_hours_per_day = get_employee_effective_shift(emp)
+    return render_template('portal/punch.html', emp=emp, location=location,
+                           today_attendance=today_att, location_mode=location_mode,
+                           shift_start=shift_start, shift_end=shift_end,
+                           working_hours_per_day=working_hours_per_day)
 
 
 @bp.route('/portal/profile', methods=['GET', 'POST'])
