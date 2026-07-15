@@ -284,23 +284,24 @@
     const txt = document.getElementById(textId || 'rp-progress-text');
     if (!fill || !txt) return;
 
+    const targetHours = workingHours || 8;
+    const duration = Math.max(1, targetHours * 60);
     let pct = 0;
-    let labelText = '0%';
-    if (checkIn && checkOut) {
-      pct = 100;
-      labelText = 'Done';
-    } else if (checkIn) {
+    let labelText = '0h 0m of ' + targetHours + 'h';
+
+    if (checkIn) {
       const start = RP.timeToMins(checkIn) || (RP.timeToMins(shiftStart) || 8 * 60);
-      let duration = (workingHours || 8) * 60;
-      // If no working hours but shift end exists, fall back to shift window
-      if (!workingHours && shiftEnd) {
-        duration = Math.max(1, (RP.timeToMins(shiftEnd) || (start + duration)) - start);
+      let elapsed = 0;
+      if (checkOut) {
+        elapsed = Math.max(0, RP.timeToMins(checkOut) - start);
+      } else {
+        const now = new Date().getHours() * 60 + new Date().getMinutes();
+        elapsed = Math.max(0, now - start);
       }
-      const now = new Date().getHours() * 60 + new Date().getMinutes();
-      const elapsed = Math.max(0, now - start);
       pct = Math.min(100, Math.max(0, (elapsed / duration) * 100));
-      labelText = formatDuration(elapsed) + ' of ' + formatDuration(duration);
+      labelText = formatDuration(elapsed) + ' of ' + targetHours + 'h';
     }
+
     fill.style.width = pct + '%';
     txt.textContent = labelText;
   }
