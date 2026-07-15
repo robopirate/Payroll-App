@@ -1,6 +1,8 @@
 """API endpoints for mobile app and third-party integrations."""
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
+from flask_jwt_extended.exceptions import JWTExtendedException
+from werkzeug.exceptions import HTTPException
 from datetime import date, datetime, timezone, timedelta
 from sqlalchemy import extract
 
@@ -13,6 +15,18 @@ from services.attendance_service import (
 from models import Employee, Attendance, Leave, LeaveBalance, Payroll, Holiday
 
 bp = Blueprint('api', __name__)
+
+
+@bp.errorhandler(Exception)
+def api_error_handler(e):
+    """Return JSON for any unhandled exception in this blueprint."""
+    if isinstance(e, HTTPException):
+        return e
+    if isinstance(e, JWTExtendedException):
+        return jsonify({'success': False, 'message': str(e)}), 401
+    from flask import current_app
+    current_app.logger.exception('Unhandled error in API blueprint')
+    return jsonify({'success': False, 'message': f'Server error: {str(e)}'}), 500
 
 
 # ─── Helper: get current employee from JWT ──────────────────────────────────
@@ -49,6 +63,7 @@ def require_employee():
 
 @bp.route('/api/punch', methods=['POST'])
 @csrf.exempt
+@limiter.exempt
 @jwt_required(optional=True)
 def api_punch():
     """

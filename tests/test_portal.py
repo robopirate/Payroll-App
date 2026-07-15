@@ -197,3 +197,51 @@ def test_portal_bottom_nav_links_present(client, app):
         # The Punch FAB is a separate fixed link to /portal/punch.
         assert b'/portal/punch' in resp.data
         assert b'punch-fab' in resp.data
+
+
+def test_portal_api_punch_returns_json(client, app):
+    """The punch API should return valid JSON and record the attendance."""
+    with app.app_context():
+        dept = Department(name='Test Dept')
+        db.session.add(dept)
+        db.session.commit()
+
+        school = School(
+            name='Test School', address='Test Address',
+            latitude=12.34, longitude=56.78, geofence_radius=100
+        )
+        db.session.add(school)
+        db.session.commit()
+
+        emp = Employee(
+            emp_id='EMP209', name='API Punch User', phone='9876543218',
+            department_id=dept.id, basic_salary=20000, is_approved=True
+        )
+        emp.schools.append(school)
+        db.session.add(emp)
+        db.session.commit()
+
+        portal_user = User(username='9876543218', is_admin=False, employee_id=emp.id)
+        portal_user.set_password('secret')
+        db.session.add(portal_user)
+        db.session.commit()
+
+    resp = _portal_login(client, '9876543218')
+    assert resp.status_code == 200
+
+    resp = client.post('/api/punch', json={
+        'lat': 12.34, 'lng': 56.78, 'action': 'in'
+    })
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data['success'] is True
+    assert 'Punched IN' in data['message']
+
+    # Punching in again should fail gracefully with JSON.
+    resp = client.post('/api/punch', json={
+        'lat': 12.34, 'lng': 56.78, 'action': 'in'
+    })
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data['success'] is False
+    assert 'Already punched IN' in data['message']
