@@ -1,122 +1,126 @@
-{% extends 'base.html' %}
+{% extends 'admin/base.html' %}
 {% block title %}Mark Attendance{% endblock %}
 {% block content %}
-<div class="container-fluid admin-page-shell">
-  <div class="admin-page-toolbar">
-    <h4 class="page-header mb-0">Mark Attendance</h4>
-    <div class="admin-toolbar-actions">
-      <form method="GET" class="d-flex align-items-center gap-2">
-        <input type="date" name="date" class="form-control form-control-sm"
-               value="{{ sel_date.isoformat() }}"
-               onchange="this.form.submit()">
-        <span class="badge bg-primary fs-6 py-2 px-3">
-          {{ sel_date.strftime('%A, %d %B %Y') }}
-        </span>
-      </form>
-      <button type="button" class="btn btn-sm btn-outline-success" onclick="markAll('present')">
-        All Present
-      </button>
-      <button type="button" class="btn btn-sm btn-outline-danger" onclick="markAll('absent')">
-        All Absent
-      </button>
-      <a href="{{ url_for('admin.attendance_report') }}" class="btn btn-sm btn-outline-info">
-        <i class="bi bi-bar-chart"></i> View Report
-      </a>
+
+<div class="admin-page-header">
+  <div>
+    <h1 class="admin-page-title">Mark Attendance</h1>
+    <div class="admin-page-subtitle">{{ sel_date.strftime('%A, %d %B %Y') }}</div>
+  </div>
+  <div class="admin-page-actions">
+    <form method="GET" class="d-flex align-items-center gap-2">
+      <input type="date" name="date" class="admin-form-control"
+             value="{{ sel_date.isoformat() }}"
+             onchange="this.form.submit()">
+      <span class="admin-badge admin-badge-info">
+        {{ sel_date.strftime('%A, %d %B %Y') }}
+      </span>
+    </form>
+    <button type="button" class="admin-btn admin-btn-success admin-btn-sm" onclick="markAll('present')">
+      All Present
+    </button>
+    <button type="button" class="admin-btn admin-btn-danger admin-btn-sm" onclick="markAll('absent')">
+      All Absent
+    </button>
+    <a href="{{ url_for('admin.attendance_report') }}" class="admin-btn admin-btn-secondary admin-btn-sm">
+      <i class="bi bi-bar-chart"></i> View Report
+    </a>
+  </div>
+</div>
+
+<form method="POST">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="admin-card">
+    <div class="admin-card-header">
+      <div class="admin-card-title">Employee Attendance — {{ sel_date.strftime('%d %b %Y') }}</div>
+    </div>
+    <div class="admin-card-body p-0">
+      {% if employees %}
+      <div class="table-responsive">
+        <table class="admin-table admin-table-compact mb-0">
+          <thead>
+            <tr>
+              <th>Employee</th>
+              <th>Department</th>
+              <th>Status</th>
+              <th>Check In</th>
+              <th>Check Out</th>
+              <th>Late</th>
+              <th>Early</th>
+              <th>Overtime (hrs)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for emp in employees %}
+            {% set att = existing.get(emp.id) %}
+            <tr>
+              <td class="admin-fw-bold">
+                <div>{{ emp.name }}{% if att and att.auto_checkout %} <span class="admin-badge admin-badge-info" title="Auto-closed: missing punch-out">AUTO</span>{% endif %}</div>
+                <small class="text-muted">{{ emp.emp_id }}</small>
+              </td>
+              <td>{{ emp.dept.name if emp.dept else '-' }}</td>
+              <td>
+                <select name="status_{{ emp.id }}" class="admin-form-select status-select" style="width:130px"
+                        onchange="toggleOT(this, {{ emp.id }})">
+                  {% for s in ['present','absent','half_day','overtime','leave','holiday'] %}
+                  <option value="{{ s }}" {% if att and att.status == s %}selected{% elif not att and s == 'present' %}selected{% endif %}>
+                    {{ s.replace('_', ' ').title() }}
+                  </option>
+                  {% endfor %}
+                </select>
+              </td>
+              <td>
+                <input type="time" name="checkin_{{ emp.id }}" class="admin-form-control" style="width:110px"
+                       value="{{ att.check_in if att and att.check_in else '' }}">
+              </td>
+              <td>
+                <input type="time" name="checkout_{{ emp.id }}" class="admin-form-control" style="width:110px"
+                       value="{{ att.check_out if att and att.check_out else '' }}">
+              </td>
+              <td>
+                {% if att and att.late_minutes %}
+                  <span class="admin-badge admin-badge-pending">{{ att.late_minutes }} min</span>
+                {% else %}
+                  <span class="text-muted small">-</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if att and att.early_minutes %}
+                  <span class="admin-badge admin-badge-pending">{{ att.early_minutes }} min</span>
+                {% else %}
+                  <span class="text-muted small">-</span>
+                {% endif %}
+              </td>
+              <td>
+                <input type="number" name="ot_{{ emp.id }}" class="admin-form-control ot-field"
+                       step="0.5" min="0" max="12"
+                       value="{{ att.overtime_hours if att else 0 }}"
+                       id="ot_{{ emp.id }}"
+                       style="width:90px;{% if not att or att.status != 'overtime' %}display:none;{% endif %}">
+                <span class="text-muted small ot-na" id="otna_{{ emp.id }}"
+                      {% if att and att.status == 'overtime' %}style="display:none"{% endif %}>-</span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="p-3 border-top">
+        <button type="submit" class="admin-btn admin-btn-success">
+          <i class="bi bi-check-circle"></i> Save Attendance
+        </button>
+      </div>
+      {% else %}
+      <div class="admin-empty">
+        <i class="bi bi-people"></i>
+        <p>No active employees.</p>
+        <a href="{{ url_for('admin.add_employee') }}" class="admin-btn admin-btn-primary">Add employees first</a>
+      </div>
+      {% endif %}
     </div>
   </div>
+</form>
 
-  <form method="POST">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <div class="card border-0 shadow-sm">
-      <div class="card-header bg-white border-bottom">
-        <h6 class="mb-0 fw-bold">Employee Attendance — {{ sel_date.strftime('%d %b %Y') }}</h6>
-      </div>
-      <div class="card-body p-0">
-        {% if employees %}
-        <div class="table-responsive">
-          <table class="table table-hover mb-0">
-            <thead class="table-light">
-              <tr>
-                <th>Employee</th>
-                <th>Department</th>
-                <th>Status</th>
-                <th>Check In</th>
-                <th>Check Out</th>
-                <th>Late</th>
-                <th>Early</th>
-                <th>Overtime (hrs)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for emp in employees %}
-              {% set att = existing.get(emp.id) %}
-              <tr>
-                <td class="fw-semibold">
-                  <div>{{ emp.name }}{% if att and att.auto_checkout %} <span class="badge bg-info" title="Auto-closed: missing punch-out">AUTO</span>{% endif %}</div>
-                  <small class="text-muted">{{ emp.emp_id }}</small>
-                </td>
-                <td>{{ emp.dept.name if emp.dept else '-' }}</td>
-                <td>
-                  <select name="status_{{ emp.id }}" class="form-select form-select-sm status-select" style="width:130px"
-                          onchange="toggleOT(this, {{ emp.id }})">
-                    {% for s in ['present','absent','half_day','overtime','leave','holiday'] %}
-                    <option value="{{ s }}" {% if att and att.status == s %}selected{% elif not att and s == 'present' %}selected{% endif %}>
-                      {{ s.replace('_', ' ').title() }}
-                    </option>
-                    {% endfor %}
-                  </select>
-                </td>
-                <td>
-                  <input type="time" name="checkin_{{ emp.id }}" class="form-control form-control-sm" style="width:110px"
-                         value="{{ att.check_in if att and att.check_in else '' }}">
-                </td>
-                <td>
-                  <input type="time" name="checkout_{{ emp.id }}" class="form-control form-control-sm" style="width:110px"
-                         value="{{ att.check_out if att and att.check_out else '' }}">
-                </td>
-                <td>
-                  {% if att and att.late_minutes %}
-                    <span class="badge bg-danger">{{ att.late_minutes }} min</span>
-                  {% else %}
-                    <span class="text-muted small">-</span>
-                  {% endif %}
-                </td>
-                <td>
-                  {% if att and att.early_minutes %}
-                    <span class="badge bg-warning text-dark">{{ att.early_minutes }} min</span>
-                  {% else %}
-                    <span class="text-muted small">-</span>
-                  {% endif %}
-                </td>
-                <td>
-                  <input type="number" name="ot_{{ emp.id }}" class="form-control form-control-sm ot-field"
-                         step="0.5" min="0" max="12"
-                         value="{{ att.overtime_hours if att else 0 }}"
-                         id="ot_{{ emp.id }}"
-                         style="width:90px;{% if not att or att.status != 'overtime' %}display:none;{% endif %}">
-                  <span class="text-muted small ot-na" id="otna_{{ emp.id }}"
-                        {% if att and att.status == 'overtime' %}style="display:none"{% endif %}>-</span>
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-        <div class="p-3 border-top">
-          <button type="submit" class="btn btn-success">
-            <i class="bi bi-check-circle"></i> Save Attendance
-          </button>
-        </div>
-        {% else %}
-        <div class="text-center py-5 text-muted">
-          <i class="bi bi-people fs-1"></i>
-          <p>No active employees. <a href="{{ url_for('admin.add_employee') }}">Add employees first.</a></p>
-        </div>
-        {% endif %}
-      </div>
-    </div>
-  </form>
-</div>
 {% endblock %}
 {% block scripts %}
 <script>

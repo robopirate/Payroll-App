@@ -1,93 +1,95 @@
-{% extends 'base.html' %}
+{% extends 'admin/base.html' %}
 {% block title %}Send SMS{% endblock %}
 {% block content %}
-<div class="container-fluid admin-page-shell">
-  <div class="admin-page-toolbar">
-    <div class="d-flex align-items-center gap-2">
-      <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
-      <h4 class="page-header mb-0">Send SMS</h4>
+
+<div class="admin-page-header">
+  <div>
+    <h1 class="admin-page-title">Send SMS</h1>
+    <div class="admin-page-subtitle">
+      <a href="{{ url_for('admin.dashboard') }}" class="admin-link"><i class="bi bi-arrow-left me-1"></i>Back to Dashboard</a>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-6">
+    <div class="admin-card h-100">
+      <div class="admin-card-header">
+        <div class="admin-card-title"><i class="bi bi-chat-dots me-2"></i>Compose SMS</div>
+      </div>
+      <div class="admin-card-body">
+        <form method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="admin-form-group">
+            <label class="admin-form-label">Select Employees</label>
+            <div class="mb-2">
+              <button type="button" class="admin-btn admin-btn-primary admin-btn-sm me-2" onclick="selectAll(true)">Select All</button>
+              <button type="button" class="admin-btn admin-btn-secondary admin-btn-sm" onclick="selectAll(false)">Deselect All</button>
+            </div>
+            <div class="admin-card">
+              <div class="admin-card-body admin-scroll-list">
+                {% for emp in employees %}
+                <div class="form-check">
+                  <input type="checkbox" name="employee_ids" value="{{ emp.id }}"
+                         class="form-check-input emp-check" id="emp_{{ emp.id }}">
+                  <label class="form-check-label" for="emp_{{ emp.id }}">
+                    {{ emp.name }} — {{ emp.phone }}
+                    <span class="text-muted small">({{ emp.dept.name if emp.dept else 'No dept' }})</span>
+                  </label>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+          <div class="admin-form-group">
+            <label class="admin-form-label">Message <span class="text-danger">*</span></label>
+            <textarea name="message" class="admin-form-textarea" rows="4" maxlength="160"
+                      placeholder="Type your SMS message (max 160 characters)..."
+                      oninput="updateCount(this)" required></textarea>
+            <div class="text-end mt-1">
+              <span class="admin-badge admin-badge-info">
+                <span id="charCount">0</span>/160 characters
+              </span>
+            </div>
+          </div>
+          <div class="alert alert-info py-2 small">
+            <i class="bi bi-info-circle"></i>
+            SMS is sent via Fast2SMS API. Ensure your API key is configured in Settings.
+          </div>
+          <button type="submit" class="admin-btn admin-btn-primary w-100">
+            <i class="bi bi-send"></i> Send SMS
+          </button>
+        </form>
+      </div>
     </div>
   </div>
 
-  <div class="row g-4">
-    <div class="col-lg-6">
-      <div class="card h-100">
-        <div class="card-header">
-          <h6 class="mb-0 fw-bold">Compose SMS</h6>
-        </div>
-        <div class="card-body">
-          <form method="POST">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Select Employees</label>
-              <div class="mb-2">
-                <button type="button" class="btn btn-sm btn-outline-primary me-2" onclick="selectAll(true)">Select All</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="selectAll(false)">Deselect All</button>
-              </div>
-              <div class="card">
-                <div class="card-body admin-scroll-list">
-                  {% for emp in employees %}
-                  <div class="form-check">
-                    <input type="checkbox" name="employee_ids" value="{{ emp.id }}"
-                           class="form-check-input emp-check" id="emp_{{ emp.id }}">
-                    <label class="form-check-label" for="emp_{{ emp.id }}">
-                      {{ emp.name }} — {{ emp.phone }}
-                      <span class="text-muted small">({{ emp.dept.name if emp.dept else 'No dept' }})</span>
-                    </label>
-                  </div>
-                  {% endfor %}
-                </div>
-              </div>
-            </div>
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Message <span class="text-danger">*</span></label>
-              <textarea name="message" class="form-control" rows="4" maxlength="160"
-                        placeholder="Type your SMS message (max 160 characters)..."
-                        oninput="updateCount(this)" required></textarea>
-              <div class="text-end mt-1">
-                <span class="badge bg-light text-dark border" style="font-weight:500; font-size:0.75rem;">
-                  <span id="charCount">0</span>/160 characters
-                </span>
-              </div>
-            </div>
-            <div class="alert alert-info py-2 small">
-              <i class="bi bi-info-circle"></i>
-              SMS is sent via Fast2SMS API. Ensure your API key is configured in Settings.
-            </div>
-            <button type="submit" class="btn btn-primary w-100">
-              <i class="bi bi-send"></i> Send SMS
-            </button>
-          </form>
-        </div>
+  <div class="col-lg-6">
+    <div class="admin-card h-100">
+      <div class="admin-card-header">
+        <div class="admin-card-title"><i class="bi bi-stars me-2"></i>Message Templates</div>
       </div>
-    </div>
-
-    <div class="col-lg-6">
-      <div class="card h-100">
-        <div class="card-header">
-          <h6 class="mb-0 fw-bold">Message Templates</h6>
-        </div>
-        <div class="card-body d-grid gap-2">
-          <button class="btn btn-outline-secondary text-start" onclick="setTemplate('Your salary for this month has been credited to your bank account. - Robo Pirate Team')">
-            <i class="bi bi-currency-rupee text-success"></i> Salary Credited
-          </button>
-          <button class="btn btn-outline-secondary text-start" onclick="setTemplate('This is a reminder that tomorrow is a working day. Please be present on time. - Robo Pirate Team')">
-            <i class="bi bi-bell text-warning"></i> Attendance Reminder
-          </button>
-          <button class="btn btn-outline-secondary text-start" onclick="setTemplate('Your leave application has been approved. - Robo Pirate Team')">
-            <i class="bi bi-calendar2-check text-info"></i> Leave Approved
-          </button>
-          <button class="btn btn-outline-secondary text-start" onclick="setTemplate('Please submit your attendance for this week. - Robo Pirate Team')">
-            <i class="bi bi-clipboard-check text-primary"></i> Attendance Submission
-          </button>
-          <button class="btn btn-outline-secondary text-start" onclick="setTemplate('Holiday notice: The office will be closed tomorrow. - Robo Pirate Team')">
-            <i class="bi bi-house text-danger"></i> Holiday Notice
-          </button>
-        </div>
+      <div class="admin-card-body d-grid gap-2">
+        <button class="admin-btn admin-btn-secondary text-start" onclick="setTemplate('Your salary for this month has been credited to your bank account. - Robo Pirate Team')">
+          <i class="bi bi-currency-rupee text-success"></i> Salary Credited
+        </button>
+        <button class="admin-btn admin-btn-secondary text-start" onclick="setTemplate('This is a reminder that tomorrow is a working day. Please be present on time. - Robo Pirate Team')">
+          <i class="bi bi-bell text-warning"></i> Attendance Reminder
+        </button>
+        <button class="admin-btn admin-btn-secondary text-start" onclick="setTemplate('Your leave application has been approved. - Robo Pirate Team')">
+          <i class="bi bi-calendar2-check text-info"></i> Leave Approved
+        </button>
+        <button class="admin-btn admin-btn-secondary text-start" onclick="setTemplate('Please submit your attendance for this week. - Robo Pirate Team')">
+          <i class="bi bi-clipboard-check text-primary"></i> Attendance Submission
+        </button>
+        <button class="admin-btn admin-btn-secondary text-start" onclick="setTemplate('Holiday notice: The office will be closed tomorrow. - Robo Pirate Team')">
+          <i class="bi bi-house text-danger"></i> Holiday Notice
+        </button>
       </div>
     </div>
   </div>
 </div>
+
 {% endblock %}
 {% block scripts %}
 <script>

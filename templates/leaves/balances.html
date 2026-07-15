@@ -1,57 +1,69 @@
-{% extends 'base.html' %}
+{% extends 'admin/base.html' %}
 {% block title %}Leave Balances{% endblock %}
 {% block content %}
-<div class="container-fluid admin-page-shell">
-  <div class="admin-page-toolbar">
-    <h4 class="page-header mb-0">Leave Balances</h4>
+
+<div class="admin-page-header">
+  <div>
+    <h1 class="admin-page-title">Leave Balances</h1>
+    <div class="admin-page-subtitle">Employee leave balance overview</div>
+  </div>
+  <div class="admin-page-actions">
     <form method="GET" class="d-flex gap-2 align-items-center">
-      <label class="form-label small mb-0">Year</label>
-      <select name="year" class="form-select form-select-sm" onchange="this.form.submit()">
+      <label class="admin-form-label mb-0">Year</label>
+      <select name="year" class="admin-form-select" onchange="this.form.submit()">
         {% for y in years %}
         <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
         {% endfor %}
       </select>
     </form>
   </div>
+</div>
 
-  <div class="card border-0 shadow-sm">
-    <div class="card-body p-0">
-      <div class="table-responsive">
-        <table class="table table-hover mb-0">
-          <thead class="table-light">
-            <tr>
-              <th>Employee</th>
-              <th class="text-center">Casual Leave</th>
-              <th class="text-center">Sick Leave</th>
-              <th class="text-center">Earned Leave</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for emp in employees %}
-            <tr>
-              <td class="fw-semibold">
-                <div>{{ emp.name }}</div>
-                <small class="text-muted">{{ emp.emp_id }}</small>
-              </td>
-              {% for ltype in ['casual', 'sick', 'earned'] %}
-              {% set lb = emp.leave_balances | selectattr('leave_type', 'equalto', ltype) | selectattr('year', 'equalto', year) | first %}
-              <td class="text-center">
-                {% if lb %}
-                <div class="fw-bold fs-5 {{ 'text-success' if lb.remaining_days > 3 else 'text-warning' if lb.remaining_days > 0 else 'text-danger' }}">
-                  {{ lb.remaining_days }}
-                </div>
-                <div class="text-muted small">{{ lb.used_days }}/{{ lb.total_days }}</div>
-                {% else %}
-                <span class="text-muted">-</span>
-                {% endif %}
-              </td>
-              {% endfor %}
-            </tr>
+<div class="admin-card">
+  <div class="admin-card-body p-0">
+    {% if employees %}
+    <div class="table-responsive">
+      <table class="admin-table admin-table-compact mb-0">
+        <thead>
+          <tr>
+            <th>Employee</th>
+            <th class="text-center">Casual Leave</th>
+            <th class="text-center">Sick Leave</th>
+            <th class="text-center">Earned Leave</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for emp in employees %}
+          <tr>
+            <td class="admin-fw-bold">
+              <div>{{ emp.name }}</div>
+              <small class="text-muted">{{ emp.emp_id }}</small>
+            </td>
+            {% for ltype in ['casual', 'sick', 'earned'] %}
+            {% set lb = emp.leave_balances | selectattr('leave_type', 'equalto', ltype) | selectattr('year', 'equalto', year) | first %}
+            <td class="text-center">
+              {% if lb %}
+              <div class="fw-bold fs-5 {{ 'text-success' if lb.remaining_days > 3 else 'text-warning' if lb.remaining_days > 0 else 'text-danger' }}">
+                {{ lb.remaining_days }}
+              </div>
+              <div class="text-muted small">{{ lb.used_days }}/{{ lb.total_days }}</div>
+              {% else %}
+              <span class="text-muted">-</span>
+              {% endif %}
+            </td>
             {% endfor %}
-          </tbody>
-        </table>
-      </div>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
+    {% else %}
+    <div class="admin-empty">
+      <i class="bi bi-clipboard-data"></i>
+      <p>No employees found.</p>
+    </div>
+    {% endif %}
   </div>
 </div>
+
 {% endblock %}

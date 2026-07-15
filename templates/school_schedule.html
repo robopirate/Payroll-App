@@ -1,132 +1,145 @@
-{% extends 'base.html' %}
+{% extends 'admin/base.html' %}
 {% block title %}School Schedule{% endblock %}
 {% block content %}
-<div class="container-fluid admin-page-shell">
-  <div class="admin-page-toolbar">
-    <div class="d-flex align-items-center gap-2">
-      <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
-      <h4 class="page-header mb-0">School Yearly Schedule</h4>
+
+<div class="admin-page-header">
+  <div>
+    <h1 class="admin-page-title">School Yearly Schedule</h1>
+    <div class="admin-page-subtitle">
+      <a href="{{ url_for('admin.dashboard') }}" class="admin-link"><i class="bi bi-arrow-left me-1"></i>Back to Dashboard</a>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Form -->
+  <div class="col-lg-5">
+    <div class="admin-card h-100">
+      <div class="admin-card-header">
+        <div class="admin-card-title"><i class="bi bi-calendar2 me-2"></i>{% if schedule %}Edit{% else %}Create{% endif %} Schedule</div>
+      </div>
+      <div class="admin-card-body">
+        <form method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="admin-form-group">
+            <label class="admin-form-label">Academic Year <span class="text-danger">*</span></label>
+            <input type="number" name="year" class="admin-form-control"
+                   value="{{ schedule.year if schedule else today.year }}" min="2020" max="2030" required readonly
+                   style="background-color:#f8fafc; cursor:not-allowed;">
+          </div>
+
+          <div class="admin-section-title"><i class="bi bi-calendar3"></i> Academic Session</div>
+          <div class="row g-2">
+            <div class="col-6">
+              <div class="admin-form-group">
+                <label class="admin-form-label">Session Start <span class="text-danger">*</span></label>
+                <input type="date" name="session_start" class="admin-form-control" value="{{ schedule.session_start.isoformat() if schedule and schedule.session_start else '' }}" required>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="admin-form-group">
+                <label class="admin-form-label">Session End <span class="text-danger">*</span></label>
+                <input type="date" name="session_end" class="admin-form-control" value="{{ schedule.session_end.isoformat() if schedule and schedule.session_end else '' }}" required>
+              </div>
+            </div>
+          </div>
+
+          <div class="admin-section-title"><i class="bi bi-journal-bookmark"></i> Semester 1</div>
+          <div class="row g-2">
+            <div class="col-6">
+              <div class="admin-form-group">
+                <label class="admin-form-label">Start Date</label>
+                <input type="date" name="semester1_start" class="admin-form-control" value="{{ schedule.semester1_start.isoformat() if schedule and schedule.semester1_start else '' }}">
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="admin-form-group">
+                <label class="admin-form-label">End Date</label>
+                <input type="date" name="semester1_end" class="admin-form-control" value="{{ schedule.semester1_end.isoformat() if schedule and schedule.semester1_end else '' }}">
+              </div>
+            </div>
+          </div>
+
+          <div class="admin-section-title"><i class="bi bi-journal-bookmark"></i> Semester 2</div>
+          <div class="row g-2">
+            <div class="col-6">
+              <div class="admin-form-group">
+                <label class="admin-form-label">Start Date</label>
+                <input type="date" name="semester2_start" class="admin-form-control" value="{{ schedule.semester2_start.isoformat() if schedule and schedule.semester2_start else '' }}">
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="admin-form-group">
+                <label class="admin-form-label">End Date</label>
+                <input type="date" name="semester2_end" class="admin-form-control" value="{{ schedule.semester2_end.isoformat() if schedule and schedule.semester2_end else '' }}">
+              </div>
+            </div>
+          </div>
+
+          <div class="admin-form-group">
+            <label class="admin-form-label">Notes</label>
+            <textarea name="notes" class="admin-form-textarea" rows="2" placeholder="Add any special notes">{{ schedule.notes or '' }}</textarea>
+          </div>
+
+          <button type="submit" class="admin-btn admin-btn-primary w-100">
+            <i class="bi bi-save me-1"></i> {% if schedule %}Update{% else %}Create{% endif %} Schedule
+          </button>
+        </form>
+      </div>
     </div>
   </div>
 
-  <div class="row g-4">
-    <!-- Form -->
-    <div class="col-lg-5">
-      <div class="card h-100">
-        <div class="card-header">
-          <h6 class="mb-0 fw-bold"><i class="bi bi-calendar2 text-primary"></i> {% if schedule %}Edit{% else %}Create{% endif %} Schedule</h6>
-        </div>
-        <div class="card-body">
-          <form method="POST">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div class="mb-3">
-              <label class="form-label">Academic Year <span class="text-danger">*</span></label>
-              <input type="number" name="year" class="form-control"
-                     value="{{ schedule.year if schedule else today.year }}" min="2020" max="2030" required readonly
-                     style="background-color:#f8fafc; cursor:not-allowed;">
-            </div>
-
-            <h6 class="mb-3 fw-bold">Academic Session</h6>
-            <div class="row g-2 mb-3">
-              <div class="col-6">
-                <label class="form-label">Session Start <span class="text-danger">*</span></label>
-                <input type="date" name="session_start" class="form-control" value="{{ schedule.session_start.isoformat() if schedule and schedule.session_start else '' }}" required>
-              </div>
-              <div class="col-6">
-                <label class="form-label">Session End <span class="text-danger">*</span></label>
-                <input type="date" name="session_end" class="form-control" value="{{ schedule.session_end.isoformat() if schedule and schedule.session_end else '' }}" required>
-              </div>
-            </div>
-
-            <h6 class="mb-3 fw-bold">Semester 1</h6>
-            <div class="row g-2 mb-3">
-              <div class="col-6">
-                <label class="form-label">Start Date</label>
-                <input type="date" name="semester1_start" class="form-control" value="{{ schedule.semester1_start.isoformat() if schedule and schedule.semester1_start else '' }}">
-              </div>
-              <div class="col-6">
-                <label class="form-label">End Date</label>
-                <input type="date" name="semester1_end" class="form-control" value="{{ schedule.semester1_end.isoformat() if schedule and schedule.semester1_end else '' }}">
-              </div>
-            </div>
-
-            <h6 class="mb-3 fw-bold">Semester 2</h6>
-            <div class="row g-2 mb-3">
-              <div class="col-6">
-                <label class="form-label">Start Date</label>
-                <input type="date" name="semester2_start" class="form-control" value="{{ schedule.semester2_start.isoformat() if schedule and schedule.semester2_start else '' }}">
-              </div>
-              <div class="col-6">
-                <label class="form-label">End Date</label>
-                <input type="date" name="semester2_end" class="form-control" value="{{ schedule.semester2_end.isoformat() if schedule and schedule.semester2_end else '' }}">
-              </div>
-            </div>
-
-            <div class="mb-3">
-              <label class="form-label">Notes</label>
-              <textarea name="notes" class="form-control" rows="2" placeholder="Add any special notes">{{ schedule.notes or '' }}</textarea>
-            </div>
-
-            <button type="submit" class="btn btn-primary w-100">
-              <i class="bi bi-save me-1"></i> {% if schedule %}Update{% else %}Create{% endif %} Schedule
-            </button>
-          </form>
-        </div>
+  <!-- Schedule View -->
+  <div class="col-lg-7">
+    <div class="admin-card h-100">
+      <div class="admin-card-header">
+        <div class="admin-card-title"><i class="bi bi-calendar-check me-2"></i>Current Schedule</div>
       </div>
-    </div>
+      <div class="admin-card-body">
+        {% if schedule %}
+        <div class="admin-card bg-light border-0 mb-0">
+          <div class="admin-card-body">
+            <h5 class="mb-3">📅 Academic Year {{ schedule.year }}</h5>
 
-    <!-- Schedule View -->
-    <div class="col-lg-7">
-      <div class="card h-100">
-        <div class="card-header">
-          <h6 class="mb-0 fw-bold"><i class="bi bi-calendar-check text-success"></i> Current Schedule</h6>
-        </div>
-        <div class="card-body">
-          {% if schedule %}
-          <div class="card bg-light border-0 mb-0">
-            <div class="card-body">
-              <h5 class="mb-3">📅 Academic Year {{ schedule.year }}</h5>
-
-              <div class="mb-3">
-                <strong>Overall Session:</strong><br>
-                <i class="bi bi-arrow-right"></i> {{ schedule.session_start.strftime('%d %b %Y') }} to {{ schedule.session_end.strftime('%d %b %Y') }}
-                <span class="badge bg-primary ms-2">{{ (schedule.session_end - schedule.session_start).days }} days</span>
-              </div>
-
-              {% if schedule.semester1_start and schedule.semester1_end %}
-              <div class="mb-3">
-                <strong>Semester 1:</strong><br>
-                <i class="bi bi-arrow-right"></i> {{ schedule.semester1_start.strftime('%d %b %Y') }} to {{ schedule.semester1_end.strftime('%d %b %Y') }}
-                <span class="badge bg-success ms-2">{{ (schedule.semester1_end - schedule.semester1_start).days }} days</span>
-              </div>
-              {% endif %}
-
-              {% if schedule.semester2_start and schedule.semester2_end %}
-              <div class="mb-3">
-                <strong>Semester 2:</strong><br>
-                <i class="bi bi-arrow-right"></i> {{ schedule.semester2_start.strftime('%d %b %Y') }} to {{ schedule.semester2_end.strftime('%d %b %Y') }}
-                <span class="badge bg-warning ms-2">{{ (schedule.semester2_end - schedule.semester2_start).days }} days</span>
-              </div>
-              {% endif %}
-
-              {% if schedule.notes %}
-              <div class="mt-3 p-3 bg-white rounded">
-                <strong>📝 Notes:</strong><br>
-                {{ schedule.notes }}
-              </div>
-              {% endif %}
+            <div class="mb-3">
+              <strong>Overall Session:</strong><br>
+              <i class="bi bi-arrow-right"></i> {{ schedule.session_start.strftime('%d %b %Y') }} to {{ schedule.session_end.strftime('%d %b %Y') }}
+              <span class="admin-badge admin-badge-info ms-2">{{ (schedule.session_end - schedule.session_start).days }} days</span>
             </div>
+
+            {% if schedule.semester1_start and schedule.semester1_end %}
+            <div class="mb-3">
+              <strong>Semester 1:</strong><br>
+              <i class="bi bi-arrow-right"></i> {{ schedule.semester1_start.strftime('%d %b %Y') }} to {{ schedule.semester1_end.strftime('%d %b %Y') }}
+              <span class="admin-badge admin-badge-approved ms-2">{{ (schedule.semester1_end - schedule.semester1_start).days }} days</span>
+            </div>
+            {% endif %}
+
+            {% if schedule.semester2_start and schedule.semester2_end %}
+            <div class="mb-3">
+              <strong>Semester 2:</strong><br>
+              <i class="bi bi-arrow-right"></i> {{ schedule.semester2_start.strftime('%d %b %Y') }} to {{ schedule.semester2_end.strftime('%d %b %Y') }}
+              <span class="admin-badge admin-badge-pending ms-2">{{ (schedule.semester2_end - schedule.semester2_start).days }} days</span>
+            </div>
+            {% endif %}
+
+            {% if schedule.notes %}
+            <div class="mt-3 p-3 bg-white rounded border">
+              <strong>📝 Notes:</strong><br>
+              {{ schedule.notes }}
+            </div>
+            {% endif %}
           </div>
-          {% else %}
-          <div class="text-center py-5 text-muted">
-            <i class="bi bi-calendar-x" style="font-size:2rem;display:block;margin-bottom:12px;"></i>
-            <p>No schedule created yet. Create one using the form.</p>
-          </div>
-          {% endif %}
         </div>
+        {% else %}
+        <div class="admin-empty">
+          <i class="bi bi-calendar-x"></i>
+          <p>No schedule created yet. Create one using the form.</p>
+        </div>
+        {% endif %}
       </div>
     </div>
   </div>
 </div>
-{% endblock %}
 
+{% endblock %}

@@ -1,236 +1,183 @@
-{% extends 'base.html' %}
+{% extends 'admin/base.html' %}
 {% block title %}Dashboard{% endblock %}
 {% block content %}
 
-<div class="container-fluid admin-page-shell">
-  <!-- ── Header ──────────────────────────────── -->
-  <div class="admin-page-toolbar">
-    <div>
-      <h4 class="page-header">Dashboard</h4>
-      <small class="text-muted"><i class="bi bi-calendar-event me-2"></i>{{ today.strftime('%A, %d %B %Y') }}</small>
-    </div>
+<div class="admin-page-header">
+  <div>
+    <h1 class="admin-page-title">Dashboard</h1>
+    <div class="admin-page-subtitle"><i class="bi bi-calendar-event me-2"></i>{{ today.strftime('%A, %d %B %Y') }}</div>
   </div>
+</div>
 
-  <!-- ── Key Metrics Grid ────────────────────── -->
-  <div class="row g-4 mb-5">
-    <div class="col">
-      <a href="{{ url_for('admin.employees') }}" class="text-decoration-none">
-        <div class="card stat-card-modern grad-blue">
-          <div class="card-body">
-            <div>
-              <div class="stat-number">{{ total_employees }}</div>
-              <div class="stat-label">Active Employees</div>
-            </div>
-            <div class="stat-emoji">👥</div>
-          </div>
-        </div>
+<!-- Key Metrics -->
+<div class="admin-stat-row mb-4">
+  <a href="{{ url_for('admin.employees') }}" class="text-decoration-none">
+    <div class="admin-stat-card blue">
+      <div>
+        <div class="num">{{ total_employees }}</div>
+        <div class="lbl">Active Employees</div>
+      </div>
+      <div class="icon"><i class="bi bi-people-fill"></i></div>
+    </div>
+  </a>
+  <a href="{{ url_for('admin.attendance', date=today.isoformat()) }}" class="text-decoration-none">
+    <div class="admin-stat-card teal">
+      <div>
+        <div class="num">{{ present_today }}</div>
+        <div class="lbl">Present Today</div>
+      </div>
+      <div class="icon"><i class="bi bi-calendar-check-fill"></i></div>
+    </div>
+  </a>
+  <a href="{{ url_for('admin.leaves', status='pending') }}" class="text-decoration-none">
+    <div class="admin-stat-card orange">
+      <div>
+        <div class="num">{{ pending_leaves }}</div>
+        <div class="lbl">Pending Leaves</div>
+      </div>
+      <div class="icon"><i class="bi bi-calendar2-x-fill"></i></div>
+    </div>
+  </a>
+  <a href="{{ url_for('admin.advances') }}" class="text-decoration-none">
+    <div class="admin-stat-card purple">
+      <div>
+        <div class="num">{{ pending_advances }}</div>
+        <div class="lbl">Pending Advances</div>
+      </div>
+      <div class="icon"><i class="bi bi-cash-coin"></i></div>
+    </div>
+  </a>
+  <a href="{{ url_for('admin.schools') }}" class="text-decoration-none">
+    <div class="admin-stat-card green">
+      <div>
+        <div class="num">{{ schools_count }}</div>
+        <div class="lbl">Locations</div>
+      </div>
+      <div class="icon"><i class="bi bi-building-fill"></i></div>
+    </div>
+  </a>
+</div>
+
+<!-- Quick Actions -->
+<div class="admin-card mb-4">
+  <div class="admin-card-body">
+    <div class="admin-section-title"><i class="bi bi-lightning-charge-fill"></i> Quick Actions</div>
+    <div class="admin-quick-grid">
+      <a href="{{ url_for('admin.attendance', date=today.isoformat()) }}" class="admin-quick-item">
+        <i class="bi bi-calendar-check-fill"></i>
+        <span>Mark Attendance</span>
       </a>
-    </div>
-
-    <div class="col">
-      <a href="{{ url_for('admin.attendance', date=today.isoformat()) }}" class="text-decoration-none">
-        <div class="card stat-card-modern grad-teal">
-          <div class="card-body">
-            <div>
-              <div class="stat-number">{{ present_today }}</div>
-              <div class="stat-label">Present Today</div>
-            </div>
-            <div class="stat-emoji">✅</div>
-          </div>
-        </div>
+      <a href="{{ url_for('admin.add_employee') }}" class="admin-quick-item">
+        <i class="bi bi-person-plus-fill"></i>
+        <span>Add Employee</span>
       </a>
-    </div>
-
-    <div class="col">
-      <a href="{{ url_for('admin.leaves', status='pending') }}" class="text-decoration-none">
-        <div class="card stat-card-modern grad-orange">
-          <div class="card-body">
-            <div>
-              <div class="stat-number">{{ pending_leaves }}</div>
-              <div class="stat-label">Pending Leaves</div>
-            </div>
-            <div class="stat-emoji">🏖️</div>
-          </div>
-        </div>
+      <a href="{{ url_for('admin.payroll') }}" class="admin-quick-item">
+        <i class="bi bi-receipt-cutoff"></i>
+        <span>Generate Payroll</span>
       </a>
-    </div>
-
-    <div class="col">
-      <a href="{{ url_for('admin.advances') }}" class="text-decoration-none">
-        <div class="card stat-card-modern grad-purple">
-          <div class="card-body">
-            <div>
-              <div class="stat-number">{{ pending_advances }}</div>
-              <div class="stat-label">Pending Advances</div>
-            </div>
-            <div class="stat-emoji">💰</div>
-          </div>
-        </div>
+      <a href="{{ url_for('admin.apply_leave') }}" class="admin-quick-item">
+        <i class="bi bi-calendar2-x-fill"></i>
+        <span>Manage Leaves</span>
       </a>
-    </div>
-
-    <div class="col">
-      <a href="{{ url_for('admin.schools') }}" class="text-decoration-none">
-        <div class="card stat-card-modern grad-cyan">
-          <div class="card-body">
-            <div>
-              <div class="stat-number">{{ schools_count }}</div>
-              <div class="stat-label">Locations</div>
-            </div>
-            <div class="stat-emoji">🏫</div>
-          </div>
-        </div>
+      <a href="{{ url_for('admin.advances') }}" class="admin-quick-item">
+        <i class="bi bi-cash-coin"></i>
+        <span>Track Advances</span>
       </a>
-    </div>
-  </div>
-
-  <!-- ── Quick Actions ──────────────────────── -->
-  <div class="mb-5">
-    <div class="admin-section-title">
-      <i class="bi bi-lightning-charge-fill"></i> Quick Actions
-    </div>
-    <div class="row g-3">
-      <div class="col-6 col-md-4 col-lg-2">
-        <a href="{{ url_for('admin.attendance', date=today.isoformat()) }}" class="action-card">
-          <i class="bi bi-calendar-check-fill"></i>
-          <span>Mark Attendance</span>
-        </a>
-      </div>
-      <div class="col-6 col-md-4 col-lg-2">
-        <a href="{{ url_for('admin.add_employee') }}" class="action-card">
-          <i class="bi bi-person-plus-fill"></i>
-          <span>Add Employee</span>
-        </a>
-      </div>
-      <div class="col-6 col-md-4 col-lg-2">
-        <a href="{{ url_for('admin.payroll') }}" class="action-card">
-          <i class="bi bi-receipt-cutoff"></i>
-          <span>Generate Payroll</span>
-        </a>
-      </div>
-      <div class="col-6 col-md-4 col-lg-2">
-        <a href="{{ url_for('admin.apply_leave') }}" class="action-card">
-          <i class="bi bi-calendar2-x-fill"></i>
-          <span>Manage Leaves</span>
-        </a>
-      </div>
-      <div class="col-6 col-md-4 col-lg-2">
-        <a href="{{ url_for('admin.advances') }}" class="action-card">
-          <i class="bi bi-cash-coin"></i>
-          <span>Track Advances</span>
-        </a>
-      </div>
-      <div class="col-6 col-md-4 col-lg-2">
-        <a href="{{ url_for('admin.schools') }}" class="action-card">
-          <i class="bi bi-building-fill"></i>
-          <span>Manage Locations</span>
-        </a>
-      </div>
-      <div class="col-6 col-md-4 col-lg-2">
-        <a href="{{ url_for('admin.sms_panel') }}" class="action-card">
-          <i class="bi bi-chat-dots-fill"></i>
-          <span>Send SMS</span>
-        </a>
-      </div>
-      <div class="col-6 col-md-4 col-lg-2">
-        <a href="{{ url_for('admin.departments') }}" class="action-card">
-          <i class="bi bi-diagram-3"></i>
-          <span>Departments</span>
-        </a>
-      </div>
-      <div class="col-6 col-md-4 col-lg-2">
-        <a href="{{ url_for('admin.settings') }}" class="action-card">
-          <i class="bi bi-gear-fill"></i>
-          <span>Settings</span>
-        </a>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── Recent Payrolls ────────────────────── -->
-  <div class="card mb-5">
-    <div class="card-header">
-      <div class="admin-section-title mb-0">
-        <i class="bi bi-receipt-cutoff"></i> Recent Payroll Activity
-      </div>
-    </div>
-    <div class="card-body p-0">
-      {% if recent_payrolls %}
-      <div class="table-responsive">
-        <table class="table table-hover mb-0 align-middle">
-          <thead>
-            <tr>
-              <th style="width: 25%;">Employee</th>
-              <th style="width: 15%;">Month / Year</th>
-              <th style="width: 20%;">Gross Salary</th>
-              <th style="width: 20%;">Net Salary</th>
-              <th style="width: 20%;">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for p in recent_payrolls %}
-            <tr>
-              <td class="fw-bold text-dark">{{ p.employee.name }}</td>
-              <td>
-                <span class="badge bg-light text-dark border">{{ '%02d'|format(p.month) }}/{{ p.year }}</span>
-              </td>
-              <td class="text-muted">₹{{ "%.2f"|format(p.gross_salary) }}</td>
-              <td class="fw-bold text-success">₹{{ "%.2f"|format(p.net_salary) }}</td>
-              <td>
-                {% if p.status == 'paid' %}
-                  <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Paid</span>
-                {% elif p.status == 'finalized' %}
-                  <span class="badge bg-primary">Finalized</span>
-                {% else %}
-                  <span class="badge bg-secondary">Draft</span>
-                {% endif %}
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      {% else %}
-      <div class="text-center py-5 px-4">
-        <i class="bi bi-inbox fs-1 text-secondary d-block mb-3"></i>
-        <p class="text-muted mb-4">No payrolls generated yet</p>
-        <a href="{{ url_for('admin.payroll') }}" class="btn btn-primary btn-sm">
-          <i class="bi bi-plus-circle me-1"></i> Generate First Payroll
-        </a>
-      </div>
-      {% endif %}
-    </div>
-    <div class="card-footer bg-transparent border-top text-end">
-      <a href="{{ url_for('admin.payroll') }}" class="fw-bold text-decoration-none">
-        View All Payrolls <i class="bi bi-arrow-right"></i>
+      <a href="{{ url_for('admin.schools') }}" class="admin-quick-item">
+        <i class="bi bi-building-fill"></i>
+        <span>Manage Locations</span>
+      </a>
+      <a href="{{ url_for('admin.sms_panel') }}" class="admin-quick-item">
+        <i class="bi bi-chat-dots-fill"></i>
+        <span>Send SMS</span>
+      </a>
+      <a href="{{ url_for('admin.departments') }}" class="admin-quick-item">
+        <i class="bi bi-diagram-3"></i>
+        <span>Departments</span>
+      </a>
+      <a href="{{ url_for('admin.settings') }}" class="admin-quick-item">
+        <i class="bi bi-gear-fill"></i>
+        <span>Settings</span>
       </a>
     </div>
   </div>
 </div>
 
+<!-- Recent Payrolls -->
+<div class="admin-card">
+  <div class="admin-card-header">
+    <div class="admin-card-title"><i class="bi bi-receipt-cutoff me-2"></i>Recent Payroll Activity</div>
+    <a href="{{ url_for('admin.payroll') }}" class="admin-link">View All <i class="bi bi-arrow-right"></i></a>
+  </div>
+  <div class="admin-card-body p-0">
+    {% if recent_payrolls %}
+    <div class="table-responsive">
+      <table class="admin-table admin-table-compact mb-0">
+        <thead>
+          <tr>
+            <th>Employee</th>
+            <th>Month / Year</th>
+            <th>Gross Salary</th>
+            <th>Net Salary</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in recent_payrolls %}
+          <tr>
+            <td class="admin-fw-bold">{{ p.employee.name }}</td>
+            <td><span class="admin-badge admin-badge-draft">{{ '%02d'|format(p.month) }}/{{ p.year }}</span></td>
+            <td class="admin-text-muted">₹{{ "%.2f"|format(p.gross_salary) }}</td>
+            <td class="admin-text-success admin-fw-bold">₹{{ "%.2f"|format(p.net_salary) }}</td>
+            <td>
+              {% if p.status == 'paid' %}
+                <span class="admin-badge admin-badge-paid"><i class="bi bi-check-circle me-1"></i>Paid</span>
+              {% elif p.status == 'finalized' %}
+                <span class="admin-badge admin-badge-finalized">Finalized</span>
+              {% else %}
+                <span class="admin-badge admin-badge-draft">Draft</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="admin-empty">
+      <i class="bi bi-inbox"></i>
+      <p>No payrolls generated yet.</p>
+      <a href="{{ url_for('admin.payroll') }}" class="admin-btn admin-btn-primary">
+        <i class="bi bi-plus-circle me-1"></i> Generate First Payroll
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
 <script>
-  // Smooth number counter animation
-  document.querySelectorAll('.stat-number').forEach(el => {
-    const finalNum = parseInt(el.innerText);
-    let currentNum = 0;
-    const increment = Math.ceil(finalNum / 20);
-    const interval = setInterval(() => {
-      currentNum += increment;
-      if (currentNum >= finalNum) {
+  // Animate stat numbers
+  document.querySelectorAll('.admin-stat-card .num').forEach(function(el) {
+    var finalNum = parseInt(el.innerText) || 0;
+    var current = 0;
+    var increment = Math.ceil(finalNum / 20);
+    var timer = setInterval(function() {
+      current += increment;
+      if (current >= finalNum) {
         el.innerText = finalNum;
-        clearInterval(interval);
+        clearInterval(timer);
       } else {
-        el.innerText = currentNum;
+        el.innerText = current;
       }
     }, 30);
   });
-</script>
 
-<script>
-  // Auto-refresh the dashboard when the user returns after switching tabs,
-  // so Recent Payroll Activity and stats stay up to date.
+  // Refresh dashboard when returning after tab switch
   (function() {
-    let hiddenTime = 0;
+    var hiddenTime = 0;
     document.addEventListener('visibilitychange', function() {
       if (document.hidden) {
         hiddenTime = Date.now();

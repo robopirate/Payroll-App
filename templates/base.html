@@ -5,160 +5,43 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <meta name="theme-color" content="#0A1628">
-  <meta property="og:title" content="Robo Pirate's Payroll">
-  <meta property="og:description" content="Manage employees, payroll, attendance, and leaves.">
-  <meta property="og:type" content="website">
   <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
   <title>{% block title %}Robo Pirate's Payroll{% endblock %} — Robo Pirate's Payroll</title>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preconnect" href="https://cdn.jsdelivr.net">
-  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
   <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+  {% block head %}{% endblock %}
 </head>
-<body class="admin-body">
+<body>
 
-{% if current_user.is_authenticated %}
-<!-- ── Top Navbar ─────────────────────────────── -->
-<nav id="main-nav">
-  <div class="container-fluid d-flex align-items-center justify-content-between px-3" style="height:var(--nav-height,64px);">
-    <a class="navbar-brand-wrap" href="{{ url_for('admin.dashboard') }}">
-      <span class="brand-title">Robo Pirate's Payroll</span>
-      <span class="brand-tagline">Powering the Humans Behind the Robots</span>
-    </a>
-    <button class="hamburger-btn" id="sidebarToggle" aria-label="Open navigation menu">
-      <span class="bar"></span>
-      <span class="bar"></span>
-      <span class="bar"></span>
-    </button>
-  </div>
-</nav>
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="container-fluid pt-3">
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+          <i class="bi bi-{% if category == 'success' %}check-circle{% elif category == 'danger' %}x-circle{% elif category == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %}-fill me-2"></i>
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
 
-<!-- ── Sidebar Overlay ────────────────────────── -->
-<div class="sidebar-overlay" id="sidebarOverlay"></div>
-
-<!-- ── Right Slide-In Sidebar ────────────────── -->
-<aside class="right-sidebar" id="rightSidebar" aria-hidden="true">
-  <div class="sidebar-header">
-    <div class="sidebar-brand">Robo Pirate's Payroll</div>
-    <button class="sidebar-close" id="sidebarClose" aria-label="Close menu">✕</button>
-  </div>
-
-  <nav class="sidebar-nav">
-    <div class="sidebar-section-label">Main</div>
-    <a href="{{ url_for('admin.dashboard') }}" class="{% if request.endpoint == 'admin.dashboard' %}active{% endif %}">
-      <i class="bi bi-speedometer2"></i> Dashboard
-    </a>
-    <a href="{{ url_for('admin.employees') }}" class="{% if 'employee' in (request.endpoint or '') %}active{% endif %}">
-      <i class="bi bi-people-fill"></i> Employees
-    </a>
-    <a href="{{ url_for('admin.schools') }}" class="{% if 'school' in (request.endpoint or '') %}active{% endif %}">
-      <i class="bi bi-building-fill"></i> Locations
-    </a>
-    <a href="{{ url_for('admin.attendance') }}" class="{% if 'attendance' in (request.endpoint or '') %}active{% endif %}">
-      <i class="bi bi-calendar-check-fill"></i> Attendance
-    </a>
-
-    <div class="sidebar-divider"></div>
-    <div class="sidebar-section-label">Leave Management</div>
-    <a href="{{ url_for('admin.leaves') }}" class="{% if request.endpoint == 'admin.leaves' %}active{% endif %}">
-      <i class="bi bi-calendar2-x-fill"></i> Manage Leaves
-    </a>
-    <a href="{{ url_for('admin.apply_leave') }}" class="{% if request.endpoint == 'admin.apply_leave' %}active{% endif %}">
-      <i class="bi bi-plus-circle-fill"></i> Apply Leave
-    </a>
-    <a href="{{ url_for('admin.leave_balances') }}" class="{% if request.endpoint == 'admin.leave_balances' %}active{% endif %}">
-      <i class="bi bi-clipboard-data-fill"></i> Leave Balances
-    </a>
-    {% if current_user.role == 'admin' %}
-    <a href="{{ url_for('admin.leave_balance_setup') }}" class="{% if request.endpoint == 'admin.leave_balance_setup' %}active{% endif %}">
-      <i class="bi bi-sliders"></i> Leave Setup
-    </a>
-    {% endif %}
-
-    <div class="sidebar-divider"></div>
-    <div class="sidebar-section-label">Organization</div>
-    {% if current_user.role == 'admin' %}
-    <a href="{{ url_for('admin.holidays') }}" class="{% if request.endpoint == 'admin.holidays' %}active{% endif %}">
-      <i class="bi bi-calendar-event-fill"></i> Holidays
-    </a>
-    <a href="{{ url_for('admin.school_schedule') }}" class="{% if request.endpoint == 'admin.school_schedule' %}active{% endif %}">
-      <i class="bi bi-calendar3"></i> School Schedule
-    </a>
-    <a href="{{ url_for('admin.departments') }}" class="{% if request.endpoint == 'admin.departments' %}active{% endif %}">
-      <i class="bi bi-diagram-3-fill"></i> Departments
-    </a>
-    {% endif %}
-
-    <div class="sidebar-divider"></div>
-    <div class="sidebar-section-label">Finance</div>
-    {% if current_user.role == 'admin' %}
-    <a href="{{ url_for('admin.advances') }}" class="{% if request.endpoint == 'admin.advances' %}active{% endif %}">
-      <i class="bi bi-cash-coin"></i> Advances
-    </a>
-    {% endif %}
-    <a href="{{ url_for('admin.payroll') }}" class="{% if 'payroll' in (request.endpoint or '') %}active{% endif %}">
-      <i class="bi bi-receipt-cutoff"></i> Payroll
-    </a>
-    {% if current_user.role == 'admin' %}
-    <a href="{{ url_for('admin.sms_panel') }}" class="{% if request.endpoint == 'admin.sms_panel' %}active{% endif %}">
-      <i class="bi bi-chat-dots-fill"></i> Send SMS
-    </a>
-    {% endif %}
-
-    <div class="sidebar-divider"></div>
-    <div class="sidebar-section-label">Account</div>
-    {% if current_user.role == 'admin' %}
-    <a href="{{ url_for('admin.settings') }}" class="{% if request.endpoint == 'admin.settings' %}active{% endif %}">
-      <i class="bi bi-gear-fill"></i> Settings
-    </a>
-    {% endif %}
-    <a href="{{ url_for('auth.logout') }}" class="logout-link">
-      <i class="bi bi-box-arrow-right"></i> Logout ({{ current_user.username }})
-    </a>
-  </nav>
-</aside>
-{% endif %}
-
-<!-- ── Page Content ───────────────────────────── -->
-<div class="{% if current_user.is_authenticated %}main-content{% endif %}">
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      <div class="container-fluid pt-3">
-        {% for category, message in messages %}
-          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-            <i class="bi bi-{% if category == 'success' %}check-circle{% elif category == 'danger' %}x-circle{% elif category == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %}-fill me-2"></i>
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-          </div>
-        {% endfor %}
-      </div>
-    {% endif %}
-  {% endwith %}
-
-  {% block content %}{% endblock %}
-</div>
-
-{% if current_user.is_authenticated %}
-<footer class="app-footer">
-  <span>© 2025–{{ now().year }} Robo Pirate | <a href="https://robopirate.in" target="_blank">robopirate.in</a></span>
-</footer>
-{% endif %}
+{% block content %}{% endblock %}
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 <script>
-  // Auto-inject CSRF token into all forms
   (function() {
     var meta = document.querySelector('meta[name="csrf-token"]');
     var token = meta ? meta.getAttribute('content') : '';
     if (token) {
-      var forms = document.querySelectorAll('form');
-      for (var i = 0; i < forms.length; i++) {
-        var form = forms[i];
+      document.querySelectorAll('form').forEach(function(form) {
         if (!form.querySelector('input[name="csrf_token"]')) {
           var input = document.createElement('input');
           input.type = 'hidden';
@@ -166,39 +49,9 @@
           input.value = token;
           form.appendChild(input);
         }
-      }
+      });
     }
   })();
-</script>
-<script>
-  // ── Sidebar toggle ──────────────────────────────
-  const sidebarToggle  = document.getElementById('sidebarToggle');
-  const sidebarClose   = document.getElementById('sidebarClose');
-  const rightSidebar   = document.getElementById('rightSidebar');
-  const sidebarOverlay = document.getElementById('sidebarOverlay');
-
-  function openSidebar() {
-    rightSidebar.classList.add('active');
-    sidebarOverlay.classList.add('active');
-    rightSidebar.setAttribute('aria-hidden', 'false');
-    document.body.style.overflow = 'hidden';
-  }
-
-  function closeSidebar() {
-    rightSidebar.classList.remove('active');
-    sidebarOverlay.classList.remove('active');
-    rightSidebar.setAttribute('aria-hidden', 'true');
-    document.body.style.overflow = '';
-  }
-
-  sidebarToggle?.addEventListener('click', openSidebar);
-  sidebarClose?.addEventListener('click', closeSidebar);
-  sidebarOverlay?.addEventListener('click', closeSidebar);
-
-  // Close on Escape key
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeSidebar();
-  });
 </script>
 {% block scripts %}{% endblock %}
 </body>

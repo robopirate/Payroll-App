@@ -1,4 +1,4 @@
-const CACHE_NAME = 'robo-pirate-hr-v7';
+const CACHE_NAME = 'robo-pirate-hr-v8';
 const STATIC_EXTENSIONS = ['.css', '.js', '.png', '.jpg', '.jpeg', '.webp', '.svg', '.ico', '.woff', '.woff2', '.ttf', '.json'];
 const CDN_HOSTS = ['cdn.jsdelivr.net', 'fonts.googleapis.com', 'fonts.gstatic.com'];
 

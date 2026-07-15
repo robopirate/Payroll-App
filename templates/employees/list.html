@@ -1,131 +1,137 @@
-{% extends 'base.html' %}
+{% extends 'admin/base.html' %}
 {% block title %}Employees{% endblock %}
 {% block content %}
-<div class="container-fluid admin-page-shell">
-  <div class="admin-page-toolbar">
-    <h4 class="page-header">Employees</h4>
-    <div class="admin-toolbar-actions flex-wrap">
-      <a href="{{ url_for('admin.departments') }}" class="btn btn-sm" style="background:#F0F4F8;color:#37474F;border:1px solid #dde3ed;">
-        <i class="bi bi-diagram-3"></i> Departments
-      </a>
-      <a href="{{ url_for('admin.export_employees') }}" class="btn btn-sm btn-outline-success">
-        <i class="bi bi-download"></i> Export
-      </a>
-      {% if current_user.role == 'admin' %}
-      <a href="{{ url_for('admin.import_employees') }}" class="btn btn-sm btn-outline-info">
-        <i class="bi bi-upload"></i> Import
-      </a>
-      <a href="{{ url_for('admin.add_employee') }}" class="btn btn-primary btn-sm">
-        <i class="bi bi-person-plus-fill me-1"></i> Add Employee
-      </a>
-      {% endif %}
-    </div>
-  </div>
 
-  <!-- Filter -->
-  <div class="card border-0 shadow-sm mb-3">
-    <div class="card-body admin-filter-bar">
-      <form method="GET" class="row g-2 align-items-end">
-        <div class="col-auto">
-          <label class="form-label small mb-1">Filter by Department</label>
-          <select name="dept" class="form-select form-select-sm" onchange="this.form.submit()">
-            <option value="">All Departments</option>
-            {% for d in departments %}
-            <option value="{{ d.name }}" {% if dept_filter == d.name %}selected{% endif %}>{{ d.name }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-auto">
-          <label class="form-label small mb-1">Status</label>
-          <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
-            <option value="approved" {% if status_filter == 'approved' %}selected{% endif %}>Approved</option>
-            <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending Approval {% if pending_count %}({{ pending_count }}){% endif %}</option>
-            <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All</option>
-          </select>
-        </div>
-      </form>
-    </div>
+<div class="admin-page-header">
+  <div>
+    <h1 class="admin-page-title">Employees</h1>
+    <div class="admin-page-subtitle">Manage staff, approvals and portal access</div>
   </div>
-
-  <div class="card border-0 shadow-sm">
-    <div class="card-body p-0">
-      {% if employees %}
-      <div class="table-responsive">
-        <table class="table table-hover mb-0">
-          <thead class="table-light">
-            <tr>
-              <th>Emp ID</th>
-              <th>Name</th>
-              <th>Phone</th>
-              <th>Department</th>
-              <th>Designation</th>
-              <th>Basic Salary</th>
-              <th>Joining Date</th>
-              <th>Status</th>
-              <th class="text-center">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for emp in employees %}
-            <tr>
-              <td><span class="badge bg-secondary">{{ emp.emp_id }}</span></td>
-              <td class="fw-semibold">
-                {{ emp.name }}
-                {% set type_badges = {'full_time': ('FT', 'bg-primary'), 'contract': ('C', 'bg-warning text-dark'), 'part_time': ('PT', 'bg-info')} %}
-                {% set badge = type_badges.get(emp.employee_type, ('FT', 'bg-primary')) %}
-                <span class="badge {{ badge[1] }}" title="{{ {'full_time':'Full-time','contract':'Contract','part_time':'Part-time'}.get(emp.employee_type, emp.employee_type) }}">{{ badge[0] }}</span>
-                {% if emp.shift_start or emp.shift_end or emp.working_hours_per_day %}
-                <i class="bi bi-clock text-warning ms-1" title="Custom shift set"></i>
-                {% endif %}
-              </td>
-              <td>{{ emp.phone|mask_pii }}</td>
-              <td>{{ emp.dept.name if emp.dept else '-' }}</td>
-              <td>{{ emp.designation or '-' }}</td>
-              <td>₹{{ "%.2f"|format(emp.basic_salary) }}</td>
-              <td>{{ emp.joining_date.strftime('%d %b %Y') if emp.joining_date else '-' }}</td>
-              <td>
-                {% if emp.is_approved %}
-                  <span class="badge bg-success">Approved</span>
-                {% else %}
-                  <span class="badge bg-warning text-dark">Pending</span>
-                {% endif %}
-              </td>
-              <td class="admin-table-actions">
-                <a href="{{ url_for('admin.view_employee', emp_id=emp.id) }}" class="btn btn-sm btn-outline-info me-1" title="View">
-                  <i class="bi bi-eye"></i>
-                </a>
-                <a href="{{ url_for('admin.edit_employee', emp_id=emp.id) }}" class="btn btn-sm btn-outline-primary me-1" title="Edit">
-                  <i class="bi bi-pencil"></i>
-                </a>
-                {% if not emp.is_approved %}
-                <form method="POST" action="{{ url_for('admin.approve_employee', emp_id=emp.id) }}"
-                      class="d-inline" onsubmit="return confirm('Approve {{ emp.name }} for portal access?')">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <button type="submit" class="btn btn-sm btn-outline-success me-1" title="Approve">
-                    <i class="bi bi-check-circle"></i>
-                  </button>
-                </form>
-                {% endif %}
-                <form method="POST" action="{{ url_for('admin.deactivate_employee', emp_id=emp.id) }}"
-                      class="d-inline" onsubmit="return confirm('Deactivate {{ emp.name }}?')">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <button type="submit" class="btn btn-sm btn-outline-danger" title="Deactivate">
-                    <i class="bi bi-person-x"></i>
-                  </button>
-                </form>
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      {% else %}
-      <div class="text-center py-5 text-muted">
-        <i class="bi bi-people fs-1"></i>
-        <p class="mt-2">No employees found. <a href="{{ url_for('admin.add_employee') }}">Add one now.</a></p>
-      </div>
-      {% endif %}
-    </div>
+  <div class="admin-page-actions">
+    <a href="{{ url_for('admin.departments') }}" class="admin-btn admin-btn-secondary admin-btn-sm">
+      <i class="bi bi-diagram-3"></i> Departments
+    </a>
+    <a href="{{ url_for('admin.export_employees') }}" class="admin-btn admin-btn-secondary admin-btn-sm">
+      <i class="bi bi-download"></i> Export
+    </a>
+    {% if current_user.role == 'admin' %}
+    <a href="{{ url_for('admin.import_employees') }}" class="admin-btn admin-btn-secondary admin-btn-sm">
+      <i class="bi bi-upload"></i> Import
+    </a>
+    <a href="{{ url_for('admin.add_employee') }}" class="admin-btn admin-btn-primary admin-btn-sm">
+      <i class="bi bi-person-plus-fill"></i> Add Employee
+    </a>
+    {% endif %}
   </div>
 </div>
+
+<!-- Filter -->
+<div class="admin-card mb-4">
+  <div class="admin-card-body">
+    <form method="GET" class="row g-3 align-items-end">
+      <div class="col-auto">
+        <label class="admin-form-label">Filter by Department</label>
+        <select name="dept" class="admin-form-select" onchange="this.form.submit()">
+          <option value="">All Departments</option>
+          {% for d in departments %}
+          <option value="{{ d.name }}" {% if dept_filter == d.name %}selected{% endif %}>{{ d.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-auto">
+        <label class="admin-form-label">Status</label>
+        <select name="status" class="admin-form-select" onchange="this.form.submit()">
+          <option value="approved" {% if status_filter == 'approved' %}selected{% endif %}>Approved</option>
+          <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending Approval {% if pending_count %}({{ pending_count }}){% endif %}</option>
+          <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All</option>
+        </select>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="admin-card">
+  <div class="admin-card-body p-0">
+    {% if employees %}
+    <div class="table-responsive">
+      <table class="admin-table admin-table-compact mb-0">
+        <thead>
+          <tr>
+            <th>Emp ID</th>
+            <th>Name</th>
+            <th>Phone</th>
+            <th>Department</th>
+            <th>Designation</th>
+            <th>Basic Salary</th>
+            <th>Joining Date</th>
+            <th>Status</th>
+            <th class="text-center">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for emp in employees %}
+          <tr>
+            <td><span class="admin-badge admin-badge-info">{{ emp.emp_id }}</span></td>
+            <td class="admin-fw-bold">
+              {{ emp.name }}
+              {% set type_badges = {'full_time': ('FT', 'admin-badge-info'), 'contract': ('C', 'admin-badge-pending'), 'part_time': ('PT', 'admin-badge-info')} %}
+              {% set badge = type_badges.get(emp.employee_type, ('FT', 'admin-badge-info')) %}
+              <span class="admin-badge {{ badge[1] }}" title="{{ {'full_time':'Full-time','contract':'Contract','part_time':'Part-time'}.get(emp.employee_type, emp.employee_type) }}">{{ badge[0] }}</span>
+              {% if emp.shift_start or emp.shift_end or emp.working_hours_per_day %}
+              <i class="bi bi-clock text-warning ms-1" title="Custom shift set"></i>
+              {% endif %}
+            </td>
+            <td>{{ emp.phone|mask_pii }}</td>
+            <td>{{ emp.dept.name if emp.dept else '-' }}</td>
+            <td>{{ emp.designation or '-' }}</td>
+            <td>₹{{ "%.2f"|format(emp.basic_salary) }}</td>
+            <td>{{ emp.joining_date.strftime('%d %b %Y') if emp.joining_date else '-' }}</td>
+            <td>
+              {% if emp.is_approved %}
+                <span class="admin-badge admin-badge-approved">Approved</span>
+              {% else %}
+                <span class="admin-badge admin-badge-pending">Pending</span>
+              {% endif %}
+            </td>
+            <td class="text-center">
+              <a href="{{ url_for('admin.view_employee', emp_id=emp.id) }}" class="admin-btn admin-btn-secondary admin-btn-sm" title="View">
+                <i class="bi bi-eye"></i>
+              </a>
+              <a href="{{ url_for('admin.edit_employee', emp_id=emp.id) }}" class="admin-btn admin-btn-primary admin-btn-sm" title="Edit">
+                <i class="bi bi-pencil"></i>
+              </a>
+              {% if not emp.is_approved %}
+              <form method="POST" action="{{ url_for('admin.approve_employee', emp_id=emp.id) }}"
+                    class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="admin-btn admin-btn-success admin-btn-sm" title="Approve">
+                  <i class="bi bi-check-circle"></i>
+                </button>
+              </form>
+              {% endif %}
+              <form method="POST" action="{{ url_for('admin.deactivate_employee', emp_id=emp.id) }}"
+                    class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="admin-btn admin-btn-danger admin-btn-sm" title="Deactivate" data-confirm="Are you sure you want to deactivate {{ emp.name }}?">
+                  <i class="bi bi-person-x"></i>
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="admin-empty">
+      <i class="bi bi-people"></i>
+      <p>No employees found.</p>
+      <a href="{{ url_for('admin.add_employee') }}" class="admin-btn admin-btn-primary">
+        <i class="bi bi-person-plus-fill me-1"></i> Add Employee
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
 {% endblock %}

@@ -1,52 +1,63 @@
-{% extends 'base.html' %}
+{% extends 'admin/base.html' %}
 {% block title %}{{ 'Edit' if edit else 'Add' }} Employee{% endblock %}
 {% block content %}
-<div class="container-fluid admin-page-shell">
-  <div class="admin-page-toolbar">
-    <div class="d-flex align-items-center gap-2">
-      <a href="{{ url_for('admin.employees') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
-      <h4 class="page-header mb-0">{{ 'Edit Employee' if edit else 'Add New Employee' }}</h4>
+
+<div class="admin-page-header">
+  <div>
+    <h1 class="admin-page-title">{{ 'Edit Employee' if edit else 'Add New Employee' }}</h1>
+    <div class="admin-page-subtitle">
+      <a href="{{ url_for('admin.employees') }}" class="admin-link"><i class="bi bi-arrow-left me-1"></i>Back to Employees</a>
     </div>
   </div>
+</div>
 
-  <form method="POST">
+<form method="POST">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <div class="row g-4">
-      <!-- Personal Info -->
-      <div class="col-lg-6">
-        <div class="card border-0 shadow-sm">
-          <div class="card-header bg-white border-bottom">
-            <h6 class="mb-0 fw-bold"><i class="bi bi-person text-primary"></i> Personal Information</h6>
-          </div>
-          <div class="card-body">
-            <div class="row g-3">
-              <div class="col-sm-6">
-                <label class="form-label">Employee ID <span class="text-danger">*</span></label>
-                <input type="text" name="emp_id" class="form-control"
+  <div class="row g-4">
+    <!-- Personal Info -->
+    <div class="col-lg-6">
+      <div class="admin-card">
+        <div class="admin-card-header">
+          <div class="admin-card-title"><i class="bi bi-person me-2"></i>Personal Information</div>
+        </div>
+        <div class="admin-card-body">
+          <div class="row g-3">
+            <div class="col-sm-6">
+              <div class="admin-form-group">
+                <label class="admin-form-label">Employee ID <span class="text-danger">*</span></label>
+                <input type="text" name="emp_id" class="admin-form-control"
                        value="{{ form.emp_id if edit else form.get('emp_id','') }}"
                        placeholder="EMP001" required {% if edit %}readonly{% endif %}>
               </div>
-              <div class="col-sm-6">
-                <label class="form-label">Full Name <span class="text-danger">*</span></label>
-                <input type="text" name="name" class="form-control"
+            </div>
+            <div class="col-sm-6">
+              <div class="admin-form-group">
+                <label class="admin-form-label">Full Name <span class="text-danger">*</span></label>
+                <input type="text" name="name" class="admin-form-control"
                        value="{{ form.name if edit else form.get('name','') }}"
                        placeholder="John Doe" required>
               </div>
-              <div class="col-sm-6">
-                <label class="form-label">Phone <span class="text-danger">*</span></label>
-                <input type="tel" name="phone" class="form-control"
+            </div>
+            <div class="col-sm-6">
+              <div class="admin-form-group">
+                <label class="admin-form-label">Phone <span class="text-danger">*</span></label>
+                <input type="tel" name="phone" class="admin-form-control"
                        value="{{ form.phone if edit else form.get('phone','') }}"
                        placeholder="9876543210" pattern="[0-9]{10}" required>
               </div>
-              <div class="col-sm-6">
-                <label class="form-label">Email</label>
-                <input type="email" name="email" class="form-control"
+            </div>
+            <div class="col-sm-6">
+              <div class="admin-form-group">
+                <label class="admin-form-label">Email</label>
+                <input type="email" name="email" class="admin-form-control"
                        value="{{ form.email if edit else form.get('email','') }}"
                        placeholder="john@example.com">
               </div>
-              <div class="col-sm-6">
-                <label class="form-label">Department</label>
-                <select name="department_id" class="form-select">
+            </div>
+            <div class="col-sm-6">
+              <div class="admin-form-group">
+                <label class="admin-form-label">Department</label>
+                <select name="department_id" class="admin-form-select">
                   <option value="">Select Department</option>
                   {% for d in departments %}
                   <option value="{{ d.id }}"
@@ -56,15 +67,19 @@
                   {% endfor %}
                 </select>
               </div>
-              <div class="col-sm-6">
-                <label class="form-label">Designation</label>
-                <input type="text" name="designation" class="form-control"
+            </div>
+            <div class="col-sm-6">
+              <div class="admin-form-group">
+                <label class="admin-form-label">Designation</label>
+                <input type="text" name="designation" class="admin-form-control"
                        value="{{ form.designation if edit else form.get('designation','') }}"
                        placeholder="Software Engineer">
               </div>
-              <div class="col-sm-6">
-                <label class="form-label">Employee Type</label>
-                <select name="employee_type" class="form-select">
+            </div>
+            <div class="col-sm-6">
+              <div class="admin-form-group">
+                <label class="admin-form-label">Employee Type</label>
+                <select name="employee_type" class="admin-form-select">
                   {% set types = [('full_time', 'Full-time'), ('contract', 'Contract'), ('part_time', 'Part-time')] %}
                   {% for value, label in types %}
                   <option value="{{ value }}"
@@ -74,134 +89,155 @@
                   {% endfor %}
                 </select>
               </div>
-              <div class="col-sm-6">
-                <label class="form-label">Basic Salary (Rs.)</label>
-                <input type="number" step="0.01" name="basic_salary" class="form-control"
+            </div>
+            <div class="col-sm-6">
+              <div class="admin-form-group">
+                <label class="admin-form-label">Basic Salary (Rs.)</label>
+                <input type="number" step="0.01" name="basic_salary" class="admin-form-control"
                        value="{{ form.basic_salary if edit else form.get('basic_salary','') }}"
                        placeholder="25000" min="0">
               </div>
-              <div class="col-sm-6">
-                <label class="form-label">Joining Date</label>
-                <input type="date" name="joining_date" class="form-control"
+            </div>
+            <div class="col-sm-6">
+              <div class="admin-form-group">
+                <label class="admin-form-label">Joining Date</label>
+                <input type="date" name="joining_date" class="admin-form-control"
                        value="{{ form.joining_date.isoformat() if edit and form.joining_date else form.get('joining_date','') }}">
               </div>
-              <div class="col-sm-6">
-                <label class="form-label">PAN Number</label>
-                <input type="text" name="pan_number" class="form-control"
+            </div>
+            <div class="col-sm-6">
+              <div class="admin-form-group">
+                <label class="admin-form-label">PAN Number</label>
+                <input type="text" name="pan_number" class="admin-form-control"
                        value="{{ form.pan_number if edit else form.get('pan_number','') }}"
                        placeholder="ABCDE1234F">
               </div>
-              <div class="col-sm-6">
-                <label class="form-label">Aadhar Number</label>
-                <input type="text" name="aadhar_number" class="form-control"
+            </div>
+            <div class="col-sm-6">
+              <div class="admin-form-group">
+                <label class="admin-form-label">Aadhar Number</label>
+                <input type="text" name="aadhar_number" class="admin-form-control"
                        value="{{ form.aadhar_number if edit else form.get('aadhar_number','') }}"
                        placeholder="1234 5678 9012">
               </div>
-              <div class="col-sm-6">
-                <label class="form-label">Portal Password</label>
-                <input type="text" name="password" class="form-control"
+            </div>
+            <div class="col-sm-6">
+              <div class="admin-form-group">
+                <label class="admin-form-label">Portal Password</label>
+                <input type="text" name="password" class="admin-form-control"
                        value=""
                        placeholder="Leave blank to keep unchanged" autocomplete="off">
-                <div class="form-text">Visible only to admin. If filled, the employee’s portal password will be set to this value.</div>
+                <div class="admin-form-hint">Visible only to admin. If filled, the employee’s portal password will be set to this value.</div>
               </div>
             </div>
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- Bank Details -->
-      <div class="col-lg-6">
-        <div class="card border-0 shadow-sm">
-          <div class="card-header bg-white border-bottom">
-            <h6 class="mb-0 fw-bold"><i class="bi bi-bank text-success"></i> Bank Details</h6>
+    <!-- Bank Details -->
+    <div class="col-lg-6">
+      <div class="admin-card">
+        <div class="admin-card-header">
+          <div class="admin-card-title"><i class="bi bi-bank me-2"></i>Bank Details</div>
+        </div>
+        <div class="admin-card-body">
+          <div class="admin-form-group">
+            <label class="admin-form-label">Bank Name</label>
+            <input type="text" name="bank_name" class="admin-form-control"
+                   value="{{ form.bank_name if edit else form.get('bank_name','') }}"
+                   placeholder="State Bank of India">
           </div>
-          <div class="card-body">
-            <div class="row g-3">
-              <div class="col-12">
-                <label class="form-label">Bank Name</label>
-                <input type="text" name="bank_name" class="form-control"
-                       value="{{ form.bank_name if edit else form.get('bank_name','') }}"
-                       placeholder="State Bank of India">
-              </div>
-              <div class="col-sm-6">
-                <label class="form-label">Account Number</label>
-                <input type="text" name="account_number" class="form-control"
+          <div class="row g-3">
+            <div class="col-sm-6">
+              <div class="admin-form-group">
+                <label class="admin-form-label">Account Number</label>
+                <input type="text" name="account_number" class="admin-form-control"
                        value="{{ form.account_number if edit else form.get('account_number','') }}"
                        placeholder="00000000000000">
               </div>
-              <div class="col-sm-6">
-                <label class="form-label">IFSC Code</label>
-                <input type="text" name="ifsc_code" class="form-control"
+            </div>
+            <div class="col-sm-6">
+              <div class="admin-form-group">
+                <label class="admin-form-label">IFSC Code</label>
+                <input type="text" name="ifsc_code" class="admin-form-control"
                        value="{{ form.ifsc_code if edit else form.get('ifsc_code','') }}"
                        placeholder="SBIN0001234">
               </div>
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- School Assignment -->
-        <div class="card border-0 shadow-sm mt-4">
-          <div class="card-header bg-white border-bottom">
-            <h6 class="mb-0 fw-bold"><i class="bi bi-building text-warning"></i> School Assignment</h6>
-          </div>
-          <div class="card-body">
-            <p class="text-muted small">Select the school(s) this employee works at.</p>
-            <div class="admin-scroll-list">
-              {% for s in schools %}
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" name="school_ids" value="{{ s.id }}" id="school_{{ s.id }}"
-                  {% if edit and s in form.schools %}checked{% endif %}>
-                <label class="form-check-label small" for="school_{{ s.id }}">{{ s.name }}</label>
-              </div>
-              {% else %}
-              <p class="text-muted small mb-0">No schools created yet. <a href="{{ url_for('admin.add_school') }}">Add a school →</a></p>
-              {% endfor %}
+      <!-- School Assignment -->
+      <div class="admin-card mt-4">
+        <div class="admin-card-header">
+          <div class="admin-card-title"><i class="bi bi-building me-2"></i>School Assignment</div>
+        </div>
+        <div class="admin-card-body">
+          <p class="admin-form-hint">Select the school(s) this employee works at.</p>
+          <div class="admin-scroll-list">
+            {% for s in schools %}
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="school_ids" value="{{ s.id }}" id="school_{{ s.id }}"
+                {% if edit and s in form.schools %}checked{% endif %}>
+              <label class="form-check-label small" for="school_{{ s.id }}">{{ s.name }}</label>
             </div>
+            {% else %}
+            <p class="text-muted small mb-0">No schools created yet. <a href="{{ url_for('admin.add_school') }}">Add a school →</a></p>
+            {% endfor %}
           </div>
         </div>
+      </div>
 
-        <!-- Shift Override -->
-        <div class="card border-0 shadow-sm mt-4">
-          <div class="card-header bg-white border-bottom">
-            <h6 class="mb-0 fw-bold"><i class="bi bi-clock text-warning"></i> Shift Override</h6>
-          </div>
-          <div class="card-body">
-            <p class="text-muted small">Leave blank to use the school's default shift timings.</p>
-            <div class="row g-3">
-              <div class="col-sm-6">
-                <label class="form-label">Custom Shift Start (optional)</label>
-                <input type="time" name="shift_start" class="form-control"
+      <!-- Shift Override -->
+      <div class="admin-card mt-4">
+        <div class="admin-card-header">
+          <div class="admin-card-title"><i class="bi bi-clock me-2"></i>Shift Override</div>
+        </div>
+        <div class="admin-card-body">
+          <p class="admin-form-hint">Leave blank to use the school's default shift timings.</p>
+          <div class="row g-3">
+            <div class="col-sm-6">
+              <div class="admin-form-group">
+                <label class="admin-form-label">Custom Shift Start (optional)</label>
+                <input type="time" name="shift_start" class="admin-form-control"
                        value="{{ form.shift_start if edit else form.get('shift_start','') }}">
               </div>
-              <div class="col-sm-6">
-                <label class="form-label">Custom Shift End (optional)</label>
-                <input type="time" name="shift_end" class="form-control"
+            </div>
+            <div class="col-sm-6">
+              <div class="admin-form-group">
+                <label class="admin-form-label">Custom Shift End (optional)</label>
+                <input type="time" name="shift_end" class="admin-form-control"
                        value="{{ form.shift_end if edit else form.get('shift_end','') }}">
               </div>
-              <div class="col-sm-6">
-                <label class="form-label">Custom Working Hours (optional)</label>
-                <input type="number" name="working_hours_per_day" class="form-control" step="0.5" min="1" max="24"
+            </div>
+            <div class="col-sm-6">
+              <div class="admin-form-group">
+                <label class="admin-form-label">Custom Working Hours (optional)</label>
+                <input type="number" name="working_hours_per_day" class="admin-form-control" step="0.5" min="1" max="24"
                        value="{{ form.working_hours_per_day if edit else form.get('working_hours_per_day','') }}"
                        placeholder="e.g. 6">
               </div>
             </div>
           </div>
         </div>
+      </div>
 
-        <div class="card border-0 shadow-sm mt-4">
-          <div class="card-footer bg-transparent border-top-0">
-            <div class="d-flex gap-2 justify-content-end">
-              <a href="{{ url_for('admin.employees') }}" class="btn btn-outline-secondary">Cancel</a>
-              <button type="submit" class="btn btn-primary">
-                <i class="bi bi-check-lg"></i> {{ 'Update Employee' if edit else 'Add Employee' }}
-              </button>
-            </div>
+      <div class="admin-card mt-4">
+        <div class="admin-card-body">
+          <div class="d-flex gap-2 justify-content-end">
+            <a href="{{ url_for('admin.employees') }}" class="admin-btn admin-btn-secondary">Cancel</a>
+            <button type="submit" class="admin-btn admin-btn-primary">
+              <i class="bi bi-check-lg"></i> {{ 'Update Employee' if edit else 'Add Employee' }}
+            </button>
           </div>
         </div>
       </div>
     </div>
-  </form>
-</div>
+  </div>
+</form>
+
 {% endblock %}
 
 {% block scripts %}
