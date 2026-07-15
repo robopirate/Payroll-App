@@ -30,25 +30,6 @@
           <div class="rp-list-meta">{{ location.name if location else 'Not Assigned' }}</div>
         </div>
       </div>
-      {% if location_mode == 'school' %}
-      <div class="rp-list-item">
-        <div class="rp-list-main">
-          <div class="rp-list-title">Shift</div>
-          <div class="rp-list-meta">{{ shift_start or '--:--' }} – {{ shift_end or '--:--' }}</div>
-        </div>
-        <span class="rp-badge rp-badge-info">{{ working_hours_per_day }} hrs</span>
-      </div>
-      {% else %}
-      <div class="rp-list-item">
-        <div class="rp-list-main">
-          <div class="rp-list-title">Working Hours</div>
-          <div class="rp-list-meta">{{ working_hours_per_day }} hrs target</div>
-        </div>
-        {% if shift_start and shift_end %}
-        <span class="rp-badge rp-badge-info">{{ shift_start }} – {{ shift_end }}</span>
-        {% endif %}
-      </div>
-      {% endif %}
       {% if location and (location.grace_minutes or location.lunch_minutes) %}
       <div class="rp-list-item">
         <div class="rp-list-main">
