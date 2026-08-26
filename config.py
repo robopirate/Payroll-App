@@ -64,6 +64,10 @@ class Config:
     GOOGLE_MAPS_API_KEY = os.environ.get('GOOGLE_MAPS_API_KEY', '')
     # Rate limiter storage (memory:// default; set to Redis URL on Render)
     RATELIMIT_STORAGE_URI = os.environ.get('RATELIMIT_STORAGE_URI', 'memory://')
+    # Static asset versioning. Bump this (or set ASSET_VERSION env var) whenever
+    # portal.css / portal.js / style.css / main.js change so browsers fetch fresh
+    # copies even with long-term immutable cache headers.
+    ASSET_VERSION = os.environ.get('ASSET_VERSION', '10')
     # Payroll settings
     OVERTIME_RATE_MULTIPLIER = 2.0   # overtime hourly rate = (basic/26/8) * multiplier
     PF_RATE = 0.0                    # disabled for small startup; set to 0.12 if PF becomes mandatory

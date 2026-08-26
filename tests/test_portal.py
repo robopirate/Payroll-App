@@ -284,3 +284,132 @@ def test_api_today_status_returns_json(client, app):
     assert 'today_att' in data
     assert 'summary' in data
     assert 'recent_activity' in data
+
+
+from datetime import date, datetime, timezone, timedelta
+from unittest.mock import patch
+
+from models import db, Payroll, Attendance
+
+
+def test_static_cache_headers_versioned_and_sw_not_immutable(client, app):
+    """Versioned static assets are immutable; sw.js/manifest.json are short-lived."""
+    app.config['ENV'] = 'production'
+
+    css = client.get('/static/css/portal.css?v=10')
+    assert css.status_code == 200
+    assert 'immutable' in css.headers.get('Cache-Control', '')
+
+    js = client.get('/static/js/portal.js')
+    assert js.status_code == 200
+    assert 'immutable' in js.headers.get('Cache-Control', '')
+
+    sw = client.get('/static/sw.js')
+    assert sw.status_code == 200
+    sw_cc = sw.headers.get('Cache-Control', '')
+    assert 'immutable' not in sw_cc
+    assert 'max-age=300' in sw_cc
+
+    manifest = client.get('/static/manifest.json')
+    assert manifest.status_code == 200
+    mf_cc = manifest.headers.get('Cache-Control', '')
+    assert 'immutable' not in mf_cc
+    assert 'max-age=300' in mf_cc
+
+
+def test_payslip_download_link_has_download_attribute(client, app):
+    """Payslip PDF links must carry the download attribute so the loader doesn't freeze."""
+    _make_approved_employee(app, '9876543200', emp_id='EMP210')
+    with app.app_context():
+        emp = Employee.query.filter_by(emp_id='EMP210').first()
+        payroll = Payroll(
+            employee_id=emp.id,
+            month=1,
+            year=2025,
+            gross_salary=25000,
+            net_salary=23000,
+            present_days=26,
+            status='finalized',
+        )
+        db.session.add(payroll)
+        db.session.commit()
+
+    resp = _portal_login(client, '9876543200')
+    assert resp.status_code == 200
+
+    resp = client.get('/portal/payslips')
+    assert resp.status_code == 200
+    html = resp.data.decode()
+    assert 'Download PDF' in html
+    # The link should have a download attribute and point to the payslip route.
+    assert 'download' in html
+    assert '/portal/payslip/' in html
+
+
+def test_punch_page_renders_done_for_day_state(client, app):
+    """When both punches exist the page must render the done-for-day JS path."""
+    _make_approved_employee(app, '9876543201', emp_id='EMP211')
+    with app.app_context():
+        emp = Employee.query.filter_by(emp_id='EMP211').first()
+        att = Attendance(
+            employee_id=emp.id,
+            date=date(2025, 1, 15),
+            status='present',
+            check_in='09:30',
+            check_out='18:30',
+        )
+        db.session.add(att)
+        db.session.commit()
+
+    resp = _portal_login(client, '9876543201')
+    assert resp.status_code == 200
+
+    resp = client.get('/portal/punch')
+    assert resp.status_code == 200
+    html = resp.data.decode()
+    assert 'doneForDay = true' in html
+    assert "setBtn('done')" in html
+
+
+def test_punch_api_records_ist_date(client, app):
+    """Punch API must write the attendance row using IST date, not server-local date."""
+    from services.attendance_service import today_ist
+
+    _make_approved_employee(app, '9876543202', emp_id='EMP212')
+    with app.app_context():
+        emp = Employee.query.filter_by(emp_id='EMP212').first()
+        school = School(
+            name='IST Test School',
+            address='Pune',
+            latitude=18.52,
+            longitude=73.85,
+            geofence_radius=1000,
+        )
+        db.session.add(school)
+        db.session.commit()
+        emp.schools.append(school)
+        db.session.commit()
+
+    resp = _portal_login(client, '9876543202')
+    assert resp.status_code == 200
+
+    target_date = date(2025, 1, 20)
+    ist = timezone(timedelta(hours=5, minutes=30))
+    target_now = datetime(2025, 1, 20, 9, 30, tzinfo=ist)
+    # api.py imports today_ist/now_ist into its own module namespace, so patch there.
+    with patch('blueprints.api.today_ist', return_value=target_date), \
+         patch('blueprints.api.now_ist', return_value=target_now):
+        resp = client.post('/api/punch', json={
+            'lat': 18.52,
+            'lng': 73.85,
+            'action': 'in',
+        })
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data['success'] is True
+
+    with app.app_context():
+        emp = Employee.query.filter_by(emp_id='EMP212').first()
+        att = Attendance.query.filter_by(employee_id=emp.id).first()
+        assert att is not None
+        assert att.date == target_date

@@ -11,6 +11,8 @@ from services.attendance_service import (
     ensure_absent_attendance,
     backfill_absent_attendance,
     run_monthly_attendance_backfill,
+    today_ist,
+    now_ist,
 )
 
 
@@ -255,16 +257,10 @@ def test_backfill_absent_attendance_fills_past_days(app):
         # Patch "today" to 2025-01-15 (Wednesday) and hour before cutoff -> fill 1..14
         fake_today = date(2025, 1, 15)
 
-        class FakeDate(date):
-            @classmethod
-            def today(cls):
-                return fake_today
-
         fake_now = MagicMock()
         fake_now.hour = 10
-        with patch('services.attendance_service.date', FakeDate), \
-             patch('services.attendance_service.datetime') as fake_dt:
-            fake_dt.now.return_value = fake_now
+        with patch('services.attendance_service.today_ist', return_value=fake_today), \
+             patch('services.attendance_service.now_ist', return_value=fake_now):
             backfill_absent_attendance(2025, 1)
 
         # Jan 2025: Sundays are 5th and 12th. So working days 1-14 except 5,12 should be absent.
@@ -282,16 +278,10 @@ def test_backfill_absent_attendance_includes_today_after_cutoff(app):
         emp_id = _make_emp(app, 'EMP_ABS_5', 'Today Test', '9876543305', date(2024, 1, 1))
         fake_today = date(2025, 1, 15)
 
-        class FakeDate(date):
-            @classmethod
-            def today(cls):
-                return fake_today
-
         fake_now = MagicMock()
         fake_now.hour = 20
-        with patch('services.attendance_service.date', FakeDate), \
-             patch('services.attendance_service.datetime') as fake_dt:
-            fake_dt.now.return_value = fake_now
+        with patch('services.attendance_service.today_ist', return_value=fake_today), \
+             patch('services.attendance_service.now_ist', return_value=fake_now):
             backfill_absent_attendance(2025, 1)
 
         att = Attendance.query.filter_by(employee_id=emp_id, date=fake_today).first()
@@ -356,16 +346,10 @@ def test_run_monthly_attendance_backfill_creates_records(app):
         emp_id = _make_emp(app, 'EMP_BF_1', 'Backfill Monthly', '9876543307', date(2024, 1, 1))
         target = date(2025, 1, 8)  # Wednesday
 
-        class FakeDate(date):
-            @classmethod
-            def today(cls):
-                return target
-
         fake_now = MagicMock()
         fake_now.hour = 20
-        with patch('services.attendance_service.date', FakeDate), \
-             patch('services.attendance_service.datetime') as fake_dt:
-            fake_dt.now.return_value = fake_now
+        with patch('services.attendance_service.today_ist', return_value=target), \
+             patch('services.attendance_service.now_ist', return_value=fake_now):
             run_monthly_attendance_backfill(2025, 1)
 
         att = Attendance.query.filter_by(employee_id=emp_id, date=target).first()
@@ -382,3 +366,13 @@ def test_backfill_attendance_task_requires_token(client, app):
         resp_ok = client.post('/tasks/backfill-attendance?token=secret-token')
         assert resp_ok.status_code == 200
         assert resp_ok.get_json()['status'] == 'ok'
+
+
+def test_today_ist_and_now_ist_use_indian_standard_time():
+    """today_ist()/now_ist() must anchor to UTC+5:30 so punches and portal agree."""
+    from datetime import timedelta, timezone
+    from services.attendance_service import today_ist, now_ist
+    now = now_ist()
+    assert now.tzinfo == timezone(timedelta(hours=5, minutes=30))
+    # today_ist is the date portion of now_ist()
+    assert today_ist() == now.date()

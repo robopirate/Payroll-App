@@ -130,6 +130,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const locationName = {{ (location.name|default('location'))|tojson }};
   let userLat = null, userLng = null, checkedIn = {{ 'true' if (today_attendance and today_attendance.check_in and not today_attendance.check_out) else 'false' }};
   let doneForDay = {{ 'true' if (today_attendance and today_attendance.check_in and today_attendance.check_out) else 'false' }};
+  let gpsError = false;
 
   const checkIn = '{{ today_attendance.check_in if today_attendance and today_attendance.check_in else '' }}';
   const checkOut = '{{ today_attendance.check_out if today_attendance and today_attendance.check_out else '' }}';
@@ -160,12 +161,13 @@ document.addEventListener('DOMContentLoaded', function() {
       out:       { cls: 'rp-btn-secondary', icon: 'bi-box-arrow-right', text: 'Punch Out' },
       'in-field':{ cls: 'rp-btn-primary', icon: 'bi-geo-alt', text: 'Field Punch In' },
       'out-field':{ cls: 'rp-btn-secondary', icon: 'bi-geo-alt', text: 'Field Punch Out' },
-      done:      { cls: 'rp-btn-success', icon: 'bi-check-circle-fill', text: 'Done' },
-      loading:   { cls: 'rp-btn-ghost', icon: 'bi-hourglass-split', text: 'Processing…' }
+      done:      { cls: 'rp-btn-success', icon: 'bi-check-circle-fill', text: 'Done for today', disabled: true },
+      error:     { cls: 'rp-btn-warning', icon: 'bi-geo-alt', text: 'Retry Location' },
+      loading:   { cls: 'rp-btn-ghost', icon: 'bi-hourglass-split', text: 'Processing…', disabled: true }
     };
     const c = configs[state] || configs.loading;
     btn.className = 'rp-btn rp-btn-lg-circle ' + c.cls;
-    btn.disabled = (state === 'loading' || state === 'done');
+    btn.disabled = !!c.disabled;
     btn.innerHTML = '<i class="bi ' + c.icon + '"></i><span class="lbl">' + c.text + '</span>';
   }
 
@@ -208,9 +210,18 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!doneForDay) setBtn(checkedIn ? 'out' : 'in');
       }
     }, e => {
+      if (doneForDay) { setBtn('done'); return; }
+      gpsError = true;
+      document.getElementById('rp-distance-card').style.display = 'none';
+      const geoEl = document.getElementById('rp-geofence-status');
+      if (geoEl) {
+        geoEl.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Location access denied or unavailable. Tap Retry below.';
+        geoEl.style.color = 'var(--rp-danger)';
+      }
       document.getElementById('rp-gps-status').className = 'rp-pill rp-status-notstarted';
       document.getElementById('rp-gps-status').innerHTML = '<i class="bi bi-geo-alt"></i> Location error';
-      RP.toast('Could not get location: ' + e.message, 'warning');
+      setBtn('error');
+      RP.toast('Could not get location: ' + (e.message || 'unknown error'), 'warning');
     }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
   }
 
@@ -238,11 +249,19 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  document.getElementById('rp-punch-page-btn').addEventListener('click', submitPunch);
+  document.getElementById('rp-punch-page-btn').addEventListener('click', function() {
+    if (doneForDay) return;
+    if (gpsError) { gpsError = false; getLocation(); return; }
+    submitPunch();
+  });
   RP.updateCurrentTime('rp-current-time');
   setInterval(() => RP.updateCurrentTime('rp-current-time'), 1000);
-  getLocation();
-  setInterval(getLocation, 30000);
+  if (doneForDay) {
+    setBtn('done');
+  } else {
+    getLocation();
+    setInterval(getLocation, 30000);
+  }
 });
 </script>
 {% endblock %}

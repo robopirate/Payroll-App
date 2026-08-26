@@ -10,7 +10,7 @@ from extensions import db, limiter, csrf
 from services.attendance_service import (
     haversine_distance, update_attendance_timing_flags, calculate_paid_days,
     get_employee_active_school, get_employee_effective_shift,
-    _compute_expected_end_time, _compute_overtime_hours
+    _compute_expected_end_time, _compute_overtime_hours, today_ist, now_ist
 )
 from models import Employee, Attendance, Leave, LeaveBalance, Payroll, Holiday
 
@@ -178,9 +178,8 @@ def api_punch():
         if closest_school and min_distance <= closest_school.geofence_radius:
             location_type = 'school'
 
-    ist = timezone(timedelta(hours=5, minutes=30))
-    today = datetime.now(ist).date()
-    now_time = datetime.now(ist).strftime('%H:%M')
+    today = today_ist()
+    now_time = now_ist().strftime('%H:%M')
     att = Attendance.query.filter_by(employee_id=emp.id, date=today).first()
 
     if action == 'in':
@@ -242,7 +241,7 @@ def api_today_status():
     if not emp:
         return jsonify({'success': False, 'message': 'Unauthorized. Please login.'}), 401
 
-    today = date.today()
+    today = today_ist()
     today_att = Attendance.query.filter_by(employee_id=emp.id, date=today).first()
     shift_start, shift_end, working_hours_per_day = get_employee_effective_shift(emp)
 
@@ -443,7 +442,7 @@ def api_attendance_today():
     if error:
         return error
 
-    today = date.today()
+    today = today_ist()
     att = Attendance.query.filter_by(employee_id=emp.id, date=today).first()
 
     if not att:
@@ -543,8 +542,8 @@ def api_attendance_monthly():
     if error:
         return error
 
-    month = int(request.args.get('month', date.today().month))
-    year = int(request.args.get('year', date.today().year))
+    month = int(request.args.get('month', today_ist().month))
+    year = int(request.args.get('year', today_ist().year))
 
     import calendar
     _, days_in_month = calendar.monthrange(year, month)
@@ -654,7 +653,7 @@ def api_leaves():
     if error:
         return error
 
-    year = date.today().year
+    year = today_ist().year
     balances = LeaveBalance.query.filter_by(employee_id=emp.id, year=year).all()
     leaves = Leave.query.filter_by(employee_id=emp.id).order_by(Leave.applied_on.desc()).all()
 
@@ -786,7 +785,7 @@ def api_apply_leave():
     if days <= 0:
         return jsonify({'success': False, 'message': 'Leave range contains no working days.'}), 400
 
-    year = date.today().year
+    year = today_ist().year
     balance = LeaveBalance.query.filter_by(employee_id=emp.id, leave_type=leave_type, year=year).first()
     if balance and balance.remaining_days < days:
         return jsonify({
@@ -956,7 +955,7 @@ def api_holidays():
       401:
         description: Unauthorized
     """
-    today = date.today()
+    today = today_ist()
     upcoming = Holiday.query.filter(
         Holiday.date >= today,
         Holiday.is_active == True

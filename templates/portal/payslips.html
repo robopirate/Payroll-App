@@ -29,7 +29,7 @@
           {% else %}rp-badge-draft{% endif %}">{{ p.status|title }}</span>
       </div>
     </div>
-    <a href="{{ url_for('portal.portal_download_payslip', payroll_id=p.id) }}" class="rp-btn rp-btn-secondary rp-btn-block mt-3" style="min-height: 44px;">
+    <a href="{{ url_for('portal.portal_download_payslip', payroll_id=p.id) }}" download class="rp-btn rp-btn-secondary rp-btn-block mt-3" style="min-height: 44px;">
       <i class="bi bi-download"></i> Download PDF
     </a>
   </div>

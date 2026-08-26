@@ -9,7 +9,7 @@ from decorators import portal_required
 from services.attendance_service import (
     count_working_days_between, calculate_paid_days,
     get_employee_active_school, get_employee_effective_shift,
-    get_employee_location_mode
+    get_employee_location_mode, today_ist
 )
 from services.login_protection import is_allowed
 from flask_limiter.util import get_remote_address
@@ -117,9 +117,9 @@ def register():
 
             # Parse joining date
             try:
-                joining_date = datetime.strptime(joining_date_str, '%Y-%m-%d').date() if joining_date_str else date.today()
+                joining_date = datetime.strptime(joining_date_str, '%Y-%m-%d').date() if joining_date_str else today_ist()
             except:
-                joining_date = date.today()
+                joining_date = today_ist()
 
             # Create employee record
             employee = Employee(
@@ -166,7 +166,7 @@ def register():
 @portal_required
 def portal_dashboard():
     emp = db.session.get(Employee, current_user.employee_id)
-    today = date.today()
+    today = today_ist()
     today_att = Attendance.query.filter_by(employee_id=emp.id, date=today).first()
     recent_att = Attendance.query.filter_by(employee_id=emp.id).order_by(
         Attendance.date.desc()).limit(7).all()
@@ -205,7 +205,7 @@ def portal_dashboard():
 @portal_required
 def portal_punch():
     emp = db.session.get(Employee, current_user.employee_id)
-    today = date.today()
+    today = today_ist()
     today_att = Attendance.query.filter_by(employee_id=emp.id, date=today).first()
     location = get_employee_active_school(emp)
     location_mode = get_employee_location_mode(emp)
@@ -281,8 +281,8 @@ def portal_profile():
 @portal_required
 def portal_attendance():
     emp = db.session.get(Employee, current_user.employee_id)
-    month = int(request.args.get('month', date.today().month))
-    year = int(request.args.get('year', date.today().year))
+    month = int(request.args.get('month', today_ist().month))
+    year = int(request.args.get('year', today_ist().year))
     _, days_in_month = calendar.monthrange(year, month)
 
     month_start = date(year, month, 1)
@@ -299,7 +299,7 @@ def portal_attendance():
     return render_template('portal/attendance.html', emp=emp, atts=atts, month=month, year=year,
         days_in_month=days_in_month, present=paid_days, absent=absent,
         month_days=month_days, get_month_name=get_month_name,
-        months=list(range(1, 13)), years=list(range(2020, date.today().year + 2)))
+        months=list(range(1, 13)), years=list(range(2020, today_ist().year + 2)))
 
 
 @bp.route('/portal/payslips')
@@ -328,10 +328,10 @@ def portal_download_payslip(payroll_id):
 @portal_required
 def portal_leaves():
     emp = db.session.get(Employee, current_user.employee_id)
-    year = date.today().year
+    year = today_ist().year
     leave_balances = LeaveBalance.query.filter_by(employee_id=emp.id, year=year).all()
     leaves_list = Leave.query.filter_by(employee_id=emp.id).order_by(Leave.applied_on.desc()).all()
-    return render_template('portal/leaves.html', emp=emp, leave_balances=leave_balances, leaves=leaves_list, today=date.today())
+    return render_template('portal/leaves.html', emp=emp, leave_balances=leave_balances, leaves=leaves_list, today=today_ist())
 
 
 @bp.route('/portal/leaves/<int:leave_id>/cancel', methods=['POST'])
@@ -344,7 +344,7 @@ def portal_cancel_leave(leave_id):
         flash('You can only cancel your own leave.', 'danger')
         return redirect(url_for('.portal_leaves'))
 
-    today = date.today()
+    today = today_ist()
     # Allow cancelling pending leaves, or approved leaves that haven't started yet
     if leave.status not in ('pending', 'approved'):
         flash('This leave cannot be cancelled.', 'warning')
@@ -371,7 +371,7 @@ def portal_cancel_leave(leave_id):
 @portal_required
 def portal_apply_leave():
     emp = db.session.get(Employee, current_user.employee_id)
-    year = date.today().year
+    year = today_ist().year
     leave_balances = LeaveBalance.query.filter_by(employee_id=emp.id, year=year).all()
     if request.method == 'POST':
         f = request.form

@@ -46,7 +46,7 @@ class School(db.Model):
     address = db.Column(db.String(300))
     latitude = db.Column(db.Float)
     longitude = db.Column(db.Float)
-    geofence_radius = db.Column(db.Float, default=150.0)
+    geofence_radius = db.Column(db.Float, default=300.0)
     working_hours_per_day = db.Column(db.Float, default=8.0)
     # Shift timings (HH:MM). Grace period applies to check-in; lunch is unpaid break.
     shift_start = db.Column(db.String(5))

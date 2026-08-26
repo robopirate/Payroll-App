@@ -16,7 +16,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
-  <link href="{{ url_for('static', filename='css/portal.css') }}" rel="stylesheet">
+  <link href="{{ url_for('static', filename='css/portal.css') }}?v={{ config.ASSET_VERSION }}" rel="stylesheet">
   {% block head %}{% endblock %}
 </head>
 <body>
@@ -96,7 +96,7 @@
 {% endif %}
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" defer></script>
-<script src="{{ url_for('static', filename='js/portal.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/portal.js') }}?v={{ config.ASSET_VERSION }}" defer></script>
 
 <script>
   if ('serviceWorker' in navigator) {
@@ -127,22 +127,28 @@
 <script>
   (function() {
     var loader = document.getElementById('rp-page-loader');
-    function showLoader() {
-      if (loader) loader.classList.add('show');
+    function showLoader() { if (loader) loader.classList.add('show'); }
+    function hideLoader() { if (loader) loader.classList.remove('show'); }
+    function shouldShowLoaderFor(el) {
+      if (el.tagName === 'BUTTON' && el.type === 'submit') return true;
+      var href = el.getAttribute('href');
+      if (!href) return false;
+      if (href.indexOf('/portal') === 0 || href.indexOf(window.location.origin) === 0) {
+        // File/attachment downloads don't navigate; showing a loader would freeze the page.
+        if (el.hasAttribute('download')) return false;
+        if (href.indexOf('/portal/payslip') !== -1) return false;
+        return true;
+      }
+      return false;
     }
-    // Show loader on internal navigation links
     document.querySelectorAll('a[href], button[type="submit"]').forEach(function(el) {
       el.addEventListener('click', function(e) {
-        var href = el.getAttribute('href');
-        if (href && (href.indexOf('/portal') === 0 || href.indexOf(window.location.origin) === 0)) {
-          showLoader();
-        }
-        if (el.tagName === 'BUTTON' && el.type === 'submit') {
-          showLoader();
-        }
+        if (shouldShowLoaderFor(el)) showLoader();
       });
     });
     window.addEventListener('beforeunload', showLoader);
+    // Pages restored from bfcache can still have the spinner; clear it.
+    window.addEventListener('pageshow', hideLoader);
   })();
 </script>
 

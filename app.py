@@ -9,6 +9,7 @@ import string
 from config import Config
 from extensions import db, login_manager, csrf, limiter, jwt, compress
 from models import User, Employee, Department, AppConfig
+from services.attendance_service import today_ist
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -123,9 +124,9 @@ def auto_checkout_task():
     supplied = request.args.get('token') or request.headers.get('X-Auto-Checkout-Token')
     if not token or supplied != token:
         abort(403)
-    from datetime import date, timedelta
+    from datetime import timedelta
     from services.attendance_service import auto_close_missing_checkouts
-    closed = auto_close_missing_checkouts(date.today() - timedelta(days=1))
+    closed = auto_close_missing_checkouts(today_ist() - timedelta(days=1))
     return jsonify({'status': 'ok', 'closed': closed}), 200
 
 
@@ -136,9 +137,8 @@ def backfill_attendance_task():
     supplied = request.args.get('token') or request.headers.get('X-Auto-Checkout-Token')
     if not token or supplied != token:
         abort(403)
-    from datetime import date
     from services.attendance_service import run_monthly_attendance_backfill
-    run_monthly_attendance_backfill(date.today().year, date.today().month)
+    run_monthly_attendance_backfill(today_ist().year, today_ist().month)
     return jsonify({'status': 'ok'}), 200
 
 
@@ -186,7 +186,11 @@ register_blueprints()
 def add_cache_headers(response):
     """Add long-term cache headers for static assets in production."""
     if app.config.get('ENV') == 'production' and request.path.startswith('/static/'):
-        response.headers['Cache-Control'] = 'public, max-age=31536000, immutable'
+        # sw.js and manifest.json must update on deploy; don't cache them for a year.
+        if request.path in ('/static/sw.js', '/static/manifest.json'):
+            response.headers['Cache-Control'] = 'public, max-age=300'
+        else:
+            response.headers['Cache-Control'] = 'public, max-age=31536000, immutable'
     return response
 
 

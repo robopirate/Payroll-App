@@ -1,9 +1,25 @@
 """Attendance and geolocation utilities."""
-from datetime import date, timedelta, datetime
+from datetime import date, timedelta, datetime, timezone
 import calendar
 import math
 
 from models import db, Holiday, Employee, Attendance, Leave
+
+
+# All employee attendance operations are anchored to Indian Standard Time so
+# that portal views, punches, and cron tasks agree on "today" even though the
+# server (Render) runs on UTC.
+_IST = timezone(timedelta(hours=5, minutes=30))
+
+
+def today_ist():
+    """Return today's date in Indian Standard Time."""
+    return datetime.now(_IST).date()
+
+
+def now_ist():
+    """Return the current moment in Indian Standard Time."""
+    return datetime.now(_IST)
 
 
 def get_working_days_in_month(year, month):
@@ -247,14 +263,14 @@ def backfill_absent_attendance(year, month):
     """
     from flask import current_app
     _, dim = calendar.monthrange(year, month)
-    today = date.today()
+    today = today_ist()
     cutoff = current_app.config.get('ABSENT_MARK_CUTOFF_HOUR', 18)
 
     for d in range(1, dim + 1):
         d_obj = date(year, month, d)
         if d_obj > today:
             continue
-        if d_obj == today and datetime.now().hour < cutoff:
+        if d_obj == today and now_ist().hour < cutoff:
             continue
         ensure_absent_attendance(d_obj)
 
@@ -267,14 +283,14 @@ def run_monthly_attendance_backfill(year, month):
     """
     from flask import current_app
     _, dim = calendar.monthrange(year, month)
-    today = date.today()
+    today = today_ist()
     cutoff = current_app.config.get('ABSENT_MARK_CUTOFF_HOUR', 18)
 
     for d in range(1, dim + 1):
         d_obj = date(year, month, d)
         if d_obj > today:
             continue
-        if d_obj == today and datetime.now().hour < cutoff:
+        if d_obj == today and now_ist().hour < cutoff:
             continue
         if d_obj.weekday() == 6:
             ensure_sunday_attendance(d_obj)
@@ -347,7 +363,8 @@ def auto_close_missing_checkouts(date_obj):
     """Close attendance records that have a check_in but no check_out.
 
     Sets check_out to the employee's shift_end, flags the record as auto-closed,
-    and leaves overtime at zero. Returns the number of records closed.
+    marks it as a half-day (so a forgotten punch-out does not count as a full
+    present day), and leaves overtime at zero. Returns the number of records closed.
     """
     records = Attendance.query.filter(
         Attendance.date == date_obj,
@@ -368,6 +385,7 @@ def auto_close_missing_checkouts(date_obj):
         else:
             continue
         att.auto_checkout = 1
+        att.status = 'half_day'
         att.overtime_hours = 0.0
         update_attendance_timing_flags(att, employee=emp)
         closed += 1
