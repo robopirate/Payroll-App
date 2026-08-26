@@ -23,6 +23,9 @@ def start_scheduler(app):
     """Start APScheduler with the daily backfill and auto-checkout jobs."""
     if os.environ.get('RUN_SCHEDULER', 'true').lower() != 'true':
         return None
+    # Don't leak background threads into the test suite.
+    if app.config.get('TESTING'):
+        return None
 
     from services.attendance_service import (
         run_monthly_attendance_backfill,
