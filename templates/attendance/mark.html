@@ -63,7 +63,7 @@
                 <select name="status_{{ emp.id }}" class="admin-form-select status-select" style="width:130px"
                         onchange="toggleOT(this, {{ emp.id }})">
                   {% for s in ['present','absent','half_day','overtime','leave','holiday'] %}
-                  <option value="{{ s }}" {% if att and att.status == s %}selected{% elif not att and s == 'present' %}selected{% endif %}>
+                  <option value="{{ s }}" {% if att and att.status == s %}selected{% elif not att and s == 'absent' %}selected{% endif %}>
                     {{ s.replace('_', ' ').title() }}
                   </option>
                   {% endfor %}
