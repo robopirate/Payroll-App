@@ -39,6 +39,10 @@ class Config:
             'max_overflow': 10,
             'pool_recycle': 1800,
             'pool_pre_ping': True,
+            # Supabase's connection pooler does not support prepared statements
+            # across pooled connections. Disable them so we don't get
+            # "DuplicatePreparedStatement" errors at runtime.
+            'connect_args': {'prepare_threshold': None},
         }
     else:
         SQLALCHEMY_ENGINE_OPTIONS = {}

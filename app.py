@@ -182,6 +182,12 @@ def register_blueprints():
 register_blueprints()
 
 
+# Start the background scheduler for daily attendance maintenance tasks.
+# Set RUN_SCHEDULER=false to disable it (useful for tests or local dev).
+from services.scheduler import start_scheduler
+scheduler = start_scheduler(app)
+
+
 @app.after_request
 def add_cache_headers(response):
     """Add long-term cache headers for static assets in production."""
