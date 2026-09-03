@@ -369,6 +369,9 @@ def auto_close_missing_checkouts(date_obj):
     records = Attendance.query.filter(
         Attendance.date == date_obj,
         Attendance.check_in.isnot(None),
+        # The admin page stores empty punch fields as '' (not NULL); those
+        # rows were never checked in and must not be auto-closed.
+        Attendance.check_in != '',
         db.or_(
             Attendance.check_out.is_(None),
             Attendance.check_out == ''
