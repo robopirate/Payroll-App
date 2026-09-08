@@ -34,7 +34,11 @@ def _parse_date(value, field_name=None):
         return None
 
 @bp.route('/portal/login', methods=['GET', 'POST'])
-@limiter.limit("10 per minute")
+# All teachers share the school's public Wi-Fi IP, so a tight per-IP cap
+# locks out the whole staff at punch-in time. 30/min ~ one class of teachers
+# logging in together; the per-phone failed-attempt guard below still
+# protects individual accounts.
+@limiter.limit("30 per minute")
 def portal_login():
     if current_user.is_authenticated:
         return redirect(url_for('auth.index'))
