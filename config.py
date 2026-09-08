@@ -76,7 +76,7 @@ class Config:
     # Static asset versioning. Bump this (or set ASSET_VERSION env var) whenever
     # portal.css / portal.js / style.css / main.js change so browsers fetch fresh
     # copies even with long-term immutable cache headers.
-    ASSET_VERSION = os.environ.get('ASSET_VERSION', '10')
+    ASSET_VERSION = os.environ.get('ASSET_VERSION', '11')
     # Payroll settings
     OVERTIME_RATE_MULTIPLIER = 2.0   # overtime hourly rate = (basic/26/8) * multiplier
     PF_RATE = 0.0                    # disabled for small startup; set to 0.12 if PF becomes mandatory

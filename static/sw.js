@@ -1,18 +1,19 @@
-const CACHE_NAME = 'robo-pirate-hr-v9';
+const CACHE_NAME = 'robo-pirate-hr-v10';
 const STATIC_EXTENSIONS = ['.css', '.js', '.png', '.jpg', '.jpeg', '.webp', '.svg', '.ico', '.woff', '.woff2', '.ttf', '.json'];
 const CDN_HOSTS = ['cdn.jsdelivr.net', 'fonts.googleapis.com', 'fonts.gstatic.com'];
 
 // Assets to cache immediately on install so the next visit loads offline/instanly.
+// All fonts/bootstrap are self-hosted now (no external CDN round-trips).
 const PRECACHE_URLS = [
   '/static/css/style.css',
   '/static/js/main.js',
   '/static/manifest.json',
+  '/static/fonts/fonts.css',
+  '/static/vendor/bootstrap.min.css',
+  '/static/vendor/bootstrap-icons.min.css',
+  '/static/vendor/bootstrap.bundle.min.js',
   '/login',
-  '/portal/login',
-  'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css',
-  'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css',
-  'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js',
-  'https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap'
+  '/portal/login'
 ];
 
 self.addEventListener('install', event => {
