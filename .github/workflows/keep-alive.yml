@@ -1,0 +1,25 @@
+name: Keep Render app awake
+
+# The Render free tier sleeps the web service after ~15 min of inactivity,
+# which causes the 30-50s cold starts teachers hit on the first load of the
+# day. This workflow pings /health every 5 minutes from GitHub's runners so
+# the instance stays awake 24/7 at no cost.
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:  # allows manual trigger from the Actions tab
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping health endpoint
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 \
+            https://payroll-app-xd1d.onrender.com/health || true)
+          echo "Health check status: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "App did not respond with 200 — it may be deploying or down."
+            exit 0  # never fail the workflow; a ping is best-effort
+          fi
