@@ -49,9 +49,9 @@ def portal_login():
         if emp:
             portal_user = User.query.filter_by(employee_id=emp.id).first()
             if portal_user and portal_user.check_password(password):
-                # Always remember portal logins: teachers punch in once daily on
-                # shared devices and Safari's saved password does not tick the
-                # checkbox, so honor it opt-out style.
+                # Always remember portal logins: teachers punch in once daily and
+                # Safari's saved password does not tick the checkbox, so the
+                # 30-day remember cookie (config.py) is applied unconditionally.
                 login_user(portal_user, remember=True)
                 return redirect(url_for('.portal_dashboard'))
 
