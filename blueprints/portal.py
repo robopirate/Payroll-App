@@ -49,7 +49,10 @@ def portal_login():
         if emp:
             portal_user = User.query.filter_by(employee_id=emp.id).first()
             if portal_user and portal_user.check_password(password):
-                login_user(portal_user, remember=request.form.get('remember'))
+                # Always remember portal logins: teachers punch in once daily on
+                # shared devices and Safari's saved password does not tick the
+                # checkbox, so honor it opt-out style.
+                login_user(portal_user, remember=True)
                 return redirect(url_for('.portal_dashboard'))
 
         # Record failed attempt and enforce brute-force protection
