@@ -11,11 +11,16 @@
   <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
   <title>{% block title %}My Portal{% endblock %} — Robo Pirate's Payroll</title>
 
-  <!-- Self-hosted fonts/bootstrap: external CDNs are the main slow-load cause on school mobile networks -->
-  <link href="{{ url_for('static', filename='fonts/fonts.css') }}" rel="stylesheet">
-  <link href="{{ url_for('static', filename='vendor/bootstrap.min.css') }}" rel="stylesheet">
-  <link href="{{ url_for('static', filename='vendor/bootstrap-icons.min.css') }}" rel="stylesheet">
+  <!-- First paint fast: portal.css is render-blocking (small); vendor/bootstrap
+       is deferred below on non-critical pages via preload trick. fonts.css is
+       non-blocking so text shows instantly even on slow school networks. -->
   <link href="{{ url_for('static', filename='css/portal.css') }}?v={{ config.ASSET_VERSION }}" rel="stylesheet">
+  <link rel="preload" href="{{ url_for('static', filename='vendor/bootstrap.min.css') }}" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link href="{{ url_for('static', filename='vendor/bootstrap.min.css') }}" rel="stylesheet"></noscript>
+  <link rel="preload" href="{{ url_for('static', filename='vendor/bootstrap-icons.min.css') }}" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link href="{{ url_for('static', filename='vendor/bootstrap-icons.min.css') }}" rel="stylesheet"></noscript>
+  <link rel="preload" href="{{ url_for('static', filename='fonts/fonts.css') }}" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link href="{{ url_for('static', filename='fonts/fonts.css') }}" rel="stylesheet"></noscript>
   {% block head %}{% endblock %}
 </head>
 <body>

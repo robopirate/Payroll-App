@@ -1,11 +1,13 @@
 from flask import Flask, redirect, url_for, flash, request, jsonify, abort
 from flask_login import current_user, logout_user
 from sqlalchemy import text, inspect
-from flasgger import Swagger
 from datetime import datetime
 import os
 import secrets
 import string
+import time
+import threading
+import logging
 from config import Config
 from extensions import db, login_manager, csrf, limiter, jwt, compress
 from models import User, Employee, Department, AppConfig
@@ -95,16 +97,8 @@ csrf.init_app(app)
 limiter.init_app(app)
 
 # Load persisted config after app context is available
+# (actual load happens in _gate_on_db_ready once tables exist)
 _persisted_config_loaded = False
-
-@app.before_request
-def load_persisted_config():
-    global _persisted_config_loaded
-    if not _persisted_config_loaded:
-        persisted_key = AppConfig.get('FAST2SMS_API_KEY')
-        if persisted_key:
-            app.config['FAST2SMS_API_KEY'] = persisted_key
-        _persisted_config_loaded = True
 
 
 @app.route('/health')
@@ -184,8 +178,15 @@ register_blueprints()
 
 # Start the background scheduler for daily attendance maintenance tasks.
 # Set RUN_SCHEDULER=false to disable it (useful for tests or local dev).
-from services.scheduler import start_scheduler
-scheduler = start_scheduler(app)
+# NOTE: imported lazily — APScheduler pulls packaging/version parsing at
+# import time; the scheduler only matters for cron, never for first load.
+scheduler = None
+if os.environ.get('RUN_SCHEDULER', 'true').lower() == 'true' and not app.config.get('TESTING'):
+    try:
+        from services.scheduler import start_scheduler
+        scheduler = start_scheduler(app)
+    except Exception:
+        app.logger.exception('Scheduler failed to start')
 
 
 @app.after_request
@@ -200,11 +201,44 @@ def add_cache_headers(response):
     return response
 
 
-# Initialize Swagger UI for API documentation
-swagger = Swagger(app)
+# Lazy Swagger: importing flasgger scans every route at startup (~seconds).
+# Teachers hit /portal/login, not /api/docs/, so only init it on demand.
+swagger = None
+
+def _get_swagger():
+    global swagger
+    if swagger is None:
+        from flasgger import Swagger
+        swagger = Swagger(app)
+    return swagger
+
+
+@app.before_request
+def _lazy_swagger_init():
+    # flasgger serves /apidocs/* and /apispec_*.json — init only for those.
+    if request.path.startswith(('/apidocs', '/apispec')) or request.path.startswith('/api/docs'):
+        _get_swagger()
 
 
 # ─── DB Init ─────────────────────────────────────────────────────────────────
+# Startup must be FAST: Render free tier cold-starts on the first teacher
+# login of the day. Heavy DB work (create_all, ~15 PRAGMA/inspect probes in
+# safe_migrate, sequence syncs, dept seeds) used to block gunicorn BEFORE it
+# could bind the port — Render saw a dead port and queued/replayed the first
+# request, which is exactly the "first look takes time to load" complaint.
+# Strategy: a /health-gated one-shot background thread.
+#   - gunicorn binds immediately → Render routes traffic → /health 200 OK.
+#   - Migrations run once, in the background, right after.
+#   - First page views wait briefly ONLY if they arrive mid-migration
+#     (a few seconds, one time) instead of timing out on a dead port.
+_db_ready = threading.Event()
+_db_init_started = False
+_db_init_lock = threading.Lock()
+
+
+def _wait_for_db_ready(timeout=25):
+    """Block a request briefly while the one-shot startup migration runs."""
+    _db_ready.wait(timeout=timeout)
 
 def safe_migrate():
     """Add new columns to existing tables without destroying data."""
@@ -409,11 +443,85 @@ def init_db():
         print("Employee portal: /portal/login  (phone + password set by admin)")
 
 
-# Initialize database on startup (works for both local and production)
+# Initialize database in the background AFTER gunicorn binds the port.
+# The first request (or /health) triggers this one-shot thread; gunicorn
+# stays responsive while Postgres create_all + migrations run.
+def _background_init_db():
+    t0 = time.time()
+    try:
+        init_db()
+        app.logger.info('Background DB init done in %.1fs', time.time() - t0)
+    except Exception as e:
+        app.logger.warning('DB init warning: %s', e)
+    finally:
+        _db_ready.set()
+        # Scheduler catch-up runs AFTER tables are guaranteed to exist,
+        # and off the request path so morning punch-in is never blocked.
+        try:
+            from services.scheduler import run_startup_catchup
+            run_startup_catchup(app)
+        except Exception:
+            app.logger.exception('Scheduler startup catch-up failed')
+
+
+def _ensure_db_init_triggered():
+    global _db_init_started
+    if _db_ready.is_set():
+        return
+    with _db_init_lock:
+        if _db_init_started:
+            return
+        _db_init_started = True
+    # Skip heavy init entirely in tests — conftest creates its own schema.
+    if app.config.get('TESTING'):
+        _db_ready.set()
+        return
+    # Under gunicorn the worker is already serving (import finished = port
+    # bound... actually gunicorn imports BEFORE binding). To keep the port
+    # bind fast, never block the import: always use the background thread,
+    # and let the before_request gate wait briefly only if needed.
+    threading.Thread(target=_background_init_db, daemon=True).start()
+
+
+@app.before_request
+def _gate_on_db_ready():
+    # /health must answer instantly so Render's probe + uptime pings pass
+    # even mid-migration. Everything else waits briefly for tables.
+    if request.path == '/health':
+        _ensure_db_init_triggered()
+        return None
+    _ensure_db_init_triggered()
+    if not _db_ready.is_set():
+        _wait_for_db_ready(timeout=25)
+    # Load persisted config after tables are ready (was a per-request query
+    # racing migrations before; now piggybacks on the same one-shot gate).
+    global _persisted_config_loaded
+    if not _persisted_config_loaded and _db_ready.is_set():
+        try:
+            persisted_key = AppConfig.get('FAST2SMS_API_KEY')
+            if persisted_key:
+                app.config['FAST2SMS_API_KEY'] = persisted_key
+        except Exception:
+            pass
+        _persisted_config_loaded = True
+
+
 try:
-    init_db()
+    # Eager init only for `python app.py` local dev and the test suite.
+    # Under gunicorn (Render) the before_request gate above triggers the
+    # background init on the first request instead — never block the import,
+    # because gunicorn binds the port only AFTER the import finishes.
+    import sys as _sys
+    _under_gunicorn = 'gunicorn' in (_sys.argv[0] if _sys.argv else '')
+    if (os.environ.get('SKIP_DB_INIT') != '1' and not _under_gunicorn
+            and 'gunicorn' not in os.environ.get('SERVER_SOFTWARE', '')):
+        _ensure_db_init_triggered()
+        if app.config.get('TESTING'):
+            _wait_for_db_ready(timeout=25)
 except Exception as e:
     print(f'DB init warning: {e}')
 
 if __name__ == '__main__':
+    # Local dev: wait for tables before serving so the first click works.
+    _wait_for_db_ready(timeout=60)
     app.run(debug=True, host=os.environ.get('FLASK_RUN_HOST', '127.0.0.1'), port=5000)

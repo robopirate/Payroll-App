@@ -1,8 +1,9 @@
 """In-process background scheduler for daily attendance maintenance tasks.
 
 Render free-tier instances spin down after inactivity, so jobs will not run
-while the app is asleep. On every startup the scheduler runs a catch-up for
-today's backfill and yesterday's auto-checkout so missed days are not lost.
+while the app is asleep. The startup catch-up runs via run_startup_catchup()
+AFTER DB migrations finish (called from app.py's background init thread) —
+never synchronously at import, so the first teacher login is never blocked.
 """
 import os
 from datetime import timedelta
@@ -60,12 +61,30 @@ def start_scheduler(app):
 
     scheduler.start()
 
-    # Catch-up in case the instance was asleep during scheduled times.
-    try:
-        with app.app_context():
-            run_monthly_attendance_backfill(today_ist().year, today_ist().month)
-            auto_close_missing_checkouts(today_ist() - timedelta(days=1))
-    except Exception:
-        app.logger.exception('Scheduler startup catch-up failed')
-
     return scheduler
+
+
+def run_startup_catchup(app):
+    """One-shot catch-up for days missed while the instance was asleep.
+
+    Called from app.py's background DB-init thread AFTER tables exist.
+    Runs the heavy backfill in a daemon thread so even this never blocks
+    the first request: morning punch-in stays fast, backfill lands seconds
+    later. Safe to call repeatedly (idempotent backfill).
+    """
+    import threading
+
+    def _catchup():
+        try:
+            from services.attendance_service import (
+                run_monthly_attendance_backfill,
+                auto_close_missing_checkouts,
+                today_ist,
+            )
+            with app.app_context():
+                run_monthly_attendance_backfill(today_ist().year, today_ist().month)
+                auto_close_missing_checkouts(today_ist() - timedelta(days=1))
+        except Exception:
+            app.logger.exception('Scheduler startup catch-up failed')
+
+    threading.Thread(target=_catchup, daemon=True).start()

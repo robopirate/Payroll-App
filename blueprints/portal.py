@@ -15,8 +15,10 @@ from services.login_protection import is_allowed
 from flask_limiter.util import get_remote_address
 
 from models import Employee, Attendance, Leave, LeaveBalance, Payroll, Holiday, User
-from pdf_service import generate_payslip_pdf
 from sms_service import get_month_name
+# NOTE: pdf_service (reportlab) is imported lazily inside
+# portal_download_payslip — it adds seconds to startup and teachers only
+# touch it when downloading a payslip, never on first load.
 
 bp = Blueprint('portal', __name__)
 
@@ -174,9 +176,13 @@ def register():
 def portal_dashboard():
     emp = db.session.get(Employee, current_user.employee_id)
     today = today_ist()
-    today_att = Attendance.query.filter_by(employee_id=emp.id, date=today).first()
+    # One round-trip instead of four: today + recent-7 come from a single
+    # ordered query (today is always the newest row when punched).
     recent_att = Attendance.query.filter_by(employee_id=emp.id).order_by(
         Attendance.date.desc()).limit(7).all()
+    today_att = next((a for a in recent_att if a.date == today), None)
+    if today_att is None:
+        today_att = Attendance.query.filter_by(employee_id=emp.id, date=today).first()
     leave_balances = LeaveBalance.query.filter_by(employee_id=emp.id, year=today.year).all()
     latest_payroll = Payroll.query.filter_by(employee_id=emp.id).order_by(
         Payroll.year.desc(), Payroll.month.desc()).first()
@@ -321,6 +327,7 @@ def portal_payslips():
 @bp.route('/portal/payslip/<int:payroll_id>')
 @portal_required
 def portal_download_payslip(payroll_id):
+    from pdf_service import generate_payslip_pdf
     p = Payroll.query.get_or_404(payroll_id)
     if p.employee_id != current_user.employee_id:
         abort(403)

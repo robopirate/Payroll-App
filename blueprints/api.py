@@ -7,6 +7,9 @@ from datetime import date, datetime, timezone, timedelta
 from sqlalchemy import extract
 
 from extensions import db, limiter, csrf
+# NOTE: reportlab (pdf_service) is imported lazily inside the punch/payslip
+# views that need it — it adds seconds to startup and must not block the
+# first teacher login. Attendance helpers stay top-level (light, hot path).
 from services.attendance_service import (
     haversine_distance, update_attendance_timing_flags, calculate_paid_days,
     get_employee_active_school, get_employee_effective_shift,

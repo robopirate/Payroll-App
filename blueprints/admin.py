@@ -13,13 +13,14 @@ from services.attendance_service import (
     update_attendance_timing_flags, ensure_sunday_attendance,
     backfill_absent_attendance, calculate_paid_days
 )
-from services.payroll_service import calculate_payroll
+# NOTE: pdf_service (reportlab) is imported lazily inside download_payslip —
+# it adds seconds to startup and teachers never touch it on first load.
+# sms_service is light (requests only) so it stays top-level.
+from sms_service import send_salary_credited_sms, send_sms, get_month_name
 from models import (
     User, Employee, Department, Attendance, Leave, LeaveBalance, Advance,
     Payroll, School, Holiday, SchoolSchedule, AuditLog, AppConfig
 )
-from sms_service import send_salary_credited_sms, send_sms, get_month_name
-from pdf_service import generate_payslip_pdf
 
 from sqlalchemy import func, distinct
 
@@ -909,6 +910,8 @@ def payroll():
 @login_required
 @require_role('admin')
 def generate_payroll():
+    from services.payroll_service import calculate_payroll
+    from sms_service import get_month_name
     month = int(request.form.get('month', date.today().month))
     year = int(request.form.get('year', date.today().year))
 
@@ -971,6 +974,8 @@ def mark_paid(payroll_id):
 @bp.route('/payroll/<int:payroll_id>/payslip')
 @login_required
 def download_payslip(payroll_id):
+    from pdf_service import generate_payslip_pdf
+    from sms_service import get_month_name
     p = Payroll.query.get_or_404(payroll_id)
     emp = Employee.query.get_or_404(p.employee_id)
     pdf_bytes = generate_payslip_pdf(emp, p)
@@ -982,6 +987,7 @@ def download_payslip(payroll_id):
 @bp.route('/payroll/<int:payroll_id>/send_sms', methods=['POST'])
 @login_required
 def send_payroll_sms(payroll_id):
+    from sms_service import send_salary_credited_sms
     p = Payroll.query.get_or_404(payroll_id)
     emp = Employee.query.get_or_404(p.employee_id)
     success, msg = send_salary_credited_sms(emp, p)

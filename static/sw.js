@@ -1,19 +1,18 @@
-const CACHE_NAME = 'robo-pirate-hr-v10';
+const CACHE_NAME = 'robo-pirate-hr-v12';
 const STATIC_EXTENSIONS = ['.css', '.js', '.png', '.jpg', '.jpeg', '.webp', '.svg', '.ico', '.woff', '.woff2', '.ttf', '.json'];
-const CDN_HOSTS = ['cdn.jsdelivr.net', 'fonts.googleapis.com', 'fonts.gstatic.com'];
+// No external CDNs — everything is self-hosted, so never put this origin's
+// HTML behind cross-origin rules. (Old CDN_HOSTS + no-cors precache used to
+// store opaque error pages as "cached" CSS, which made first load look slow
+// or unstyled on school networks.)
 
 // Assets to cache immediately on install so the next visit loads offline/instanly.
 // All fonts/bootstrap are self-hosted now (no external CDN round-trips).
+// NOTE: keep versioned portal.css/portal.js OUT of precache — they change per
+// deploy via ?v=ASSET_VERSION and stale-while-revalidate below keeps them
+// fresh without blocking install. Only tiny stable files are precached.
 const PRECACHE_URLS = [
-  '/static/css/style.css',
   '/static/js/main.js',
   '/static/manifest.json',
-  '/static/fonts/fonts.css',
-  '/static/vendor/bootstrap.min.css',
-  '/static/vendor/bootstrap-icons.min.css',
-  '/static/vendor/bootstrap.bundle.min.js',
-  '/login',
-  '/portal/login'
 ];
 
 self.addEventListener('install', event => {
@@ -21,12 +20,15 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache =>
       Promise.all(
-        PRECACHE_URLS.map(url => {
-          const isCors = url.startsWith(self.location.origin);
-          return fetch(url, { mode: isCors ? 'cors' : 'no-cors' })
-            .then(response => cache.put(url, response))
-            .catch(() => {});
-        })
+        PRECACHE_URLS.map(url =>
+          // Same-origin GET with credentials: only cache real 200 responses
+          // so login HTML / error pages never poison the static cache.
+          fetch(url, { credentials: 'same-origin' })
+            .then(response => {
+              if (response && response.ok) return cache.put(url, response);
+            })
+            .catch(() => {})
+        )
       )
     )
   );
@@ -44,9 +46,9 @@ self.addEventListener('activate', event => {
 
 function isStaticAsset(url) {
   const extMatch = STATIC_EXTENSIONS.some(ext => url.pathname.toLowerCase().endsWith(ext));
-  return extMatch && (
-    url.origin === self.location.origin || CDN_HOSTS.includes(url.hostname)
-  );
+  // Same-origin only; query strings (?v=11) are still static. Never treat
+  // login HTML as a static asset.
+  return extMatch && url.origin === self.location.origin;
 }
 
 self.addEventListener('fetch', event => {
@@ -59,10 +61,12 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Static assets (same-origin + CDN): cache first, update in background.
+  // Static assets (same-origin only): stale-while-revalidate. Serve cache
+  // instantly (fast repeat visits), refresh in background. Ignore query
+  // strings when matching (?v=11 versioning) so deploys still hit cache.
   if (isStaticAsset(url)) {
     event.respondWith(
-      caches.match(request).then(cached => {
+      caches.match(request, { ignoreSearch: true }).then(cached => {
         const networkFetch = fetch(request)
           .then(response => {
             if (response && response.ok) {
@@ -79,12 +83,15 @@ self.addEventListener('fetch', event => {
   }
 
   // HTML pages / navigations: network first, fall back to cache if offline.
+  // Only cache real 200 HTML (never redirects/login-error pages).
   if (request.mode === 'navigate' || request.destination === 'document') {
     event.respondWith(
       fetch(request)
         .then(response => {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
+          if (response && response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
+          }
           return response;
         })
         .catch(() => caches.match(request).then(cached => cached || caches.match('/portal/login')))

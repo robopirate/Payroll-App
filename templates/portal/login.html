@@ -7,11 +7,16 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#0A1628">
   <title>Employee Login — Robo Pirate's Payroll</title>
-  <!-- Self-hosted fonts/bootstrap: external CDNs are the main slow-load cause on school mobile networks -->
-  <link href="{{ url_for('static', filename='fonts/fonts.css') }}" rel="stylesheet">
-  <link href="{{ url_for('static', filename='vendor/bootstrap.min.css') }}" rel="stylesheet">
-  <link href="{{ url_for('static', filename='vendor/bootstrap-icons.min.css') }}" rel="stylesheet">
+  <!-- First paint fast on school mobile networks: portal.css blocks render
+       (small, needed for layout); the big vendor/fonts sheets load deferred
+       so the login form shows instantly even before they arrive. -->
   <link href="{{ url_for('static', filename='css/portal.css') }}" rel="stylesheet">
+  <link rel="preload" href="{{ url_for('static', filename='vendor/bootstrap.min.css') }}" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link href="{{ url_for('static', filename='vendor/bootstrap.min.css') }}" rel="stylesheet"></noscript>
+  <link rel="preload" href="{{ url_for('static', filename='vendor/bootstrap-icons.min.css') }}" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link href="{{ url_for('static', filename='vendor/bootstrap-icons.min.css') }}" rel="stylesheet"></noscript>
+  <link rel="preload" href="{{ url_for('static', filename='fonts/fonts.css') }}" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link href="{{ url_for('static', filename='fonts/fonts.css') }}" rel="stylesheet"></noscript>
 </head>
 <body class="rp-login-body">
 

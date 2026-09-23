@@ -5,7 +5,10 @@ services:
     env: python
     plan: free
     buildCommand: "pip install -r requirements.txt"
-    startCommand: "gunicorn app:app --workers 1"
+    # +2 workers/threads: free-tier RAM is tight but a single sync worker
+    # serializes the morning punch-in rush (25s API timeouts queue behind one
+    # slow request). Threads share memory so this stays within budget.
+    startCommand: "gunicorn app:app --workers 2 --threads 4 --timeout 60"
     envVars:
       - key: PYTHON_VERSION
         value: 3.10.0
