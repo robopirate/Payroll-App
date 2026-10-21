@@ -119,8 +119,8 @@ def submit_request(employee, att, requested_time, reason, today=None):
 
 def snapshot(att):
     """The attendance fields we track in the audit log."""
-    return {'status': att.status, 'check_in': att.check_in,
-            'check_out': att.check_out, 'overtime': att.overtime_hours or 0.0}
+    return {'status': att.status or '', 'check_in': att.check_in or '',
+            'check_out': att.check_out or '', 'overtime': att.overtime_hours or 0.0}
 
 
 def log_attendance_change(att, old, new, username, action='attendance_edit'):

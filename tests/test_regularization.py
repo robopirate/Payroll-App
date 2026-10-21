@@ -287,3 +287,82 @@ def test_portal_user_cannot_open_admin_page(client, app):
     _portal_login(client, emp.phone)
     resp = client.get('/regularizations', follow_redirects=False)
     assert resp.status_code == 302 and 'portal' in resp.location
+
+
+# ─── Admin direct edit + audit trail ──────────────────────────────────────────
+
+def test_saving_attendance_page_does_not_clear_untouched_system_half_day(client, app):
+    emp = _employee(app)
+    day = today_ist() - timedelta(days=1)
+    att = _auto_closed_day(emp, day)
+    _admin_login(client, app)
+
+    # Admin saves the page without touching this employee's row
+    client.post(f'/attendance?date={day.isoformat()}', data={
+        f'status_{emp.id}': 'half_day', f'checkin_{emp.id}': '09:00',
+        f'checkout_{emp.id}': '17:00', f'ot_{emp.id}': '0', f'notes_{emp.id}': '',
+    }, follow_redirects=True)
+    att = db.session.get(Attendance, att.id)
+    assert att.auto_checkout == 1 and att.status == 'half_day'
+    assert AuditLog.query.filter_by(action='attendance_edit').count() == 0
+
+
+def test_admin_edit_through_page_is_audited(client, app):
+    emp = _employee(app)
+    day = today_ist() - timedelta(days=1)
+    att = _auto_closed_day(emp, day)
+    _admin_login(client, app)
+
+    client.post(f'/attendance?date={day.isoformat()}', data={
+        f'status_{emp.id}': 'present', f'checkin_{emp.id}': '09:00',
+        f'checkout_{emp.id}': '17:00', f'ot_{emp.id}': '0', f'notes_{emp.id}': '',
+    }, follow_redirects=True)
+    att = db.session.get(Attendance, att.id)
+    assert att.status == 'present' and att.auto_checkout == 0
+    log = AuditLog.query.filter_by(action='attendance_edit').one()
+    assert log.user == 'boss_admin' and 'half_day -> present' in log.details
+    assert log.affected_entity == f'Attendance:{att.id}'
+
+
+def test_make_full_day_button_changes_only_that_row_and_is_audited(client, app):
+    emp = _employee(app)
+    other = _employee(app, '9876500002', 'EMP901')
+    day = date(2026, 3, 9)
+    att = _auto_closed_day(emp, day)
+    other_att = _auto_closed_day(other, day)
+    _admin_login(client, app)
+
+    resp = client.post(f'/attendance/{att.id}/make_full_day', follow_redirects=True)
+    assert b'is now a full day' in resp.data
+    assert db.session.get(Attendance, att.id).status == 'present'
+    assert db.session.get(Attendance, other_att.id).status == 'half_day'
+    assert 'Made full day by boss_admin' in db.session.get(Attendance, att.id).notes
+    assert AuditLog.query.filter_by(action='attendance_edit').count() == 1
+
+    # a normal (not system-closed) day is refused
+    resp = client.post(f'/attendance/{att.id}/make_full_day', follow_redirects=True)
+    assert b'not a system half day' in resp.data
+
+
+def test_make_full_day_blocked_when_paid_or_locked(client, app):
+    emp = _employee(app)
+    att = _auto_closed_day(emp, date(2026, 3, 9))
+    _admin_login(client, app)
+    db.session.add(Payroll(employee_id=emp.id, month=3, year=2026, status='paid'))
+    db.session.commit()
+    resp = client.post(f'/attendance/{att.id}/make_full_day', follow_redirects=True)
+    assert b'finalized or paid' in resp.data
+    assert db.session.get(Attendance, att.id).status == 'half_day'
+
+
+def test_needs_review_lists_only_auto_closed_days(client, app):
+    emp = _employee(app)
+    _auto_closed_day(emp, date(2026, 3, 9))
+    ok_day = Attendance(employee_id=emp.id, date=date(2026, 3, 10), status='present',
+                        check_in='09:00', check_out='17:00')
+    db.session.add(ok_day)
+    db.session.commit()
+    _admin_login(client, app)
+    page = client.get('/attendance/needs-review?month=3&year=2026')
+    assert page.status_code == 200
+    assert b'09 Mar 2026' in page.data and b'10 Mar 2026' not in page.data
