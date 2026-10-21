@@ -10,6 +10,7 @@ from datetime import timedelta
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
+from apscheduler.triggers.interval import IntervalTrigger
 
 
 def _with_app_context(app, fn):
@@ -57,6 +58,21 @@ def start_scheduler(app):
         name='Daily auto-checkout for missing punch-outs',
         replace_existing=True,
         misfire_grace_time=3600,
+    )
+
+    def reminder_job():
+        # Does nothing unless an admin switched the reminder on in Settings.
+        from services.regularization_service import send_missed_punch_reminders
+        send_missed_punch_reminders()
+
+    scheduler.add_job(
+        func=_with_app_context(app, reminder_job),
+        trigger=IntervalTrigger(minutes=10),
+        id='missed_punch_reminder',
+        name='Reminder SMS for missed punch-outs',
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
     )
 
     scheduler.start()

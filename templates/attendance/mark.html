@@ -25,6 +25,9 @@
     <a href="{{ url_for('admin.attendance_report') }}" class="admin-btn admin-btn-secondary admin-btn-sm">
       <i class="bi bi-bar-chart"></i> View Report
     </a>
+    <a href="{{ url_for('admin.attendance_needs_review', month=sel_date.month, year=sel_date.year) }}" class="admin-btn admin-btn-secondary admin-btn-sm">
+      <i class="bi bi-exclamation-circle"></i> Needs Review
+    </a>
   </div>
 </div>
 
@@ -55,7 +58,10 @@
             {% set att = existing.get(emp.id) %}
             <tr>
               <td class="admin-fw-bold">
-                <div>{{ emp.name }}{% if att and att.auto_checkout %} <span class="admin-badge admin-badge-info" title="Auto-closed: missing punch-out">AUTO</span>{% endif %}</div>
+                <div>{{ emp.name }}{% if att and att.auto_checkout %} <span class="admin-badge admin-badge-info" title="The system closed this day because there was no punch-out">System half day</span>
+                  <button type="button" class="admin-btn admin-btn-success admin-btn-sm" style="padding: 1px 8px;"
+                          onclick="if (confirm('Make this a full day? Only this employee is changed.')) { var f = this.form; f.action = '{{ url_for('admin.make_full_day', att_id=att.id) }}'; f.submit(); }"
+                          title="Make this a full day (only this employee is changed)">Make full day</button>{% endif %}</div>
                 <small class="text-muted">{{ emp.emp_id }}</small>
               </td>
               <td>{{ emp.dept.name if emp.dept else '-' }}</td>

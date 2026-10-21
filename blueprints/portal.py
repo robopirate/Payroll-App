@@ -14,7 +14,11 @@ from services.attendance_service import (
 from services.login_protection import is_allowed
 from flask_limiter.util import get_remote_address
 
-from models import Employee, Attendance, Leave, LeaveBalance, Payroll, Holiday, User
+from models import (
+    Employee, Attendance, Leave, LeaveBalance, Payroll, Holiday, User,
+    AttendanceRegularization,
+)
+from services import regularization_service as reg_service
 from sms_service import get_month_name
 # NOTE: pdf_service (reportlab) is imported lazily inside
 # portal_download_payslip — it adds seconds to startup and teachers only
@@ -203,6 +207,7 @@ def portal_dashboard():
     location_mode = get_employee_location_mode(emp)
 
     return render_template('portal/dashboard.html', emp=emp, today=today,
+        missed_days=reg_service.correctable_days(emp, today),
         today_att=today_att, recent_att=recent_att,
         leave_balances=leave_balances, latest_payroll=latest_payroll,
         upcoming_holidays=upcoming_holidays,
@@ -224,6 +229,7 @@ def portal_punch():
     location_mode = get_employee_location_mode(emp)
     shift_start, shift_end, working_hours_per_day = get_employee_effective_shift(emp)
     return render_template('portal/punch.html', emp=emp, location=location,
+                           missed_days=reg_service.correctable_days(emp, today),
                            today_attendance=today_att, location_mode=location_mode,
                            shift_start=shift_start, shift_end=shift_end,
                            working_hours_per_day=working_hours_per_day)
@@ -309,10 +315,52 @@ def portal_attendance():
     absent = sum(1 for a in atts.values() if a.status == 'absent')
 
     month_days = [date(year, month, d) for d in range(1, days_in_month + 1)]
+
+    # Missed punch-outs: which days can be corrected, and the latest request per day.
+    today = today_ist()
+    correction_days = {}
+    last_request = {}
+    att_ids = [a.id for a in atts.values()]
+    if att_ids:
+        for r in AttendanceRegularization.query.filter(
+                AttendanceRegularization.attendance_id.in_(att_ids)
+        ).order_by(AttendanceRegularization.id).all():
+            last_request[r.attendance_id] = r
+    for day, a in atts.items():
+        if reg_service.needs_correction(a, today):
+            correction_days[day] = reg_service.check_can_request(emp, a, today)
+
     return render_template('portal/attendance.html', emp=emp, atts=atts, month=month, year=year,
         days_in_month=days_in_month, present=paid_days, absent=absent,
         month_days=month_days, get_month_name=get_month_name,
+        correction_days=correction_days, last_request=last_request,
         months=list(range(1, 13)), years=list(range(2020, today_ist().year + 2)))
+
+
+@bp.route('/portal/attendance/<int:att_id>/correct', methods=['GET', 'POST'])
+@portal_required
+def portal_request_correction(att_id):
+    """Employee asks to correct a missed punch-out on a past day."""
+    emp = db.session.get(Employee, current_user.employee_id)
+    att = db.session.get(Attendance, att_id)
+    if not att or att.employee_id != emp.id:
+        abort(404)
+    back = url_for('.portal_attendance', month=att.date.month, year=att.date.year)
+
+    if request.method == 'POST':
+        ok, msg = reg_service.submit_request(
+            emp, att, request.form.get('check_out', '').strip(),
+            request.form.get('reason', ''))
+        flash(msg, 'success' if ok else 'danger')
+        return redirect(back if ok else url_for('.portal_request_correction', att_id=att.id))
+
+    ok, msg = reg_service.check_can_request(emp, att)
+    if not ok:
+        flash(msg, 'warning')
+        return redirect(back)
+    return render_template('portal/request_correction.html', emp=emp, att=att,
+                           back=back, window_days=reg_service.window_days(),
+                           get_month_name=get_month_name)
 
 
 @bp.route('/portal/payslips')

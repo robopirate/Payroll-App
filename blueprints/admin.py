@@ -19,8 +19,10 @@ from services.attendance_service import (
 from sms_service import send_salary_credited_sms, send_sms, get_month_name
 from models import (
     User, Employee, Department, Attendance, Leave, LeaveBalance, Advance,
-    Payroll, School, Holiday, SchoolSchedule, AuditLog, AppConfig
+    Payroll, School, Holiday, SchoolSchedule, AuditLog, AppConfig,
+    AttendanceRegularization
 )
+from services import regularization_service as reg_service
 
 from sqlalchemy import func, distinct
 
@@ -624,13 +626,20 @@ def attendance():
 
             att = existing.get(emp.id)
             if att:
+                old = reg_service.snapshot(att)
+                old_notes = att.notes or ''
                 att.status = status
                 att.overtime_hours = ot_hours
                 att.check_in = check_in
                 att.check_out = check_out
                 att.notes = notes
-                att.admin_override = True
-                att.auto_checkout = 0
+                changed = reg_service.log_attendance_change(
+                    att, old, reg_service.snapshot(att), current_user.username)
+                if changed:
+                    att.admin_override = True
+                    att.auto_checkout = 0   # an admin edit settles an auto-closed day
+                elif (notes or '') == old_notes:
+                    continue                # untouched row: leave every flag as it was
             else:
                 att = Attendance(
                     employee_id=emp.id, date=sel_date,
@@ -639,6 +648,10 @@ def attendance():
                     notes=notes, admin_override=True
                 )
                 db.session.add(att)
+                db.session.flush()
+                reg_service.log_attendance_change(
+                    att, {}, reg_service.snapshot(att), current_user.username,
+                    'attendance_create')
             update_attendance_timing_flags(att, employee=emp)
         db.session.commit()
         flash(f'Attendance saved for {sel_date.strftime("%d %b %Y")}.', 'success')
@@ -821,6 +834,101 @@ def delete_leave(leave_id):
 
     flash('Leave deleted.', 'success')
     return redirect(url_for('.leaves'))
+
+
+# ─── Missed punch-out corrections ────────────────────────────────────────────
+
+@bp.route('/attendance/needs-review')
+@login_required
+def attendance_needs_review():
+    """All days the system auto-closed as a half day (missed punch-out) in a month."""
+    today = date.today()
+    try:
+        month = int(request.args.get('month', today.month))
+        year = int(request.args.get('year', today.year))
+        _, dim = calendar.monthrange(year, month)
+    except (ValueError, calendar.IllegalMonthError):
+        month, year = today.month, today.year
+        _, dim = calendar.monthrange(year, month)
+    rows = (Attendance.query.join(Employee, Attendance.employee_id == Employee.id)
+            .filter(Attendance.auto_checkout == 1,
+                    Attendance.date >= date(year, month, 1),
+                    Attendance.date <= date(year, month, dim),
+                    Employee.is_active == True, Employee.is_approved == True)
+            .options(joinedload(Attendance.employee))
+            .order_by(Attendance.date, Employee.name).all())
+    return render_template('attendance/needs_review.html', rows=rows, month=month, year=year,
+                           get_month_name=get_month_name, months=list(range(1, 13)),
+                           years=list(range(2020, today.year + 2)))
+
+
+@bp.route('/attendance/<int:att_id>/make_full_day', methods=['POST'])
+@login_required
+@require_role('admin')
+def make_full_day(att_id):
+    """Turn one system half day (missed punch-out) into a full day. Audited."""
+    att = Attendance.query.get_or_404(att_id)
+    emp = att.employee
+    back = (url_for('.attendance_needs_review', month=att.date.month, year=att.date.year)
+            if request.args.get('back') == 'review'
+            else url_for('.attendance', date=att.date.isoformat()))
+    if not att.auto_checkout:
+        flash('This day is not a system half day.', 'warning')
+    elif reg_service.is_period_locked(emp, att.date):
+        flash('Attendance for this month is locked.', 'danger')
+    elif reg_service.payroll_status(emp, att.date) in ('finalized', 'paid'):
+        flash('Salary for this month is already finalized or paid.', 'danger')
+    else:
+        old = reg_service.snapshot(att)
+        att.status = 'present'
+        att.auto_checkout = 0
+        att.admin_override = True
+        stamp = f'Made full day by {current_user.username}'
+        att.notes = ((att.notes[:150] + ' | ') if att.notes else '') + stamp
+        reg_service.log_attendance_change(att, old, reg_service.snapshot(att),
+                                          current_user.username)
+        db.session.commit()
+        flash(f'{emp.name}: {att.date.strftime("%d %b")} is now a full day.', 'success')
+        if reg_service.payroll_status(emp, att.date) == 'draft':
+            flash('Payroll for this month is already generated as a draft. '
+                  'Regenerate it so the change is counted.', 'warning')
+    return redirect(back)
+
+
+@bp.route('/regularizations')
+@login_required
+def regularizations():
+    status_filter = request.args.get('status', 'pending')
+    q = AttendanceRegularization.query.options(
+        joinedload(AttendanceRegularization.employee),
+        joinedload(AttendanceRegularization.attendance))
+    if status_filter != 'all':
+        q = q.filter_by(status=status_filter)
+    items = q.order_by(AttendanceRegularization.requested_on.desc()).all()
+    return render_template('regularizations.html', items=items, status_filter=status_filter)
+
+
+@bp.route('/regularizations/<int:reg_id>/approve', methods=['POST'])
+@login_required
+@require_role('admin')
+def approve_regularization(reg_id):
+    reg = AttendanceRegularization.query.get_or_404(reg_id)
+    ok, msg, warning = reg_service.approve(reg, current_user.username,
+                                           request.form.get('note', ''))
+    flash(msg, 'success' if ok else 'danger')
+    if warning:
+        flash(warning, 'warning')
+    return redirect(url_for('.regularizations'))
+
+
+@bp.route('/regularizations/<int:reg_id>/reject', methods=['POST'])
+@login_required
+@require_role('admin')
+def reject_regularization(reg_id):
+    reg = AttendanceRegularization.query.get_or_404(reg_id)
+    ok, msg = reg_service.reject(reg, current_user.username, request.form.get('note', ''))
+    flash(msg, 'info' if ok else 'danger')
+    return redirect(url_for('.regularizations'))
 
 
 @bp.route('/leaves/balances')
@@ -1066,7 +1174,21 @@ def settings():
             AppConfig.set('FAST2SMS_API_KEY', api_key)
             db.session.commit()
             flash('API key updated and persisted.', 'success')
-    return render_template('settings.html')
+    return render_template('settings.html', reminder_on=reg_service.reminder_enabled())
+
+
+@bp.route('/settings/reminder', methods=['POST'])
+@login_required
+@require_role('admin')
+def set_reminder():
+    on = '1' if request.form.get('enabled') else '0'
+    AppConfig.set(reg_service.REMINDER_SETTING, on)
+    db.session.add(AuditLog(action='setting_change', user=current_user.username,
+                            affected_entity='AppConfig:' + reg_service.REMINDER_SETTING,
+                            details='Missed punch-out reminder ' + ('ON' if on == '1' else 'OFF')))
+    db.session.commit()
+    flash('Reminder is now ' + ('ON.' if on == '1' else 'OFF.'), 'success')
+    return redirect(url_for('.settings'))
 
 
 # ─── Employee Portal ──────────────────────────────────────────────────────────

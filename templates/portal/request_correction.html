@@ -1,0 +1,45 @@
+{% extends 'portal/base.html' %}
+{% block title %}Request Correction{% endblock %}
+{% block content %}
+
+<div class="d-flex align-items-center gap-2 mb-3">
+  <a href="{{ back }}" class="rp-btn rp-btn-ghost" style="padding: 0; width: 38px; height: 38px;"><i class="bi bi-arrow-left"></i></a>
+  <h1 class="rp-title-2 mb-0">Request Correction</h1>
+</div>
+
+<form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <div class="rp-card mb-3">
+    <div class="rp-card-body">
+      <div class="rp-form-section-title"><i class="bi bi-clock-history"></i> Missed punch-out</div>
+
+      <p class="mb-3">
+        <strong>{{ att.date.strftime('%A, %d %b %Y') }}</strong><br>
+        You punched in at <strong>{{ att.check_in }}</strong> but did not punch out.
+        {% if att.auto_checkout %}The system closed the day automatically as a half day.{% endif %}
+      </p>
+
+      <div class="mb-3">
+        <label class="rp-label">What time did you leave?</label>
+        <input type="time" name="check_out" class="rp-input" required>
+      </div>
+
+      <div class="mb-1">
+        <label class="rp-label">Reason</label>
+        <textarea name="reason" class="rp-input" maxlength="300" required
+                  placeholder="For example: phone battery died, forgot to punch out"></textarea>
+      </div>
+
+      <div class="rp-form-hint mt-3">
+        Your admin will review this. You can ask for a correction up to {{ window_days }} days after the day.
+      </div>
+    </div>
+  </div>
+
+  <button type="submit" class="rp-btn rp-btn-primary rp-btn-block">
+    <i class="bi bi-send"></i> Send Request
+  </button>
+</form>
+
+{% endblock %}

@@ -85,6 +85,21 @@
                   {% if att.check_out %} · Out {{ att.check_out }}{% endif %}
                 </div>
                 {% endif %}
+                {% set cd = correction_days.get(day) %}
+                {% set lr = last_request.get(att.id) %}
+                {% if lr and lr.status == 'pending' %}
+                <div class="rp-caption mt-1" style="color: var(--rp-blue);"><i class="bi bi-hourglass-split"></i> Correction pending (leaving {{ lr.requested_check_out }})</div>
+                {% elif lr and lr.status == 'approved' %}
+                <div class="rp-caption mt-1" style="color: var(--rp-success);"><i class="bi bi-check-circle"></i> Corrected by admin</div>
+                {% elif cd %}
+                  {% if lr and lr.status == 'rejected' %}
+                  <div class="rp-caption mt-1" style="color: var(--rp-danger);"><i class="bi bi-x-circle"></i> Rejected{% if lr.admin_note %}: {{ lr.admin_note }}{% endif %}</div>
+                  {% endif %}
+                  <div class="rp-caption mt-1"><i class="bi bi-exclamation-circle"></i> Missed punch-out
+                    {% if cd[0] %}· <a href="{{ url_for('portal.portal_request_correction', att_id=att.id) }}">Request correction</a>
+                    {% else %}<span style="opacity: .8;">({{ cd[1] }})</span>{% endif %}
+                  </div>
+                {% endif %}
               </div>
             </div>
             {% if att.overtime_hours %}

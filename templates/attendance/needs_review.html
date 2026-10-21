@@ -1,0 +1,66 @@
+{% extends 'admin/base.html' %}
+{% block title %}Needs Review{% endblock %}
+{% block content %}
+
+<div class="admin-page-header">
+  <div>
+    <h1 class="admin-page-title">System Half Days</h1>
+    <div class="admin-page-subtitle">Days the system closed as a half day because the employee did not punch out</div>
+  </div>
+  <div class="admin-page-actions">
+    <a href="{{ url_for('admin.attendance') }}" class="admin-btn admin-btn-secondary admin-btn-sm">
+      <i class="bi bi-calendar-check-fill me-1"></i> Daily Attendance
+    </a>
+  </div>
+</div>
+
+<form method="GET" class="d-flex gap-2 mb-3">
+  <select name="month" class="admin-form-select" style="width:150px">
+    {% for m in months %}<option value="{{ m }}" {{ 'selected' if m == month else '' }}>{{ get_month_name(m) }}</option>{% endfor %}
+  </select>
+  <select name="year" class="admin-form-select" style="width:110px">
+    {% for y in years %}<option value="{{ y }}" {{ 'selected' if y == year else '' }}>{{ y }}</option>{% endfor %}
+  </select>
+  <button class="admin-btn admin-btn-primary admin-btn-sm">Show</button>
+</form>
+
+<div class="admin-card">
+  <div class="admin-card-body p-0">
+    {% if rows %}
+    <div class="table-responsive">
+      <table class="admin-table admin-table-compact mb-0">
+        <thead>
+          <tr>
+            <th>Employee</th><th>Day</th><th>Punched in</th><th>System closed at</th><th class="text-center">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in rows %}
+          <tr>
+            <td class="admin-fw-bold">{{ a.employee.name }}</td>
+            <td>{{ a.date.strftime('%a, %d %b %Y') }}</td>
+            <td>{{ a.check_in or '-' }}</td>
+            <td>{{ a.check_out or '-' }}</td>
+            <td class="text-center">
+              <form method="POST" action="{{ url_for('admin.make_full_day', att_id=a.id, back='review') }}" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="admin-btn admin-btn-success admin-btn-sm" data-confirm="Make this a full day for {{ a.employee.name }}?">
+                  <i class="bi bi-check-lg"></i> Make full day
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="admin-empty">
+      <i class="bi bi-check-circle"></i>
+      <p>No system half days in {{ get_month_name(month) }} {{ year }}.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

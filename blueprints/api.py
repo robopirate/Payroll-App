@@ -216,6 +216,15 @@ def api_punch():
         return jsonify({'success': True, 'message': msg, 'location_type': location_type})
     else:
         if not att or not att.check_in:
+            # Forgot to punch out yesterday? Point to "Request correction" rather than
+            # silently doing nothing (the old day is never changed by a late punch).
+            previous = Attendance.query.filter_by(
+                employee_id=emp.id, date=today - timedelta(days=1)).first()
+            if previous and previous.check_in and (
+                    previous.auto_checkout or not previous.check_out):
+                return jsonify({'success': False, 'message': (
+                    'You did not punch out yesterday. Open Attendance and tap '
+                    '"Request correction" for that day.')})
             return jsonify({'success': False, 'message': 'No punch-in record found for today.'})
         if att.check_out:
             return jsonify({'success': False, 'message': f'Already punched OUT at {att.check_out}.'})
