@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from datetime import datetime, timezone, timedelta
 import secrets
@@ -62,52 +62,52 @@ def logout():
 @bp.route('/forgot-password', methods=['GET', 'POST'])
 @limiter.limit("5 per hour")
 def forgot_password():
-    """Request password reset via phone number."""
+    """Request password reset via phone number.
+
+    The reset link is ONLY ever sent by SMS to the employee's own phone. It is
+    never shown on screen or put in the redirect URL, otherwise anyone who
+    knows a phone number could take over that account. The reply is the same
+    whether or not the number is registered, so it can't be used to find out
+    who works here.
+    """
     if request.method == 'POST':
         phone = request.form.get('phone', '').strip()
         emp = Employee.query.filter_by(phone=phone).first()
-        if not emp:
-            flash('Phone number not found.', 'warning')
-            return redirect(url_for('.forgot_password'))
+        # Portal (employee) accounts only; never reset an admin account this way.
+        user = (User.query.filter_by(employee_id=emp.id, is_admin=False).first()
+                if emp else None)
 
-        user = User.query.filter_by(employee_id=emp.id).first()
-        if not user:
-            flash('No login account found for this employee.', 'warning')
-            return redirect(url_for('.forgot_password'))
+        if user:
+            # Invalidate any previous unused tokens for this user
+            PasswordReset.query.filter_by(user_id=user.id, is_used=False).update(
+                {'is_used': True}, synchronize_session=False
+            )
 
-        # Invalidate any previous unused tokens for this user
-        PasswordReset.query.filter_by(user_id=user.id, is_used=False).update(
-            {'is_used': True}, synchronize_session=False
-        )
+            token = secrets.token_urlsafe(32)
+            link = url_for('.reset_password', token=token, _external=True)
+            message = f"Password reset link (valid 1 hour, do not share): {link}"
+            sms_success, sms_message = send_sms(emp.phone, message)
 
-        # Generate reset token and attempt SMS delivery first
-        token = secrets.token_urlsafe(32)
-        message = f"Your password reset token: {token}. Valid for 1 hour. Do not share this token."
-        sms_success, sms_message = send_sms(emp.phone, message)
+            if sms_success:
+                db.session.add(PasswordReset(
+                    user_id=user.id,
+                    token=token,
+                    expires_at=datetime.now(timezone.utc) + timedelta(hours=1)
+                ))
+                db.session.add(AuditLog(
+                    action='password_reset_request',
+                    user=emp.name,
+                    affected_entity=f'User:{user.id}',
+                    details='Password reset requested via phone'
+                ))
+                db.session.commit()
+            else:
+                db.session.rollback()
+                current_app.logger.warning('Password reset SMS failed: %s', sms_message)
 
-        if not sms_success:
-            db.session.rollback()
-            flash(f'Could not send reset SMS: {sms_message}', 'danger')
-            return render_template('forgot_password.html')
-
-        # SMS delivered — store the token and audit log
-        reset = PasswordReset(
-            user_id=user.id,
-            token=token,
-            expires_at=datetime.now(timezone.utc) + timedelta(hours=1)
-        )
-        db.session.add(reset)
-        audit = AuditLog(
-            action='password_reset_request',
-            user=emp.name,
-            affected_entity=f'User:{user.id}',
-            details=f'Password reset requested via phone'
-        )
-        db.session.add(audit)
-        db.session.commit()
-
-        flash('Reset token sent via SMS. Check your phone.', 'success')
-        return redirect(url_for('.reset_password', token=token))
+        flash('If that number is registered, a reset link has been sent by SMS. '
+              'Please check your phone.', 'info')
+        return redirect(url_for('.forgot_password'))
 
     return render_template('forgot_password.html')
 
@@ -121,7 +121,11 @@ def reset_password():
         confirm_password = request.form.get('confirm_password', '')
 
         reset = PasswordReset.query.filter_by(token=token, is_used=False).first()
-        if not reset or reset.expires_at < datetime.now(timezone.utc):
+        # The database hands back times without a time zone; treat them as UTC.
+        expires_at = reset.expires_at if reset else None
+        if expires_at is not None and expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        if not reset or expires_at < datetime.now(timezone.utc):
             flash('Invalid or expired reset token.', 'danger')
             return redirect(url_for('.reset_password'))
 
