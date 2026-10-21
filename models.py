@@ -273,6 +273,24 @@ class AppConfig(db.Model):
             db.session.add(row)
 
 
+class AttendanceRegularization(db.Model):
+    """An employee's request to correct a missed punch-out on a past day."""
+    __tablename__ = 'attendance_regularizations'
+    id = db.Column(db.Integer, primary_key=True)
+    employee_id = db.Column(db.Integer, db.ForeignKey('employees.id'), nullable=False)
+    attendance_id = db.Column(db.Integer, db.ForeignKey('attendance.id'), nullable=False)
+    date = db.Column(db.Date, nullable=False)
+    requested_check_out = db.Column(db.String(5), nullable=False)  # HH:MM
+    reason = db.Column(db.String(300), nullable=False)
+    status = db.Column(db.String(20), default='pending')  # pending, approved, rejected
+    requested_on = db.Column(db.DateTime, default=_utcnow)
+    decided_by = db.Column(db.String(80))
+    decided_on = db.Column(db.DateTime)
+    admin_note = db.Column(db.String(300))
+    employee = db.relationship('Employee', backref='regularizations')
+    attendance = db.relationship('Attendance', backref='regularizations')
+
+
 class TaxDeclaration(db.Model):
     __tablename__ = 'tax_declarations'
     id = db.Column(db.Integer, primary_key=True)
