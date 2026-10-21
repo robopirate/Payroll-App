@@ -366,3 +366,108 @@ def test_needs_review_lists_only_auto_closed_days(client, app):
     page = client.get('/attendance/needs-review?month=3&year=2026')
     assert page.status_code == 200
     assert b'09 Mar 2026' in page.data and b'10 Mar 2026' not in page.data
+
+
+# ─── Reminder, banner, settings switch ────────────────────────────────────────
+
+from datetime import datetime, timezone as _tz
+from models import Holiday, Leave
+
+IST = _tz(timedelta(hours=5, minutes=30))
+
+
+def _punched_in_today(emp, day=TODAY):
+    att = Attendance(employee_id=emp.id, date=day, status='present', check_in='09:00')
+    db.session.add(att)
+    db.session.commit()
+    return att
+
+
+def _enable_reminder():
+    AppConfig.set('missed_punch_reminder_enabled', '1')
+    db.session.commit()
+
+
+def _at(hour, minute, day=TODAY):
+    return datetime(day.year, day.month, day.day, hour, minute, tzinfo=IST)
+
+
+def test_reminder_is_off_by_default(app, monkeypatch):
+    emp = _employee(app)
+    _punched_in_today(emp)
+    sent = []
+    monkeypatch.setattr(svc, 'send_sms', lambda p, m: (sent.append(p) or (True, 'ok')))
+    assert svc.send_missed_punch_reminders(_at(18, 0)) == 0 and sent == []
+
+
+def test_reminder_sent_once_after_shift_plus_30_minutes(app, monkeypatch):
+    emp = _employee(app)
+    _punched_in_today(emp)          # 09:00 in, default 8h day -> expected end 17:00
+    _enable_reminder()
+    sent = []
+    monkeypatch.setattr(svc, 'send_sms', lambda p, m: (sent.append((p, m)) or (True, 'ok')))
+
+    assert svc.send_missed_punch_reminders(_at(17, 29)) == 0      # too early
+    assert svc.send_missed_punch_reminders(_at(17, 30)) == 1      # shift end + 30 min
+    assert svc.send_missed_punch_reminders(_at(18, 0)) == 0       # never twice
+    assert len(sent) == 1 and sent[0][0] == emp.phone and 'punched in at 09:00' in sent[0][1]
+
+
+def test_reminder_skips_sunday_holiday_leave_and_punched_out(app, monkeypatch):
+    emp = _employee(app)
+    _enable_reminder()
+    sent = []
+    monkeypatch.setattr(svc, 'send_sms', lambda p, m: (sent.append(p) or (True, 'ok')))
+
+    sunday = date(2026, 3, 8)
+    _punched_in_today(emp, sunday)
+    assert svc.send_missed_punch_reminders(_at(18, 0, sunday)) == 0
+
+    holiday = date(2026, 3, 11)
+    _punched_in_today(emp, holiday)
+    db.session.add(Holiday(date=holiday, name='Test Day'))
+    db.session.commit()
+    assert svc.send_missed_punch_reminders(_at(18, 0, holiday)) == 0
+
+    leave_day = date(2026, 3, 12)
+    _punched_in_today(emp, leave_day)
+    db.session.add(Leave(employee_id=emp.id, leave_type='casual', start_date=leave_day,
+                         end_date=leave_day, status='approved'))
+    db.session.commit()
+    assert svc.send_missed_punch_reminders(_at(18, 0, leave_day)) == 0
+
+    done = Attendance(employee_id=emp.id, date=TODAY, status='present',
+                      check_in='09:00', check_out='17:05')
+    db.session.add(done)
+    db.session.commit()
+    assert svc.send_missed_punch_reminders(_at(18, 0)) == 0
+    assert sent == []
+
+
+def test_failed_sms_is_not_retried_every_ten_minutes(app, monkeypatch):
+    emp = _employee(app)
+    _punched_in_today(emp)
+    _enable_reminder()
+    calls = []
+    monkeypatch.setattr(svc, 'send_sms', lambda p, m: (calls.append(p) or (False, 'no key')))
+    svc.send_missed_punch_reminders(_at(17, 40))
+    svc.send_missed_punch_reminders(_at(17, 50))
+    assert len(calls) == 1
+    assert 'SMS failed' in AuditLog.query.filter_by(action='punch_reminder').one().details
+
+
+def test_portal_banner_lists_correctable_day(client, app):
+    emp = _employee(app)
+    _auto_closed_day(emp, today_ist() - timedelta(days=1))
+    _portal_login(client, emp.phone)
+    assert b'You missed punching out' in client.get('/portal/punch').data
+    assert b'You missed punching out' in client.get('/portal/dashboard').data
+
+
+def test_settings_switch_turns_reminder_on_and_off(client, app):
+    _admin_login(client, app)
+    client.post('/settings/reminder', data={'enabled': '1'}, follow_redirects=True)
+    assert svc.reminder_enabled() is True
+    client.post('/settings/reminder', data={}, follow_redirects=True)
+    assert svc.reminder_enabled() is False
+    assert AuditLog.query.filter_by(action='setting_change').count() == 2

@@ -1,6 +1,7 @@
 {% extends 'portal/base.html' %}
 {% block title %}Punch In/Out{% endblock %}
 {% block content %}
+{% include 'portal/_missed_punch_banner.html' %}
 
 <div class="d-flex align-items-center gap-2 mb-3">
   <a href="{{ url_for('portal.portal_dashboard') }}" class="rp-btn rp-btn-ghost" style="padding: 0; width: 38px; height: 38px;"><i class="bi bi-arrow-left"></i></a>

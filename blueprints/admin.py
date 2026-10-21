@@ -1174,7 +1174,21 @@ def settings():
             AppConfig.set('FAST2SMS_API_KEY', api_key)
             db.session.commit()
             flash('API key updated and persisted.', 'success')
-    return render_template('settings.html')
+    return render_template('settings.html', reminder_on=reg_service.reminder_enabled())
+
+
+@bp.route('/settings/reminder', methods=['POST'])
+@login_required
+@require_role('admin')
+def set_reminder():
+    on = '1' if request.form.get('enabled') else '0'
+    AppConfig.set(reg_service.REMINDER_SETTING, on)
+    db.session.add(AuditLog(action='setting_change', user=current_user.username,
+                            affected_entity='AppConfig:' + reg_service.REMINDER_SETTING,
+                            details='Missed punch-out reminder ' + ('ON' if on == '1' else 'OFF')))
+    db.session.commit()
+    flash('Reminder is now ' + ('ON.' if on == '1' else 'OFF.'), 'success')
+    return redirect(url_for('.settings'))
 
 
 # ─── Employee Portal ──────────────────────────────────────────────────────────

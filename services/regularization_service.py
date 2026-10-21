@@ -7,15 +7,17 @@ Rules (industry standard, as in Keka / greytHR / Zoho People):
   * Every change is written to the audit log (who, what, old value, new value).
   * Nothing changes once the month is locked or that month's salary is finalized/paid.
 """
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from models import (
-    db, AttendanceLock, AuditLog, AppConfig, Payroll, AttendanceRegularization,
+    db, Attendance, AttendanceLock, AuditLog, AppConfig, Payroll,
+    AttendanceRegularization, Employee, Holiday, Leave,
 )
 from services.attendance_service import (
-    today_ist, update_attendance_timing_flags, get_employee_effective_shift,
+    today_ist, now_ist, update_attendance_timing_flags, get_employee_effective_shift,
     _compute_expected_end_time, _compute_overtime_hours, _time_to_minutes,
 )
+from sms_service import send_sms
 
 DEFAULT_WINDOW_DAYS = 3
 DEFAULT_MAX_PER_MONTH = 3
@@ -193,3 +195,80 @@ def reject(reg, admin_username, note):
         details=f'{reg.date} | rejected request for {reg.requested_check_out}: {note}'[:500]))
     db.session.commit()
     return True, 'Request rejected.'
+
+
+def correctable_days(employee, today=None):
+    """Recent days this employee can still ask to correct (used for the portal banner)."""
+    today = today or today_ist()
+    atts = Attendance.query.filter(
+        Attendance.employee_id == employee.id,
+        Attendance.date >= today - timedelta(days=window_days()),
+        Attendance.date < today,
+    ).order_by(Attendance.date.desc()).all()
+    return [a for a in atts if check_can_request(employee, a, today)[0]]
+
+
+# ─── End-of-shift reminder ────────────────────────────────────────────────────
+
+REMINDER_SETTING = 'missed_punch_reminder_enabled'
+REMINDER_DELAY_MINUTES = 30      # after the expected end of the employee's day
+REMINDER_LATEST_MINUTE = 23 * 60 + 30
+
+
+def reminder_enabled():
+    """Off unless an admin switches it on in Settings (SMS costs money)."""
+    return (AppConfig.get(REMINDER_SETTING) or '0') == '1'
+
+
+def send_missed_punch_reminders(now=None):
+    """SMS employees who punched in today but have not punched out, once per day.
+
+    Runs every few minutes from the scheduler. Skips Sundays, holidays and
+    approved leave days. The "already reminded" marker is an AuditLog row that
+    is saved BEFORE the SMS goes out, so a person is never texted twice a day.
+    Returns the number of SMS sent.
+    """
+    if not reminder_enabled():
+        return 0
+    now = now or now_ist()
+    today = now.date()
+    if today.weekday() == 6 or Holiday.query.filter_by(date=today, is_active=True).first():
+        return 0
+    now_minutes = now.hour * 60 + now.minute
+    if now_minutes > REMINDER_LATEST_MINUTE:
+        return 0
+
+    rows = (Attendance.query.join(Employee, Attendance.employee_id == Employee.id)
+            .filter(Attendance.date == today, Attendance.check_in.isnot(None),
+                    Attendance.check_in != '',
+                    db.or_(Attendance.check_out.is_(None), Attendance.check_out == ''),
+                    Employee.is_active == True, Employee.is_approved == True)  # noqa: E712
+            .all())
+    sent = 0
+    for att in rows:
+        emp = att.employee
+        on_leave = Leave.query.filter(
+            Leave.employee_id == emp.id, Leave.status == 'approved',
+            Leave.start_date <= today, Leave.end_date >= today).first()
+        if on_leave:
+            continue
+        _start, shift_end, hours = get_employee_effective_shift(emp)
+        end_minutes = _time_to_minutes(_compute_expected_end_time(att.check_in, shift_end, hours))
+        if end_minutes is None or now_minutes < end_minutes + REMINDER_DELAY_MINUTES:
+            continue
+        entity = f'Attendance:{att.id}'
+        if AuditLog.query.filter_by(action='punch_reminder', affected_entity=entity).first():
+            continue
+        marker = AuditLog(action='punch_reminder', user='system', affected_entity=entity,
+                          details=f'{today} reminder to {emp.name}')
+        db.session.add(marker)
+        db.session.commit()          # claim first, then send
+        ok, info = send_sms(emp.phone, (
+            f'Hi {emp.name}, you punched in at {att.check_in} but have not punched out. '
+            'Please punch out in the portal. - HR Team'))
+        if ok:
+            sent += 1
+        else:
+            marker.details = (marker.details + f' (SMS failed: {info})')[:500]
+            db.session.commit()
+    return sent

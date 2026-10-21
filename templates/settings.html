@@ -55,6 +55,24 @@
   </div>
 
   <div class="col-lg-7">
+    <div class="admin-card mb-3">
+      <div class="admin-card-header">
+        <div class="admin-card-title"><i class="bi bi-bell me-2"></i>Missed Punch-out Reminder</div>
+      </div>
+      <div class="admin-card-body">
+        <form method="POST" action="{{ url_for('admin.set_reminder') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <label class="d-flex align-items-center gap-2 mb-2">
+            <input type="checkbox" name="enabled" value="1" {{ 'checked' if reminder_on else '' }}
+                   style="width:18px;height:18px;">
+            <span>Send an SMS to employees who punched in but have not punched out
+              (30 minutes after their day should end)</span>
+          </label>
+          <div class="admin-form-hint mb-2">One SMS per person per day. Never on Sundays, holidays or leave days. Each SMS costs money.</div>
+          <button class="admin-btn admin-btn-primary admin-btn-sm">Save</button>
+        </form>
+      </div>
+    </div>
     <div class="admin-card">
       <div class="admin-card-header">
         <div class="admin-card-title"><i class="bi bi-info-circle me-2"></i>System Information</div>

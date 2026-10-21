@@ -207,6 +207,7 @@ def portal_dashboard():
     location_mode = get_employee_location_mode(emp)
 
     return render_template('portal/dashboard.html', emp=emp, today=today,
+        missed_days=reg_service.correctable_days(emp, today),
         today_att=today_att, recent_att=recent_att,
         leave_balances=leave_balances, latest_payroll=latest_payroll,
         upcoming_holidays=upcoming_holidays,
@@ -228,6 +229,7 @@ def portal_punch():
     location_mode = get_employee_location_mode(emp)
     shift_start, shift_end, working_hours_per_day = get_employee_effective_shift(emp)
     return render_template('portal/punch.html', emp=emp, location=location,
+                           missed_days=reg_service.correctable_days(emp, today),
                            today_attendance=today_att, location_mode=location_mode,
                            shift_start=shift_start, shift_end=shift_end,
                            working_hours_per_day=working_hours_per_day)

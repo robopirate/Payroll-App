@@ -1,0 +1,13 @@
+{% if missed_days %}
+<div class="rp-card mb-3" style="border-left: 4px solid var(--rp-warning, #f59e0b);">
+  <div class="rp-card-body">
+    <div class="rp-card-title mb-1"><i class="bi bi-exclamation-triangle"></i> You missed punching out</div>
+    {% for m in missed_days %}
+    <div class="rp-caption">
+      {{ m.date.strftime('%a, %d %b') }} (in {{ m.check_in }}) ·
+      <a href="{{ url_for('portal.portal_request_correction', att_id=m.id) }}">Request correction</a>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
