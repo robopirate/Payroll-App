@@ -55,6 +55,9 @@
     <a href="{{ url_for('admin.attendance') }}" class="{% if 'attendance' in (request.endpoint or '') %}active{% endif %}">
       <i class="bi bi-calendar-check-fill"></i> Attendance
     </a>
+    <a href="{{ url_for('admin.regularizations') }}" class="{% if 'regulariz' in (request.endpoint or '') %}active{% endif %}">
+      <i class="bi bi-clock-history"></i> Punch Corrections
+    </a>
 
     <div class="admin-nav-section">Leave Management</div>
     <a href="{{ url_for('admin.leaves') }}" class="{% if request.endpoint == 'admin.leaves' %}active{% endif %}">

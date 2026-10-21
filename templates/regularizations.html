@@ -1,0 +1,84 @@
+{% extends 'admin/base.html' %}
+{% block title %}Punch Corrections{% endblock %}
+{% block content %}
+
+<div class="admin-page-header">
+  <div>
+    <h1 class="admin-page-title">Punch Corrections</h1>
+    <div class="admin-page-subtitle">Employees who forgot to punch out and asked for the day to be corrected</div>
+  </div>
+</div>
+
+<ul class="nav nav-pills mb-3">
+  {% for s in ['pending','approved','rejected','all'] %}
+  <li class="nav-item">
+    <a href="{{ url_for('admin.regularizations', status=s) }}"
+       class="nav-link {{ 'active' if status_filter == s else '' }}">{{ s.title() }}</a>
+  </li>
+  {% endfor %}
+</ul>
+
+<div class="admin-card">
+  <div class="admin-card-body p-0">
+    {% if items %}
+    <div class="table-responsive">
+      <table class="admin-table admin-table-compact mb-0">
+        <thead>
+          <tr>
+            <th>Employee</th>
+            <th>Day</th>
+            <th>Punched in</th>
+            <th>Says they left</th>
+            <th>Reason</th>
+            <th>Status</th>
+            <th>Decision</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in items %}
+          <tr>
+            <td class="admin-fw-bold">{{ r.employee.name }}</td>
+            <td>{{ r.date.strftime('%a, %d %b %Y') }}</td>
+            <td>{{ r.attendance.check_in or '-' }}</td>
+            <td>{{ r.requested_check_out }}</td>
+            <td>{{ r.reason }}</td>
+            <td>
+              {% if r.status == 'pending' %}<span class="admin-badge admin-badge-pending">Pending</span>
+              {% elif r.status == 'approved' %}<span class="admin-badge admin-badge-approved">Approved</span>
+              {% else %}<span class="admin-badge admin-badge-rejected">Rejected</span>{% endif %}
+            </td>
+            <td style="min-width: 260px;">
+              {% if r.status == 'pending' %}
+              <form method="POST" action="{{ url_for('admin.approve_regularization', reg_id=r.id) }}" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="admin-btn admin-btn-success admin-btn-sm" title="Approve - day becomes a full day">
+                  <i class="bi bi-check-lg"></i> Approve
+                </button>
+              </form>
+              <form method="POST" action="{{ url_for('admin.reject_regularization', reg_id=r.id) }}" class="d-inline-flex gap-1 mt-1">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="text" name="note" class="form-control form-control-sm" placeholder="Reason for rejecting" required style="max-width: 170px;">
+                <button class="admin-btn admin-btn-danger admin-btn-sm" title="Reject">
+                  <i class="bi bi-x-lg"></i>
+                </button>
+              </form>
+              {% else %}
+                <small>{{ r.decided_by or '' }}{% if r.decided_on %}, {{ r.decided_on.strftime('%d %b') }}{% endif %}
+                {% if r.admin_note %}<br>{{ r.admin_note }}{% endif %}</small>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="admin-empty">
+      <i class="bi bi-clock-history"></i>
+      <p>No correction requests here.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

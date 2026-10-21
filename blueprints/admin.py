@@ -19,8 +19,10 @@ from services.attendance_service import (
 from sms_service import send_salary_credited_sms, send_sms, get_month_name
 from models import (
     User, Employee, Department, Attendance, Leave, LeaveBalance, Advance,
-    Payroll, School, Holiday, SchoolSchedule, AuditLog, AppConfig
+    Payroll, School, Holiday, SchoolSchedule, AuditLog, AppConfig,
+    AttendanceRegularization
 )
+from services import regularization_service as reg_service
 
 from sqlalchemy import func, distinct
 
@@ -821,6 +823,44 @@ def delete_leave(leave_id):
 
     flash('Leave deleted.', 'success')
     return redirect(url_for('.leaves'))
+
+
+# ─── Missed punch-out corrections ────────────────────────────────────────────
+
+@bp.route('/regularizations')
+@login_required
+def regularizations():
+    status_filter = request.args.get('status', 'pending')
+    q = AttendanceRegularization.query.options(
+        joinedload(AttendanceRegularization.employee),
+        joinedload(AttendanceRegularization.attendance))
+    if status_filter != 'all':
+        q = q.filter_by(status=status_filter)
+    items = q.order_by(AttendanceRegularization.requested_on.desc()).all()
+    return render_template('regularizations.html', items=items, status_filter=status_filter)
+
+
+@bp.route('/regularizations/<int:reg_id>/approve', methods=['POST'])
+@login_required
+@require_role('admin')
+def approve_regularization(reg_id):
+    reg = AttendanceRegularization.query.get_or_404(reg_id)
+    ok, msg, warning = reg_service.approve(reg, current_user.username,
+                                           request.form.get('note', ''))
+    flash(msg, 'success' if ok else 'danger')
+    if warning:
+        flash(warning, 'warning')
+    return redirect(url_for('.regularizations'))
+
+
+@bp.route('/regularizations/<int:reg_id>/reject', methods=['POST'])
+@login_required
+@require_role('admin')
+def reject_regularization(reg_id):
+    reg = AttendanceRegularization.query.get_or_404(reg_id)
+    ok, msg = reg_service.reject(reg, current_user.username, request.form.get('note', ''))
+    flash(msg, 'info' if ok else 'danger')
+    return redirect(url_for('.regularizations'))
 
 
 @bp.route('/leaves/balances')

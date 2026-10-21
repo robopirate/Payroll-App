@@ -223,3 +223,67 @@ def test_late_punch_out_points_to_request_correction(client, app):
     # yesterday's record is untouched and no record was invented for today
     assert db.session.get(Attendance, open_day.id).check_out is None
     assert Attendance.query.filter_by(employee_id=emp.id, date=today_ist()).count() == 0
+
+
+# ─── Admin screen ─────────────────────────────────────────────────────────────
+
+def _admin_login(client, app, role='admin'):
+    admin = User(username=f'boss_{role}', is_admin=True, role=role)
+    admin.set_password('adminpass')
+    db.session.add(admin)
+    db.session.commit()
+    client.post('/login', data={'username': admin.username, 'password': 'adminpass'},
+                follow_redirects=True)
+    return admin
+
+
+def _pending_request(emp, day):
+    att = _auto_closed_day(emp, day)
+    assert svc.submit_request(emp, att, '17:30', 'battery died', today=day + timedelta(days=1))[0]
+    return att, AttendanceRegularization.query.filter_by(attendance_id=att.id).one()
+
+
+def test_admin_page_lists_pending_requests(client, app):
+    emp = _employee(app)
+    _pending_request(emp, date(2026, 3, 9))
+    _admin_login(client, app)
+    page = client.get('/regularizations')
+    assert page.status_code == 200
+    assert b'Baban' in page.data and b'battery died' in page.data
+
+
+def test_admin_can_approve_and_reject_through_the_page(client, app):
+    emp = _employee(app)
+    att1, reg1 = _pending_request(emp, date(2026, 3, 9))
+    att2, reg2 = _pending_request(emp, date(2026, 3, 8))
+    _admin_login(client, app)
+
+    resp = client.post(f'/regularizations/{reg1.id}/approve', follow_redirects=True)
+    assert b'Approved' in resp.data
+    assert db.session.get(Attendance, att1.id).status == 'present'
+
+    resp = client.post(f'/regularizations/{reg2.id}/reject', data={'note': ''},
+                       follow_redirects=True)
+    assert b'write a reason' in resp.data
+    assert db.session.get(AttendanceRegularization, reg2.id).status == 'pending'
+
+    client.post(f'/regularizations/{reg2.id}/reject', data={'note': 'no proof'},
+                follow_redirects=True)
+    assert db.session.get(AttendanceRegularization, reg2.id).status == 'rejected'
+    assert db.session.get(Attendance, att2.id).status == 'half_day'
+
+
+def test_viewer_cannot_approve(client, app):
+    emp = _employee(app)
+    att, reg = _pending_request(emp, date(2026, 3, 9))
+    _admin_login(client, app, role='viewer')
+    client.post(f'/regularizations/{reg.id}/approve', follow_redirects=True)
+    assert db.session.get(AttendanceRegularization, reg.id).status == 'pending'
+    assert db.session.get(Attendance, att.id).status == 'half_day'
+
+
+def test_portal_user_cannot_open_admin_page(client, app):
+    emp = _employee(app)
+    _portal_login(client, emp.phone)
+    resp = client.get('/regularizations', follow_redirects=False)
+    assert resp.status_code == 302 and 'portal' in resp.location
