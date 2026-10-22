@@ -745,6 +745,10 @@ def apply_leave():
 @require_role('admin')
 def approve_leave(leave_id):
     leave = Leave.query.get_or_404(leave_id)
+    if leave.status != 'pending':
+        # A double click or a second tab must not take the balance off twice.
+        flash(f'This leave was already {leave.status}. Use Delete to undo it.', 'warning')
+        return redirect(url_for('.leaves'))
     leave.status = 'approved'
     leave.approved_by = current_user.username
     leave.approved_on = datetime.now(timezone.utc)
@@ -779,6 +783,10 @@ def approve_leave(leave_id):
 @require_role('admin')
 def reject_leave(leave_id):
     leave = Leave.query.get_or_404(leave_id)
+    if leave.status != 'pending':
+        # Rejecting an approved leave would leave the balance deducted. Delete restores it.
+        flash(f'This leave was already {leave.status}. Use Delete to undo it.', 'warning')
+        return redirect(url_for('.leaves'))
     leave.status = 'rejected'
     leave.approved_by = current_user.username
     leave.approved_on = datetime.now(timezone.utc)
@@ -1032,11 +1040,16 @@ def generate_payroll():
         emp_ids = [str(e.id) for e in emps]
     count = 0
     clamped = []
+    locked = []
     for emp_id in emp_ids:
         emp = db.session.get(Employee, int(emp_id))
         if not emp or not emp.is_active or not emp.is_approved:
             continue
         existing = Payroll.query.filter_by(employee_id=emp.id, month=month, year=year).first()
+        if existing and existing.status in ('finalized', 'paid'):
+            # Never silently rewrite a payslip that is already finalized or paid.
+            locked.append(emp.name)
+            continue
         data = calculate_payroll(emp, month, year)
         if data.pop('net_negative_clamped', False):
             clamped.append(emp.name)
@@ -1050,6 +1063,9 @@ def generate_payroll():
         count += 1
     db.session.commit()
     flash(f'Payroll generated for {count} employees for {get_month_name(month)} {year}.', 'success')
+    if locked:
+        flash('Skipped (already finalized or paid, left unchanged): ' + ', '.join(locked) + '.',
+              'warning')
     if clamped:
         flash('Warning: net salary was negative and clamped to ₹0 for: ' + ', '.join(clamped) +
               '. Please review advances.', 'warning')
