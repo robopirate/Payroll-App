@@ -17,7 +17,7 @@ jobs:
       - name: Ping health endpoint
         run: |
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 \
-            https://payroll-app-xd1d.onrender.com/health || true)
+            https://payroll-app-sg.onrender.com/health || true)
           echo "Health check status: $STATUS"
           if [ "$STATUS" != "200" ]; then
             echo "App did not respond with 200 — it may be deploying or down."
