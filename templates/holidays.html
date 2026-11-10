@@ -30,14 +30,25 @@
       <div class="admin-card-body">
         <form method="POST">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <div class="admin-form-group">
-            <label class="admin-form-label">Date <span class="text-danger">*</span></label>
-            <input type="date" name="date" class="admin-form-control" required>
+          <div class="row g-2">
+            <div class="col-6">
+              <div class="admin-form-group">
+                <label class="admin-form-label">From date <span class="text-danger">*</span></label>
+                <input type="date" name="date" class="admin-form-control" required>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="admin-form-group">
+                <label class="admin-form-label">To date <small class="text-muted">(optional)</small></label>
+                <input type="date" name="end_date" class="admin-form-control">
+              </div>
+            </div>
           </div>
+          <small class="text-muted d-block mb-3">For a single day, leave "To date" empty. For a vacation, pick the last day too &ndash; Sundays in the range are skipped (they are already paid days off).</small>
 
           <div class="admin-form-group">
             <label class="admin-form-label">Holiday Name <span class="text-danger">*</span></label>
-            <input type="text" name="name" class="admin-form-control" placeholder="e.g., Independence Day" required>
+            <input type="text" name="name" class="admin-form-control" placeholder="e.g., Summer Vacation" required>
           </div>
 
           <div class="admin-form-group">
@@ -46,8 +57,25 @@
           </div>
 
           <div class="admin-form-group">
-            <label class="admin-form-label">Year</label>
-            <input type="number" name="year" class="admin-form-control" value="{{ today.year }}" min="2020" max="2030">
+            <label class="admin-form-label">Applies to</label>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="scope" id="scopeAll" value="all" checked>
+              <label class="form-check-label" for="scopeAll">All schools and offices</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="scope" id="scopeSel" value="selected">
+              <label class="form-check-label" for="scopeSel">Only the ones I tick below</label>
+            </div>
+            <div id="schoolPicker" class="border rounded p-2 mt-2" style="display:none; max-height:180px; overflow-y:auto;">
+              {% for s in schools %}
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="school_ids" value="{{ s.id }}" id="sch{{ s.id }}">
+                <label class="form-check-label" for="sch{{ s.id }}">{{ s.name }}{% if s.location_type and s.location_type != 'School' %} <small class="text-muted">({{ s.location_type }})</small>{% endif %}</label>
+              </div>
+              {% else %}
+              <small class="text-muted">No active schools/offices found.</small>
+              {% endfor %}
+            </div>
           </div>
 
           <button type="submit" class="admin-btn admin-btn-primary w-100">
@@ -62,7 +90,17 @@
   <div class="col-lg-7">
     <div class="admin-card h-100">
       <div class="admin-card-header">
-        <div class="admin-card-title"><i class="bi bi-calendar-check me-2"></i>Holidays in {{ today.year }}</div>
+        <div class="admin-card-title"><i class="bi bi-calendar-check me-2"></i>Holidays</div>
+        <form method="GET" class="d-flex align-items-center gap-2">
+          <label class="small text-muted mb-0" for="schoolFilter">Show for</label>
+          <select id="schoolFilter" name="school" class="admin-form-control" style="width:auto" onchange="this.form.submit()">
+            <option value="" {{ 'selected' if not school_filter }}>Everything</option>
+            <option value="global" {{ 'selected' if school_filter == 'global' }}>Only holidays for all</option>
+            {% for s in schools %}
+            <option value="{{ s.id }}" {{ 'selected' if school_filter == s.id|string }}>{{ s.name }}</option>
+            {% endfor %}
+          </select>
+        </form>
       </div>
       <div class="admin-card-body p-0">
         {% if holidays %}
@@ -73,6 +111,7 @@
                 <th>Date</th>
                 <th>Holiday Name</th>
                 <th>Day</th>
+                <th>Applies to</th>
                 <th>Description</th>
                 <th>Action</th>
               </tr>
@@ -80,9 +119,16 @@
             <tbody>
               {% for h in holidays %}
               <tr>
-                <td class="fw-bold">{{ h.date.strftime('%d %b') }}</td>
+                <td class="fw-bold">{{ h.date.strftime('%d %b %Y') }}</td>
                 <td class="fw-semibold">{{ h.name }}</td>
                 <td><small class="text-muted">{{ h.date.strftime('%A') }}</small></td>
+                <td>
+                  {% if h.is_global %}
+                  <span class="badge bg-secondary">All</span>
+                  {% else %}
+                  {% for s in h.schools %}<span class="badge bg-info text-dark me-1">{{ s.name }}</span>{% endfor %}
+                  {% endif %}
+                </td>
                 <td><small class="text-muted">{{ h.description or '-' }}</small></td>
                 <td>
                   <form method="POST" action="{{ url_for('admin.delete_holiday', holiday_id=h.id) }}" style="display:inline;">
@@ -107,5 +153,17 @@
     </div>
   </div>
 </div>
+
+<script>
+  (function () {
+    var picker = document.getElementById('schoolPicker');
+    var selRadio = document.getElementById('scopeSel');
+    function sync() { picker.style.display = selRadio.checked ? 'block' : 'none'; }
+    document.querySelectorAll('input[name="scope"]').forEach(function (r) {
+      r.addEventListener('change', sync);
+    });
+    sync();
+  })();
+</script>
 
 {% endblock %}

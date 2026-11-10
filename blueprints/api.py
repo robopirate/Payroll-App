@@ -12,7 +12,7 @@ from extensions import db, limiter, csrf
 # first teacher login. Attendance helpers stay top-level (light, hot path).
 from services.attendance_service import (
     haversine_distance, update_attendance_timing_flags, calculate_paid_days,
-    get_employee_active_school, get_employee_effective_shift,
+    get_employee_active_school, get_employee_effective_shift, holidays_for_employee,
     _compute_expected_end_time, _compute_overtime_hours, today_ist, now_ist
 )
 from models import Employee, Attendance, Leave, LeaveBalance, Payroll, Holiday
@@ -253,11 +253,7 @@ def api_today_status():
     total_leave_remaining = sum((lb.remaining_days or 0) for lb in leave_balances)
 
     thirty_days_later = today + timedelta(days=30)
-    upcoming_holiday_count = Holiday.query.filter(
-        Holiday.date >= today,
-        Holiday.date <= thirty_days_later,
-        Holiday.is_active == True
-    ).count()
+    upcoming_holiday_count = len(holidays_for_employee(emp, today, thirty_days_later))
 
     recent_att = Attendance.query.filter_by(employee_id=emp.id).order_by(
         Attendance.date.desc()).limit(7).all()
@@ -783,7 +779,7 @@ def api_apply_leave():
     if is_half_day:
         days = 0.5
     else:
-        days = count_working_days_between(start_date, end_date)
+        days = count_working_days_between(start_date, end_date, emp)
 
     if days <= 0:
         return jsonify({'success': False, 'message': 'Leave range contains no working days.'}), 400
@@ -958,11 +954,11 @@ def api_holidays():
       401:
         description: Unauthorized
     """
+    # Show holidays for the caller's own school(s); no employee record -> only
+    # holidays that apply to everyone.
+    emp = get_current_employee()
     today = today_ist()
-    upcoming = Holiday.query.filter(
-        Holiday.date >= today,
-        Holiday.is_active == True
-    ).order_by(Holiday.date).all()
+    upcoming = holidays_for_employee(emp, today)
 
     return jsonify({
         'success': True,

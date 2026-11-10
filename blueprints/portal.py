@@ -7,7 +7,7 @@ import io
 from extensions import db, limiter
 from decorators import portal_required
 from services.attendance_service import (
-    count_working_days_between, calculate_paid_days,
+    count_working_days_between, calculate_paid_days, holidays_for_employee,
     get_employee_active_school, get_employee_effective_shift,
     get_employee_location_mode, today_ist
 )
@@ -189,11 +189,7 @@ def portal_dashboard():
 
     # Get upcoming holidays (next 30 days)
     thirty_days_later = today + timedelta(days=30)
-    upcoming_holidays = Holiday.query.filter(
-        Holiday.date >= today,
-        Holiday.date <= thirty_days_later,
-        Holiday.is_active == True
-    ).order_by(Holiday.date).all()
+    upcoming_holidays = holidays_for_employee(emp, today, thirty_days_later)
 
     present_this_month = calculate_paid_days(emp, today.year, today.month)
     pending_leaves_count = Leave.query.filter_by(employee_id=emp.id, status='pending').count()
@@ -397,7 +393,7 @@ def portal_apply_leave():
         if f.get('half_day'):
             days = 0.5
         else:
-            days = count_working_days_between(start_date, end_date)
+            days = count_working_days_between(start_date, end_date, emp)
         if days <= 0:
             flash('Leave range contains no working days (all weekends/holidays).', 'warning')
             return render_template('portal/apply_leave.html', emp=emp, leave_balances=leave_balances)
