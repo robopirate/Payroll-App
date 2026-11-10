@@ -1084,35 +1084,42 @@ def holidays():
         end_str = f.get('end_date')
         name = f.get('name', '').strip()
         description = f.get('description', '').strip()
+        # The School Schedule page posts here too and wants to come back to itself.
+        back = url_for('.school_schedule') if f.get('return_to') == 'schedule' else url_for('.holidays')
 
         if not date_str or not name:
             flash('Date and name are required.', 'danger')
-            return redirect(url_for('.holidays'))
+            return redirect(back)
 
         # Scope: everyone, or only the ticked schools/offices.
         scope_schools = []
-        if f.get('scope') == 'selected':
+        # Holidays page: radio 'scope'. Schedule page: an 'All locations' tick-box.
+        if f.get('vacation_form'):
+            pick_schools = not f.get('scope_all')
+        else:
+            pick_schools = f.get('scope') == 'selected'
+        if pick_schools:
             try:
                 wanted = {int(x) for x in f.getlist('school_ids')}
             except ValueError:
                 wanted = set()
             scope_schools = School.query.filter(School.id.in_(wanted)).all() if wanted else []
             if not scope_schools:
-                flash('Please tick at least one school/office, or choose "All schools and offices".', 'danger')
-                return redirect(url_for('.holidays'))
+                flash('Please tick at least one school/office, or choose "All locations".', 'danger')
+                return redirect(back)
 
         try:
             start = datetime.strptime(date_str, '%Y-%m-%d').date()
             end = datetime.strptime(end_str, '%Y-%m-%d').date() if end_str else start
         except ValueError:
             flash('Invalid date.', 'danger')
-            return redirect(url_for('.holidays'))
+            return redirect(back)
         if end < start:
             flash('The "to" date cannot be before the "from" date.', 'danger')
-            return redirect(url_for('.holidays'))
+            return redirect(back)
         if (end - start).days > 120:
             flash('A holiday range can be at most 120 days. Please split it up.', 'danger')
-            return redirect(url_for('.holidays'))
+            return redirect(back)
 
         try:
             added = updated = skipped = 0
@@ -1173,7 +1180,7 @@ def holidays():
             db.session.rollback()
             flash(f'Error: {str(e)}', 'danger')
 
-        return redirect(url_for('.holidays'))
+        return redirect(back)
 
     schools = School.query.filter_by(is_active=True).order_by(School.name).all()
     school_filter = request.args.get('school', '')
@@ -1206,6 +1213,8 @@ def delete_holiday(holiday_id):
     db.session.commit()
 
     flash(f'Holiday "{name}" deleted.', 'success')
+    if request.form.get('return_to') == 'schedule':
+        return redirect(url_for('.school_schedule'))
     return redirect(url_for('.holidays'))
 
 
@@ -1345,7 +1354,11 @@ def school_schedule():
 
         return redirect(url_for('.school_schedule'))
 
-    return render_template('school_schedule.html', schedule=schedule, today=date.today())
+    schools = School.query.filter_by(is_active=True).order_by(School.name).all()
+    # School/office-specific days off (vacations). Holidays for everyone live on the Holidays page.
+    vacations = [h for h in Holiday.query.order_by(Holiday.date).all() if not h.is_global]
+    return render_template('school_schedule.html', schedule=schedule, today=date.today(),
+                           schools=schools, vacations=vacations)
 
 
 # ─── Leave Balance Setup ───────────────────────────────────────────────────────

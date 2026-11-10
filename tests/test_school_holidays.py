@@ -199,3 +199,52 @@ def test_adding_holiday_clears_only_auto_absent_for_closed_school(client, app):
         assert ids['eb'] in left            # School B untouched
         assert ids['en'] in left            # no school untouched
         assert ids['p'] in left             # admin-edited row kept
+
+
+# ── Vacation form on the School Schedule page ────────────────────────────────
+
+def test_schedule_page_vacation_ticked_schools_only(client, app):
+    with app.app_context():
+        a, b, *_ = _setup(app)
+        a_id, b_id = a.id, b.id
+    _admin_client(client, app)
+
+    page = client.get('/school-schedule')
+    assert page.status_code == 200
+    assert b'School A' in page.data and b'All locations' in page.data
+
+    # "All locations" unticked (field absent) + School A and B ticked
+    resp = client.post('/holidays', data={
+        'vacation_form': '1', 'return_to': 'schedule',
+        'date': '2025-06-02', 'end_date': '2025-06-03', 'name': 'Summer',
+        'school_ids': [str(a_id), str(b_id)],
+    })
+    assert resp.status_code == 302 and resp.headers['Location'].endswith('/school-schedule')
+    with app.app_context():
+        rows = Holiday.query.all()
+        assert len(rows) == 2
+        assert all({s.id for s in h.schools} == {a_id, b_id} for h in rows)
+    assert b'Summer' in client.get('/school-schedule').data
+
+
+def test_schedule_page_vacation_all_locations_and_none_ticked(client, app):
+    with app.app_context():
+        _setup(app)
+    _admin_client(client, app)
+
+    # Unticked "All" but no school ticked -> refused
+    resp = client.post('/holidays', data={
+        'vacation_form': '1', 'return_to': 'schedule',
+        'date': '2025-06-02', 'name': 'Nope',
+    }, follow_redirects=True)
+    assert b'at least one school' in resp.data
+    with app.app_context():
+        assert Holiday.query.count() == 0
+
+    # "All locations" ticked -> global holiday
+    client.post('/holidays', data={
+        'vacation_form': '1', 'return_to': 'schedule', 'scope_all': '1',
+        'date': '2025-06-02', 'name': 'Everyone',
+    })
+    with app.app_context():
+        assert Holiday.query.one().is_global
