@@ -8,6 +8,7 @@ import string
 import time
 import threading
 import logging
+from werkzeug.middleware.proxy_fix import ProxyFix
 from config import Config
 from extensions import db, login_manager, csrf, limiter, jwt, compress
 from models import User, Employee, Department, AppConfig
@@ -95,6 +96,12 @@ def mask_pii(value):
 
 csrf.init_app(app)
 limiter.init_app(app)
+
+# Trust Render's proxy so get_remote_address() returns the real client IP
+# instead of the shared proxy IP. Without this, all teachers on one school
+# Wi-Fi look like a single IP and share one rate-limit bucket, which can
+# trigger 429 errors and slow retries at morning punch-in.
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
 # Load persisted config after app context is available
 # (actual load happens in _gate_on_db_ready once tables exist)

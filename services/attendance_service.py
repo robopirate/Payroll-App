@@ -22,15 +22,80 @@ def now_ist():
     return datetime.now(_IST)
 
 
-def get_working_days_in_month(year, month):
+def employee_school_ids(employee):
+    """IDs of the active schools/offices an employee works at."""
+    if not employee:
+        return []
+    return [s.id for s in employee.schools if s.is_active]
+
+
+def holiday_dates_for(employee, start_date, end_date):
+    """Set of dates in [start_date, end_date] that are a day off for `employee`.
+
+    A holiday with no schools is global. A school-specific holiday only counts
+    when ALL of the employee's schools are closed that day. With employee=None
+    only global holidays count.
+    """
+    school_ids = employee_school_ids(employee)
+    return {
+        h.date for h in Holiday.query.filter(
+            Holiday.date >= start_date,
+            Holiday.date <= end_date,
+            Holiday.is_active == True
+        ).all()
+        if h.applies_to_school_ids(school_ids)
+    }
+
+
+def is_holiday_for(employee, day_holidays):
+    """True if any of `day_holidays` (Holiday rows for one date) is a day off
+    for `employee`."""
+    school_ids = employee_school_ids(employee)
+    return any(h.applies_to_school_ids(school_ids) for h in day_holidays)
+
+
+def remove_auto_absent_on_holidays(dates):
+    """Delete the automatic 'absent' marks on `dates` for staff who are now on
+    holiday. Used when a holiday is added after the days have already passed
+    (the nightly job had marked everyone without a punch as absent).
+
+    Only touches rows that are untouched by a human or a punch: status absent,
+    not admin-edited, no check-in, no notes. Does NOT commit; returns the count.
+    """
+    removed = 0
+    for d in set(dates):
+        day_holidays = Holiday.query.filter_by(date=d, is_active=True).all()
+        if not day_holidays:
+            continue
+        rows = Attendance.query.filter(
+            Attendance.date == d,
+            Attendance.status == 'absent',
+            db.or_(Attendance.admin_override.is_(None), Attendance.admin_override == False),
+            db.or_(Attendance.check_in.is_(None), Attendance.check_in == ''),
+            db.or_(Attendance.notes.is_(None), Attendance.notes == ''),
+        ).all()
+        for att in rows:
+            if is_holiday_for(att.employee, day_holidays):
+                db.session.delete(att)
+                removed += 1
+    return removed
+
+
+def holidays_for_employee(employee, start_date, end_date=None):
+    """Holiday rows (ordered by date) that apply to `employee`. If end_date is
+    omitted, returns everything from start_date onwards."""
+    school_ids = employee_school_ids(employee)
+    q = Holiday.query.filter(Holiday.date >= start_date, Holiday.is_active == True)
+    if end_date is not None:
+        q = q.filter(Holiday.date <= end_date)
+    return [h for h in q.order_by(Holiday.date).all() if h.applies_to_school_ids(school_ids)]
+
+
+def get_working_days_in_month(year, month, employee=None):
     _, days_in_month = calendar.monthrange(year, month)
     first_day = date(year, month, 1)
     last_day = date(year, month, days_in_month)
-    holidays = {h.date for h in Holiday.query.filter(
-        Holiday.date >= first_day,
-        Holiday.date <= last_day,
-        Holiday.is_active == True
-    ).all()}
+    holidays = holiday_dates_for(employee, first_day, last_day)
     working = 0
     for d in range(1, days_in_month + 1):
         current_date = date(year, month, d)
@@ -39,13 +104,10 @@ def get_working_days_in_month(year, month):
     return working
 
 
-def count_working_days_between(start_date, end_date):
-    """Count working days (Mon-Sat) between two dates, excluding holidays."""
-    holidays = {h.date for h in Holiday.query.filter(
-        Holiday.date >= start_date,
-        Holiday.date <= end_date,
-        Holiday.is_active == True
-    ).all()}
+def count_working_days_between(start_date, end_date, employee=None):
+    """Count working days (Mon-Sat) between two dates, excluding holidays that
+    apply to `employee` (global holidays only if no employee is given)."""
+    holidays = holiday_dates_for(employee, start_date, end_date)
     days = 0
     current = start_date
     while current <= end_date:
@@ -163,8 +225,9 @@ def ensure_absent_attendance(date_obj):
     """
     if date_obj.weekday() == 6:
         return
-    is_holiday = Holiday.query.filter_by(date=date_obj, is_active=True).first() is not None
-    if is_holiday:
+    day_holidays = Holiday.query.filter_by(date=date_obj, is_active=True).all()
+    if any(h.is_global for h in day_holidays):
+        # Fast path: a global holiday closes everyone.
         return
 
     employees = Employee.query.filter_by(is_active=True, is_approved=True).all()
@@ -182,6 +245,8 @@ def ensure_absent_attendance(date_obj):
         if emp.id in existing or emp.id in on_leave:
             continue
         if date_obj < emp.joining_date:
+            continue
+        if is_holiday_for(emp, day_holidays):
             continue
         db.session.add(Attendance(
             employee_id=emp.id,
@@ -239,14 +304,10 @@ def calculate_paid_days(employee, year, month):
         start = max(leave.start_date, effective_start)
         end = min(leave.end_date, month_end)
         if start <= end:
-            paid_days += count_working_days_between(start, end)
+            paid_days += count_working_days_between(start, end, employee)
 
-    # Unrecorded Sundays / holidays
-    holidays = {h.date for h in Holiday.query.filter(
-        Holiday.date >= effective_start,
-        Holiday.date <= month_end,
-        Holiday.is_active == True
-    ).all()}
+    # Unrecorded Sundays / holidays (only holidays that apply to this employee)
+    holidays = holiday_dates_for(employee, effective_start, month_end)
 
     current = effective_start
     while current <= month_end:
@@ -306,8 +367,8 @@ def ensure_sunday_attendance(date_obj):
     if date_obj.weekday() != 6:
         return
 
-    is_holiday = Holiday.query.filter_by(date=date_obj, is_active=True).first() is not None
-    if is_holiday:
+    day_holidays = Holiday.query.filter_by(date=date_obj, is_active=True).all()
+    if any(h.is_global for h in day_holidays):
         return
 
     employees = Employee.query.filter_by(is_active=True, is_approved=True).all()
@@ -325,6 +386,8 @@ def ensure_sunday_attendance(date_obj):
         if emp.id in existing or emp.id in on_leave:
             continue
         if date_obj < emp.joining_date:
+            continue
+        if is_holiday_for(emp, day_holidays):
             continue
         db.session.add(Attendance(employee_id=emp.id, date=date_obj, status='present'))
         added = True

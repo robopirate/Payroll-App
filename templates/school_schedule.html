@@ -142,4 +142,116 @@
   </div>
 </div>
 
+<!-- Vacations: days off for particular schools / locations -->
+<div class="row g-4 mt-1">
+  <div class="col-lg-5">
+    <div class="admin-card h-100">
+      <div class="admin-card-header">
+        <div class="admin-card-title"><i class="bi bi-sun me-2"></i>Add Vacation</div>
+      </div>
+      <div class="admin-card-body">
+        <form method="POST" action="{{ url_for('admin.holidays') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="return_to" value="schedule">
+          <input type="hidden" name="vacation_form" value="1">
+
+          <div class="admin-form-group">
+            <label class="admin-form-label">Vacation name <span class="text-danger">*</span></label>
+            <input type="text" name="name" class="admin-form-control" placeholder="e.g., Summer Vacation" required>
+          </div>
+
+          <div class="row g-2">
+            <div class="col-6">
+              <div class="admin-form-group">
+                <label class="admin-form-label">From <span class="text-danger">*</span></label>
+                <input type="date" name="date" class="admin-form-control" required>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="admin-form-group">
+                <label class="admin-form-label">To <small class="text-muted">(optional)</small></label>
+                <input type="date" name="end_date" class="admin-form-control">
+              </div>
+            </div>
+          </div>
+          <small class="text-muted d-block mb-3">Sundays are skipped (already paid days off).</small>
+
+          <div class="admin-form-group">
+            <label class="admin-form-label">Locations</label>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="scope_all" id="vacAll" value="1" checked>
+              <label class="form-check-label fw-semibold" for="vacAll">All locations</label>
+            </div>
+            <div id="vacPicker" class="border rounded p-2 mt-2" style="display:none; max-height:200px; overflow-y:auto;">
+              <small class="text-muted d-block mb-1">Tick the schools/offices that are closed:</small>
+              {% for s in schools %}
+              <div class="form-check">
+                <input class="form-check-input vac-school" type="checkbox" name="school_ids" value="{{ s.id }}" id="vac{{ s.id }}">
+                <label class="form-check-label" for="vac{{ s.id }}">{{ s.name }}{% if s.location_type and s.location_type != 'School' %} <small class="text-muted">({{ s.location_type }})</small>{% endif %}</label>
+              </div>
+              {% else %}
+              <small class="text-muted">No active schools/offices found.</small>
+              {% endfor %}
+            </div>
+          </div>
+
+          <button type="submit" class="admin-btn admin-btn-primary w-100">
+            <i class="bi bi-plus-circle me-1"></i> Add Vacation
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-7">
+    <div class="admin-card h-100">
+      <div class="admin-card-header">
+        <div class="admin-card-title"><i class="bi bi-calendar-range me-2"></i>School / Location Vacations</div>
+      </div>
+      <div class="admin-card-body p-0">
+        {% if vacations %}
+        <div class="table-responsive">
+          <table class="admin-table admin-table-compact mb-0">
+            <thead><tr><th>Date</th><th>Name</th><th>Closed locations</th><th></th></tr></thead>
+            <tbody>
+              {% for h in vacations %}
+              <tr>
+                <td class="fw-bold">{{ h.date.strftime('%d %b %Y') }}</td>
+                <td>{{ h.name }}</td>
+                <td>{% for s in h.schools %}<span class="badge bg-info text-dark me-1">{{ s.name }}</span>{% endfor %}</td>
+                <td>
+                  <form method="POST" action="{{ url_for('admin.delete_holiday', holiday_id=h.id) }}" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="return_to" value="schedule">
+                    <button type="submit" class="admin-btn admin-btn-danger admin-btn-sm" data-confirm="Delete this vacation day?">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="admin-empty">
+          <i class="bi bi-sun"></i>
+          <p>No school-specific vacations yet. Holidays for everyone are on the Holidays page.</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var all = document.getElementById('vacAll');
+    var picker = document.getElementById('vacPicker');
+    function sync() { picker.style.display = all.checked ? 'none' : 'block'; }
+    all.addEventListener('change', sync);
+    sync();
+  })();
+</script>
+
 {% endblock %}

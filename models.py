@@ -194,6 +194,14 @@ class Payroll(db.Model):
     __table_args__ = (db.UniqueConstraint('employee_id', 'month', 'year', name='uq_emp_month_year'),)
 
 
+# Many-to-many: Holiday <-> School. A holiday with NO rows here applies to
+# every school/office; otherwise only to the listed ones.
+holiday_schools = db.Table('holiday_schools',
+    db.Column('holiday_id', db.Integer, db.ForeignKey('holidays.id', ondelete='CASCADE'), primary_key=True),
+    db.Column('school_id', db.Integer, db.ForeignKey('schools.id', ondelete='CASCADE'), primary_key=True)
+)
+
+
 class Holiday(db.Model):
     __tablename__ = 'holidays'
     id = db.Column(db.Integer, primary_key=True)
@@ -202,6 +210,22 @@ class Holiday(db.Model):
     description = db.Column(db.String(300))
     year = db.Column(db.Integer)
     is_active = db.Column(db.Boolean, default=True)
+    schools = db.relationship('School', secondary=holiday_schools, lazy='selectin')
+
+    @property
+    def is_global(self):
+        return not self.schools
+
+    def applies_to_school_ids(self, school_ids):
+        """True if this holiday is a day off for someone working at ALL of
+        `school_ids`. Global holidays always apply. Scoped holidays apply only
+        when every one of the person's schools is covered; a person with no
+        school is only affected by global holidays."""
+        if self.is_global:
+            return True
+        if not school_ids:
+            return False
+        return set(school_ids) <= {s.id for s in self.schools}
 
 
 class SchoolSchedule(db.Model):

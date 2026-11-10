@@ -11,7 +11,8 @@ from extensions import db, limiter
 from services.attendance_service import (
     get_working_days_in_month, count_working_days_between,
     update_attendance_timing_flags, ensure_sunday_attendance,
-    backfill_absent_attendance, calculate_paid_days
+    backfill_absent_attendance, calculate_paid_days, is_holiday_for,
+    remove_auto_absent_on_holidays
 )
 # NOTE: pdf_service (reportlab) is imported lazily inside download_payslip —
 # it adds seconds to startup and teachers never touch it on first load.
@@ -602,10 +603,10 @@ def attendance():
     existing = {a.employee_id: a for a in Attendance.query.filter_by(date=sel_date).all()}
 
     # Auto-populate holiday status if date is a holiday and no record exists
-    is_holiday = Holiday.query.filter_by(date=sel_date).first() is not None
-    if is_holiday:
+    day_holidays = Holiday.query.filter_by(date=sel_date, is_active=True).all()
+    if day_holidays:
         for emp in emps:
-            if emp.id not in existing:
+            if emp.id not in existing and is_holiday_for(emp, day_holidays):
                 att = Attendance(employee_id=emp.id, date=sel_date, status='holiday', admin_override=False)
                 db.session.add(att)
         db.session.commit()
@@ -722,7 +723,7 @@ def apply_leave():
         if f.get('half_day'):
             days = 0.5
         else:
-            days = count_working_days_between(start_date, end_date)
+            days = count_working_days_between(start_date, end_date, emp)
         if days <= 0:
             flash('Leave range contains no working days (all weekends/holidays).', 'warning')
             return render_template('leaves/apply.html', employees=emps, form=f)
@@ -1218,32 +1219,117 @@ def holidays():
     if request.method == 'POST':
         f = request.form
         date_str = f.get('date')
+        end_str = f.get('end_date')
         name = f.get('name', '').strip()
         description = f.get('description', '').strip()
-        year = int(f.get('year', date.today().year))
+        # The School Schedule page posts here too and wants to come back to itself.
+        back = url_for('.school_schedule') if f.get('return_to') == 'schedule' else url_for('.holidays')
 
         if not date_str or not name:
             flash('Date and name are required.', 'danger')
-            return redirect(url_for('.holidays'))
+            return redirect(back)
+
+        # Scope: everyone, or only the ticked schools/offices.
+        scope_schools = []
+        # Holidays page: radio 'scope'. Schedule page: an 'All locations' tick-box.
+        if f.get('vacation_form'):
+            pick_schools = not f.get('scope_all')
+        else:
+            pick_schools = f.get('scope') == 'selected'
+        if pick_schools:
+            try:
+                wanted = {int(x) for x in f.getlist('school_ids')}
+            except ValueError:
+                wanted = set()
+            scope_schools = School.query.filter(School.id.in_(wanted)).all() if wanted else []
+            if not scope_schools:
+                flash('Please tick at least one school/office, or choose "All locations".', 'danger')
+                return redirect(back)
 
         try:
-            holiday_date = datetime.strptime(date_str, '%Y-%m-%d').date()
-            existing = Holiday.query.filter_by(date=holiday_date).first()
-            if existing:
-                flash('Holiday already exists for this date.', 'warning')
-            else:
-                holiday = Holiday(date=holiday_date, name=name, description=description, year=year)
-                db.session.add(holiday)
-                db.session.commit()
-                flash(f'Holiday "{name}" added successfully.', 'success')
+            start = datetime.strptime(date_str, '%Y-%m-%d').date()
+            end = datetime.strptime(end_str, '%Y-%m-%d').date() if end_str else start
+        except ValueError:
+            flash('Invalid date.', 'danger')
+            return redirect(back)
+        if end < start:
+            flash('The "to" date cannot be before the "from" date.', 'danger')
+            return redirect(back)
+        if (end - start).days > 120:
+            flash('A holiday range can be at most 120 days. Please split it up.', 'danger')
+            return redirect(back)
+
+        try:
+            added = updated = skipped = 0
+            touched_dates = []
+            is_range = end > start
+            d = start
+            while d <= end:
+                # In a range, skip Sundays: they are already paid days off.
+                if is_range and d.weekday() == 6:
+                    d += timedelta(days=1)
+                    continue
+                touched_dates.append(d)
+                existing = Holiday.query.filter_by(date=d).first()
+                if existing is None:
+                    db.session.add(Holiday(
+                        date=d, name=name, description=description, year=d.year,
+                        schools=list(scope_schools),
+                    ))
+                    added += 1
+                elif existing.is_global:
+                    skipped += 1          # already a day off for everyone
+                elif not scope_schools:
+                    existing.schools = []  # widen to everyone
+                    updated += 1
+                else:
+                    have = {s.id for s in existing.schools}
+                    new = [s for s in scope_schools if s.id not in have]
+                    if new:
+                        existing.schools = list(existing.schools) + new
+                        updated += 1
+                    else:
+                        skipped += 1
+                d += timedelta(days=1)
+
+            who = ', '.join(s.name for s in scope_schools) if scope_schools else 'all schools and offices'
+            db.session.flush()
+            # Past days may already carry automatic "absent" marks; clear them
+            # so closed-school staff are not docked pay for the holiday.
+            cleared = remove_auto_absent_on_holidays(touched_dates)
+            db.session.add(AuditLog(
+                action='add_holiday', user=current_user.username,
+                affected_entity=f'Holiday:{start}',
+                details=(f'{name} {start}..{end} for {who} (added {added}, updated {updated}, '
+                         f'skipped {skipped}, auto-absent marks cleared {cleared})')
+            ))
+            db.session.commit()
+            parts = [f'{added} added']
+            if updated:
+                parts.append(f'{updated} extended to more schools')
+            if skipped:
+                parts.append(f'{skipped} already covered')
+            msg = f'Holiday "{name}" for {who}: ' + ', '.join(parts) + '.'
+            if cleared:
+                msg += (f' Removed {cleared} automatic "absent" marks on those days. '
+                        'If October (or any month) payroll was already generated, regenerate it to pick this up.')
+            flash(msg, 'success' if (added or updated) else 'warning')
         except Exception as e:
             db.session.rollback()
             flash(f'Error: {str(e)}', 'danger')
 
-        return redirect(url_for('.holidays'))
+        return redirect(back)
 
+    schools = School.query.filter_by(is_active=True).order_by(School.name).all()
+    school_filter = request.args.get('school', '')
     holidays_list = Holiday.query.order_by(Holiday.date).all()
-    return render_template('holidays.html', holidays=holidays_list, today=date.today())
+    if school_filter == 'global':
+        holidays_list = [h for h in holidays_list if h.is_global]
+    elif school_filter.isdigit():
+        sid = int(school_filter)
+        holidays_list = [h for h in holidays_list if h.is_global or sid in {s.id for s in h.schools}]
+    return render_template('holidays.html', holidays=holidays_list, today=date.today(),
+                           schools=schools, school_filter=school_filter)
 
 
 @bp.route('/holidays/<int:holiday_id>/delete', methods=['POST'])
@@ -1265,6 +1351,8 @@ def delete_holiday(holiday_id):
     db.session.commit()
 
     flash(f'Holiday "{name}" deleted.', 'success')
+    if request.form.get('return_to') == 'schedule':
+        return redirect(url_for('.school_schedule'))
     return redirect(url_for('.holidays'))
 
 
@@ -1321,21 +1409,33 @@ def populate_national_holidays():
 
     added = 0
     skipped = 0
+    touched = []
     for date_str, name, desc in national_holidays:
         try:
             holiday_date = datetime.strptime(date_str, '%Y-%m-%d').date()
             existing = Holiday.query.filter_by(date=holiday_date).first()
             if existing:
-                skipped += 1
+                if not existing.is_global:
+                    existing.schools = []  # national holiday applies to everyone
+                    touched.append(holiday_date)
+                    added += 1
+                else:
+                    skipped += 1
             else:
                 holiday = Holiday(date=holiday_date, name=name, description=desc, year=year)
                 db.session.add(holiday)
+                touched.append(holiday_date)
                 added += 1
         except Exception as e:
             skipped += 1
 
+    db.session.flush()
+    cleared = remove_auto_absent_on_holidays(touched)
     db.session.commit()
-    flash(f'Added {added} national holidays for {year}. {skipped} already existed.', 'success')
+    msg = f'Added {added} national holidays for {year}. {skipped} already existed.'
+    if cleared:
+        msg += f' Removed {cleared} automatic "absent" marks on those days.'
+    flash(msg, 'success')
     return redirect(url_for('.holidays'))
 
 
@@ -1392,7 +1492,11 @@ def school_schedule():
 
         return redirect(url_for('.school_schedule'))
 
-    return render_template('school_schedule.html', schedule=schedule, today=date.today())
+    schools = School.query.filter_by(is_active=True).order_by(School.name).all()
+    # School/office-specific days off (vacations). Holidays for everyone live on the Holidays page.
+    vacations = [h for h in Holiday.query.order_by(Holiday.date).all() if not h.is_global]
+    return render_template('school_schedule.html', schedule=schedule, today=date.today(),
+                           schools=schools, vacations=vacations)
 
 
 # ─── Leave Balance Setup ───────────────────────────────────────────────────────
