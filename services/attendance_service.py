@@ -3,6 +3,8 @@ from datetime import date, timedelta, datetime, timezone
 import calendar
 import math
 
+from flask import current_app
+
 from models import db, Holiday, Employee, Attendance, Leave
 
 
@@ -269,6 +271,8 @@ def calculate_paid_days(employee, year, month):
       - half_day counts as 0.5
       - approved leave working days
       - unrecorded Sundays and holidays
+    Only the first Absent / approved-leave day of the month is paid
+    (config FREE_LEAVE_DAYS_PER_MONTH); every extra one is unpaid.
     Joining date is respected.
     """
     _, dim = calendar.monthrange(year, month)
@@ -287,11 +291,18 @@ def calculate_paid_days(employee, year, month):
 
     paid_days = 0.0
     attended_dates = {a.date for a in attendances}
+    worked_dates = set()
+    off_dates = set()   # days the employee was Absent / on Leave
     for att in attendances:
         if att.status in ('present', 'overtime', 'holiday'):
             paid_days += 1.0
+            worked_dates.add(att.date)
         elif att.status == 'half_day':
             paid_days += 0.5
+            worked_dates.add(att.date)
+        elif att.status in ('absent', 'leave'):
+            if count_working_days_between(att.date, att.date, employee) == 1:
+                off_dates.add(att.date)
 
     # Approved leave working days
     approved_leaves = Leave.query.filter_by(
@@ -303,8 +314,16 @@ def calculate_paid_days(employee, year, month):
     for leave in approved_leaves:
         start = max(leave.start_date, effective_start)
         end = min(leave.end_date, month_end)
-        if start <= end:
-            paid_days += count_working_days_between(start, end, employee)
+        current = start
+        while current <= end:
+            if count_working_days_between(current, current, employee) == 1:
+                off_dates.add(current)
+            current += timedelta(days=1)
+
+    # One paid leave per month: the first Absent / Leave day is paid, every
+    # extra one is unpaid. A day the employee actually worked is not a leave.
+    free_days = current_app.config.get('FREE_LEAVE_DAYS_PER_MONTH', 1)
+    paid_days += min(len(off_dates - worked_dates), free_days)
 
     # Unrecorded Sundays / holidays (only holidays that apply to this employee)
     holidays = holiday_dates_for(employee, effective_start, month_end)

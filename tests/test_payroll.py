@@ -228,3 +228,60 @@ def test_calculate_payroll_uses_employee_working_hours_override(app):
         assert result['overtime_pay'] > result_default['overtime_pay']
         assert result['overtime_pay'] == 333
         assert result_default['overtime_pay'] == 250
+
+
+def _free_leave_employee(app):
+    dept = Department(name='FL Dept')
+    db.session.add(dept)
+    db.session.commit()
+    emp = Employee(emp_id='EMPFL', name='FL', phone='9876500001',
+                   department_id=dept.id, basic_salary=30000,
+                   joining_date=date(2024, 1, 1))
+    db.session.add(emp)
+    db.session.commit()
+    return emp
+
+
+def _mark_month(emp, year, month, absent_days):
+    """Present on every Mon-Sat except absent_days (Absent)."""
+    from calendar import monthrange
+    from models import Attendance
+    for d in range(1, monthrange(year, month)[1] + 1):
+        day = date(year, month, d)
+        if day.weekday() == 6:
+            continue
+        db.session.add(Attendance(
+            employee_id=emp.id, date=day,
+            status='absent' if d in absent_days else 'present'))
+    db.session.commit()
+
+
+def test_one_absent_day_is_paid(app):
+    from services.attendance_service import calculate_paid_days
+    with app.app_context():
+        emp = _free_leave_employee(app)
+        _mark_month(emp, 2026, 10, absent_days={7})
+        # 31 days - 0 unpaid (1 absent is free)
+        assert calculate_paid_days(emp, 2026, 10) == 31.0
+
+
+def test_extra_absent_days_are_cut(app):
+    from services.attendance_service import calculate_paid_days
+    with app.app_context():
+        emp = _free_leave_employee(app)
+        _mark_month(emp, 2026, 10, absent_days={7, 8, 9})
+        # 3 absent: 1 free, 2 cut -> 31 - 2
+        assert calculate_paid_days(emp, 2026, 10) == 29.0
+
+
+def test_leave_and_absent_share_the_one_free_day(app):
+    from services.attendance_service import calculate_paid_days
+    with app.app_context():
+        emp = _free_leave_employee(app)
+        _mark_month(emp, 2026, 10, absent_days={7, 8})
+        db.session.add(Leave(employee_id=emp.id, leave_type='casual',
+                             start_date=date(2026, 10, 7), end_date=date(2026, 10, 7),
+                             days=1.0, status='approved'))
+        db.session.commit()
+        # Oct 7 (leave+absent same day) and Oct 8 absent: 2 off days, 1 free
+        assert calculate_paid_days(emp, 2026, 10) == 30.0
