@@ -99,7 +99,7 @@
               </td>
               <td>
                 <input type="number" name="ot_{{ emp.id }}" class="admin-form-control ot-field"
-                       step="0.5" min="0" max="12"
+                       step="any" min="0"
                        value="{{ att.overtime_hours if att else 0 }}"
                        id="ot_{{ emp.id }}"
                        style="width:90px;{% if not att or att.status != 'overtime' %}display:none;{% endif %}">
