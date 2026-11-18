@@ -285,3 +285,28 @@ def test_leave_and_absent_share_the_one_free_day(app):
         db.session.commit()
         # Oct 7 (leave+absent same day) and Oct 8 absent: 2 off days, 1 free
         assert calculate_paid_days(emp, 2026, 10) == 30.0
+
+
+def test_school_department_gets_no_overtime_pay(app):
+    from models import Attendance
+    with app.app_context():
+        school = Department(name='School')
+        ops = Department(name='Operations')
+        db.session.add_all([school, ops])
+        db.session.commit()
+        emps = []
+        for i, dept in enumerate((school, ops)):
+            e = Employee(emp_id=f'EMPOT{i}', name=f'OT{i}', phone=f'98765001{i}0',
+                         department_id=dept.id, basic_salary=26000,
+                         joining_date=date(2024, 1, 1))
+            db.session.add(e)
+            emps.append(e)
+        db.session.commit()
+        for e in emps:
+            db.session.add(Attendance(employee_id=e.id, date=date(2026, 10, 7),
+                                      status='present', overtime_hours=2.0))
+        db.session.commit()
+        teacher = calculate_payroll(emps[0], month=10, year=2026)
+        other = calculate_payroll(emps[1], month=10, year=2026)
+        assert teacher['overtime_hours'] == 0.0 and teacher['overtime_pay'] == 0
+        assert other['overtime_hours'] == 2.0 and other['overtime_pay'] > 0

@@ -121,6 +121,10 @@ def calculate_payroll(employee, month, year):
         Attendance.date <= month_end
     ).all()
     overtime_hours = sum((att.overtime_hours or 0.0) for att in attendances)
+    # Some departments (school teachers) are never paid overtime.
+    dept_name = (employee.dept.name if employee.dept else '') or ''
+    if dept_name.strip().lower() in current_app.config.get('NO_OVERTIME_DEPARTMENTS', ()):
+        overtime_hours = 0.0
 
     days_in_month = dim
     daily_rate = employee.basic_salary / days_in_month if days_in_month > 0 else 0
